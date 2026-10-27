@@ -184,7 +184,10 @@ docs/superpowers/plans/2026-10-26-apg-site-prompts.md.
 5. ContainerCode: texto mono pequeno steel-400,
    "APGU 1996-0{index} · {LABEL MAIÚSCULO}".
 6. CtaButton: primary = fundo red-500, texto #FFFFFF (sand-50 não passa
-   em contraste), com seta (arrow.svg) que avança 4px no hover. ghost = borda sand-50/30. Transição de 150ms, foco visível
+   em contraste), com a seta do logo em branco (arrow.svg via CSS mask
+   com background currentColor; vermelho sobre vermelho some) que avança
+   4px no hover. ghost = borda sand-50/30 e seta red-500. Transição de
+   150ms, foco visível
    (outline 2px sand-50, offset 3px), alvo mínimo de 44px.
 7. Testes unitários: ContainerCode formata corretamente; Counter
    renderiza o valor final quando reduced-motion está ativo (mock de
