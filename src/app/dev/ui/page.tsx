@@ -33,13 +33,13 @@ export default function DevUiPage() {
   if (process.env.NODE_ENV === "production") notFound();
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 pb-24 md:px-10">
+    <main className="mx-auto w-full max-w-6xl px-4 pt-16 pb-24 md:px-10">
       <header className="py-16 md:py-24">
         <ContainerCode index={0} label="Design system" />
-        <RevealText as="h1" className="font-condensed mt-6 text-5xl font-bold uppercase leading-[0.9] md:text-8xl">
+        <RevealText as="h1" immediate className="font-condensed mt-6 text-5xl font-bold uppercase leading-[0.9] md:text-8xl">
           {site.tagline}
         </RevealText>
-        <RevealText className="mt-6 max-w-xl text-lg text-steel-400">{site.description}</RevealText>
+        <RevealText immediate className="mt-6 max-w-xl text-lg text-steel-400">{site.description}</RevealText>
       </header>
 
       <Section index={1} label="Logo">

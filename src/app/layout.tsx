@@ -1,5 +1,10 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
+import { Footer } from "@/components/layout/Footer";
+import { Header } from "@/components/layout/Header";
+import { PageCurtain } from "@/components/layout/PageCurtain";
+import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { site } from "@/content/site";
 import "./globals.css";
@@ -24,13 +29,24 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // suppressHydrationWarning: the inline script below adds the `js` class before React hydrates
     <html
       lang="pt-BR"
       className={`${archivo.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* runs before first paint so `.js [data-reveal-immediate]` can hide above-the-fold reveals */}
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <SmoothScroll />
+        <Header />
         {children}
+        <Footer />
+        <WhatsAppButton />
+        <PageCurtain />
+        <Analytics />
       </body>
     </html>
   );

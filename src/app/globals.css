@@ -7,6 +7,11 @@
   --color-sand-50: #f3efe7;
   --color-steel-400: #8b94a8;
   --color-sunset: #f2913d; /* só na iluminação 3D, nunca na interface */
+  --color-whatsapp: #25d366; /* cor da marca WhatsApp, só no botão flutuante */
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* fallbacks; next/font sets the real --font-display / --font-mono on <html> */
   --font-display: ui-sans-serif, system-ui, sans-serif;
@@ -20,6 +25,22 @@
 @utility font-mono-tabular {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+@utility mask-arrow {
+  mask: url(/brand/arrow.svg) center / contain no-repeat;
+}
+
+/* RevealText immediate: hidden before first paint when JS runs (html.js), failsafe reveal after 2s */
+.js [data-reveal-immediate]:not([data-revealed]) {
+  opacity: 0;
+  animation: reveal-failsafe 0s 2s forwards;
+}
+
+@keyframes reveal-failsafe {
+  to {
+    opacity: 1;
+  }
 }
 
 body {

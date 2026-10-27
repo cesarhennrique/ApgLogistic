@@ -24,3 +24,25 @@ test("condensed title is under 75% of the normal width", async ({ page }, testIn
   console.log(`${testInfo.project.name}: condensed ${c.toFixed(0)}px / normal ${n.toFixed(0)}px = ${((c / n) * 100).toFixed(1)}%`);
   expect(c / n).toBeLessThan(0.75);
 });
+
+test("immediate h1 is hidden until its reveal and ends visible", async ({ page }) => {
+  await page.addInitScript(() => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const h1 = document.querySelector<HTMLElement>("h1[data-reveal-immediate]");
+      if (!h1) return;
+      const line = h1.querySelector(".reveal-line");
+      // hidden = CSS still hiding it, or GSAP already holding its first line below the mask
+      const lineHidden = !!line && new DOMMatrix(getComputedStyle(line).transform).m42 > 0;
+      (window as unknown as { hiddenAtDcl: boolean }).hiddenAtDcl =
+        getComputedStyle(h1).opacity === "0" || lineHidden;
+    });
+  });
+  await page.goto("/dev/ui");
+  expect(await page.evaluate(() => (window as unknown as { hiddenAtDcl?: boolean }).hiddenAtDcl)).toBe(true);
+
+  const h1 = page.locator("h1[data-reveal-immediate]");
+  await expect(h1).toHaveCSS("opacity", "1");
+  await expect
+    .poll(() => h1.locator(".reveal-line").first().evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m42))
+    .toBe(0);
+});
