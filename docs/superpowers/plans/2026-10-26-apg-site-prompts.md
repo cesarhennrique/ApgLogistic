@@ -12,7 +12,7 @@
 
 Valem para todos os prompts.
 
-- Paleta: `navy-900 #0A1338`, `blue-600 #1D3494`, `red-500 #E1242B`, `sand-50 #F3EFE7`, `steel-400 #8B94A8`, `sunset #F2913D` (só no 3D). Ajustar o azul e o vermelho ao hex exato do logo vetorial no Prompt 01.
+- Paleta: `navy-900 #0A1338`, `blue-600 #393185`, `red-500 #E31E24`, `sand-50 #F3EFE7`, `steel-400 #8B94A8`, `sunset #F2913D` (só no 3D). Azul e vermelho extraídos do PNG original do logo (4962x2954). Contraste: red-500 sobre navy-900 = 3,8:1, então vermelho em texto só ≥ 24px (ou 19px bold); em botão vermelho, o texto é #FFFFFF (4,7:1), nunca sand-50 (4,1:1).
 - Fontes: Archivo (variável, eixo `wdth`) e JetBrains Mono.
 - Capítulos da jornada: hero = 0 (animação por tempo); 1: 0–0.2; 2: 0.2–0.4; 3: 0.4–0.6; 4: 0.6–0.8; 5: 0.8–1.
 - Orçamento 3D: até 1,5 MB de assets e até 200 mil triângulos. 60 fps em desktop, 30+ em mobile intermediário.
@@ -119,6 +119,45 @@ e mostre a saída).
 Commit: "feat: scaffold, tokens, fontes e conteúdo"
 ````
 
+## Prompt 01b — Logo vetorial a partir do PNG em alta
+
+````text
+Leia o CLAUDE.md.
+
+Contexto: assets-src/logo/logo.svg foi traçado de uma imagem de 192px e
+está deformado. O site antigo tem o PNG original em 4962x2954, com duas
+cores chapadas exatas: azul #393185 e vermelho #E31E24.
+
+1. Baixe https://static.wixstatic.com/media/64205d_aa89fadd6fc64cdfb223ecf6a65dc45c~mv2.png
+   para assets-src/logo/logo-original.png. Registre a origem em
+   assets-src/LICENSES.md (material do cliente).
+2. Crie scripts/vectorize-logo.mjs: com sharp, gera uma máscara por cor
+   (tolerância de ±24 por canal em torno de cada hex) e vetoriza cada
+   máscara com potrace (pacote npm potrace, turdSize 4, optTolerance 0.2).
+   Junta as duas camadas num único SVG com viewBox justo (sem margem),
+   fill="#393185" e fill="#E31E24". sharp e potrace entram só como
+   devDependencies.
+3. Saídas em public/brand/, substituindo as atuais:
+   - logo.svg: duas cores;
+   - logo-white.svg: tudo #FFFFFF;
+   - arrow.svg: só a camada vermelha (as setas), com viewBox justo;
+   - src/app/icon.svg: seta vermelha sobre navy, como hoje.
+   Otimize com svgo (npx svgo, sem instalar).
+4. Verificação objetiva: o script renderiza logo.svg com sharp no tamanho
+   do PNG e compara pixel a pixel com o original. Falha se mais de 1,5% dos
+   pixels opacos divergirem. Mostre o percentual.
+5. Confira visualmente: abra o logo.svg ampliado e leia o texto da faixa,
+   "Transporte e Logística". Se estiver deformado, ajuste turdSize e
+   optTolerance e rode de novo.
+6. Tokens: em src/app/globals.css, troque --color-blue-600 para #393185 e
+   --color-red-500 para #E31E24. Apague assets-src/logo/logo.svg (o traço
+   ruim) e mantenha o PNG original.
+
+Pronto quando: diff abaixo de 1,5%, texto legível, e lint, typecheck,
+test e e2e passam.
+Commit: "fix: logo vetorial fiel ao original e cores exatas"
+````
+
 ## Prompt 02 — Primitivas de motion e UI
 
 ````text
@@ -144,14 +183,18 @@ docs/superpowers/plans/2026-10-26-apg-site-prompts.md.
    layout shift). Reduced-motion: mostra o valor final direto.
 5. ContainerCode: texto mono pequeno steel-400,
    "APGU 1996-0{index} · {LABEL MAIÚSCULO}".
-6. CtaButton: primary = fundo red-500 com seta (arrow.svg) que avança 4px
-   no hover. ghost = borda sand-50/30. Transição de 150ms, foco visível
+6. CtaButton: primary = fundo red-500, texto #FFFFFF (sand-50 não passa
+   em contraste), com seta (arrow.svg) que avança 4px no hover. ghost = borda sand-50/30. Transição de 150ms, foco visível
    (outline 2px sand-50, offset 3px), alvo mínimo de 44px.
 7. Testes unitários: ContainerCode formata corretamente; Counter
    renderiza o valor final quando reduced-motion está ativo (mock de
    matchMedia); CtaButton renderiza um link com o href.
 8. Página interna /dev/ui (só em development: notFound() em produção)
-   mostrando todas as primitivas, para conferência visual.
+   mostrando todas as primitivas, o logo e a paleta, e um título em
+   .font-condensed ao lado do mesmo título em largura normal. Confirme
+   com screenshot do Playwright que o condensed está realmente estreito
+   (largura medida menor que 75% da normal; adicione esse teste em
+   e2e/ui.spec.ts).
 
 Pronto quando: lint, typecheck, test e e2e passam e /dev/ui está bonita
 em desktop e mobile.

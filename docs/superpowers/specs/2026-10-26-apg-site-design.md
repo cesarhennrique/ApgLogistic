@@ -105,13 +105,13 @@ Cada página interna tem um hero curto com um recorte da cena 3D, em câmera fix
 | Token | Valor | Uso |
 |---|---|---|
 | `navy-900` | `#0A1338` | Fundo principal, seções escuras, cortina de transição |
-| `blue-600` | `#1D3494` | Azul do logo: links, detalhes, gradientes |
-| `red-500` | `#E1242B` | Só CTA, linha do trajeto e destaques pontuais |
+| `blue-600` | `#393185` | Azul do logo: links, detalhes, gradientes |
+| `red-500` | `#E31E24` | Só CTA, linha do trajeto e destaques pontuais |
 | `sand-50` | `#F3EFE7` | Fundo das seções claras |
 | `steel-400` | `#8B94A8` | Texto secundário, divisores |
 | `sunset` | `#F2913D` | Só na iluminação da cena 3D, nunca na interface |
 
-Os valores de `blue-600` e `red-500` são estimados a partir do site atual. Devem ser ajustados ao valor exato do logo vetorial antes do marco 1.
+Os valores de `blue-600` e `red-500` foram extraídos do PNG original do logo (4962×2954). Contraste de `red-500` sobre `navy-900`: 3,8:1, então o vermelho em texto só aparece em tamanho grande; em botão vermelho, o texto é branco `#FFFFFF` (4,7:1).
 
 ### Tipografia
 
