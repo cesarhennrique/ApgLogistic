@@ -61,50 +61,61 @@ e2e, e faça um commit "fix: revisão" se houver mudanças.
 ## Prompt 01 — Scaffold, tokens, fontes e conteúdo
 
 ````text
-Leia o CLAUDE.md e o spec (docs/superpowers/specs/2026-10-26-apg-site-design.md).
+Leia o CLAUDE.md, o spec (docs/superpowers/specs/2026-10-26-apg-site-design.md)
+e as seções "Restrições globais" e "Interfaces compartilhadas" do plano
+(docs/superpowers/plans/2026-10-26-apg-site-prompts.md).
 
-Tarefa: criar a base do projeto Next.js dentro desta pasta (que já tem docs/
-e CLAUDE.md; não apague nada).
+Tarefa: criar a base do projeto Next.js dentro desta pasta (que já tem docs/,
+assets-src/ e CLAUDE.md; não apague nada).
 
 1. Crie o app com create-next-app (TypeScript, App Router, Tailwind, ESLint,
-   src/, alias @/*), na versão estável atual. Adicione: vitest,
-   @testing-library/react, jsdom, @playwright/test. Scripts no package.json:
-   dev, build, start, lint, typecheck (tsc --noEmit), test (vitest run),
-   e2e (playwright test).
+   src/, alias @/*), na versão estável atual. Se ele recusar a pasta por
+   não estar vazia, gere numa pasta temporária fora do projeto e mova os
+   arquivos para cá, sem sobrescrever CLAUDE.md, docs/ e assets-src/.
+   Adicione: vitest, @testing-library/react, jsdom, @playwright/test.
+   Scripts no package.json: dev, build, start, lint, typecheck
+   (tsc --noEmit), test (vitest run), e2e (playwright test).
 2. Tokens em src/app/globals.css via @theme: as cores das Restrições
    globais, como --color-navy-900 etc. Fundo padrão navy-900, texto sand-50.
 3. Fontes com next/font/google: Archivo com axes ['wdth'] (variável
    --font-display) e JetBrains Mono (--font-mono). Crie utilitários
    .font-condensed (font-stretch 62%) e .font-mono-tabular
    (tabular-nums).
-4. Logo: o arquivo vetorial está em assets-src/logo/ (veja o guia de
-   assets). Gere em public/brand/: logo.svg (original), logo-white.svg
+4. Logo: o arquivo vetorial está em assets-src/logo/. Gere em
+   public/brand/: logo.svg (original otimizado), logo-white.svg
    (monocromático branco) e arrow.svg (só a seta). Extraia os hex exatos do
-   azul e do vermelho do logo e atualize blue-600 e red-500 nos tokens e no
-   spec. Gere src/app/icon.svg a partir da seta.
+   azul e do vermelho do logo e atualize blue-600 e red-500 nos tokens, no
+   spec e nas Restrições globais do plano. Gere src/app/icon.svg a partir
+   da seta. Se o logo não estiver em SVG, pare e me avise.
 5. src/content/site.ts: exporte `site` com TODOS os dados do spec (seções
    2, 3 e 4): fundação 1996, fundador, stats (1900 TEUs/mês, 500
    entregas/dia, 35000 m², 46 docas, 5000 m² cobertos, 4000 TEUs, 24h),
    endereços completos da Matriz e da Filial, telefone (81) 3202-1800,
    e-mail rh, 3 serviços (slug, título, resumo, bullets, FAQ com 4
    perguntas cada, escritas a partir do conteúdo do spec), 4 diferenciais,
-   linha do tempo (1996 fundação + marcos que o spec permite; marque com
-   `// confirmar com cliente` qualquer marco que não esteja no spec) e os
-   textos dos 6 capítulos da jornada, `mission` e `values` (marcados
-   `// confirmar com cliente`), `gallery: { src: string; alt: string }[]`
-   (vazio por enquanto) e `clients: { name: string; logo: string }[]`
-   (vazio). O WhatsApp vem de
-   process.env.NEXT_PUBLIC_WHATSAPP_NUMBER.
-6. TDD: src/content/site.test.ts verifica que todo service tem slug único,
-   4 FAQs e que stats contém os 7 números acima.
+   linha do tempo (1996 fundação; marque com `// confirmar com cliente`
+   qualquer marco que não esteja no spec), os textos dos 6 capítulos da
+   jornada, `mission` e `values` (marcados `// confirmar com cliente`),
+   `gallery: { src: string; alt: string }[]` (vazio por enquanto) e
+   `clients: { name: string; logo: string }[]` (vazio). O WhatsApp vem de
+   process.env.NEXT_PUBLIC_WHATSAPP_NUMBER. Slugs dos serviços:
+   containers-suape, operacao-bahia, logistica-armazenagem.
+6. TDD (skill superpowers:test-driven-development): src/content/site.test.ts
+   verifica que todo service tem slug único e 4 FAQs e que stats contém os
+   7 números acima. Escreva o teste antes e veja-o falhar.
 7. Layout raiz com lang="pt-BR", metadata base e página / provisória com
-   o título "Transportando confiança desde 1996".
+   o h1 "Transportando confiança desde 1996".
 8. Playwright: config com projetos desktop (1440x900) e mobile (iPhone
-   13). Teste e2e/smoke.spec.ts: / carrega, o h1 aparece e não há erros
-   de console.
-9. Crie .env.example com as variáveis das Restrições globais.
+   13), webServer rodando npm run dev. Teste e2e/smoke.spec.ts: / carrega,
+   o h1 aparece e não há erros de console. Rode npx playwright install
+   chromium webkit.
+9. Crie .env.example com: RESEND_API_KEY, MAIL_FROM, QUOTE_TO_EMAIL,
+   RESUME_TO_EMAIL, NEXT_PUBLIC_WHATSAPP_NUMBER, NEXT_PUBLIC_SITE_URL.
+   Garanta que .env*.local está no .gitignore.
 
-Pronto quando: lint, typecheck, test e e2e passam.
+Pronto quando: npm run lint, npm run typecheck, npm run test e
+npm run e2e passam (use a skill superpowers:verification-before-completion
+e mostre a saída).
 Commit: "feat: scaffold, tokens, fontes e conteúdo"
 ````
 
