@@ -261,6 +261,13 @@ frontend-design:frontend-design e emil-design-eng.
 Tarefa: montar a Home inteira em HTML. O 3D entra no Marco 2, então por
 enquanto o hero usa um placeholder.
 
+0. Mapa: assets-src/map/nordeste-ibge.svg já está no projeto (malha
+   oficial do IBGE, 9 estados). Limpe para public/images/map/nordeste.svg:
+   um <path> por estado com id pela sigla (o IBGE usa códigos: 21=MA,
+   22=PI, 23=CE, 24=RN, 25=PB, 26=PE, 27=AL, 28=SE, 29=BA), sem fill e
+   stroke fixos, sem o transform de escala (aplique nas coordenadas),
+   viewBox justo. Registre a origem em assets-src/LICENSES.md (IBGE,
+   dados públicos).
 1. src/components/home/Hero.tsx: altura 100svh. Placeholder de fundo:
    gradiente navy-900 → blue-600 com leve grão (SVG noise). Por cima:
    ContainerCode 1 "Quem somos", h1 RevealText "Transportando confiança
