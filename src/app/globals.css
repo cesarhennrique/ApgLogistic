@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-900: #0a1338;
+  --color-blue-600: #1d3494;
+  --color-red-500: #e1242b;
+  --color-sand-50: #f3efe7;
+  --color-steel-400: #8b94a8;
+  --color-sunset: #f2913d; /* só na iluminação 3D, nunca na interface */
+
+  /* fallbacks; next/font sets the real --font-display / --font-mono on <html> */
+  --font-display: ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-display);
+}
+
+@utility font-condensed {
+  font-stretch: 62%;
+}
+
+@utility font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+body {
+  background-color: var(--color-navy-900);
+  color: var(--color-sand-50);
+}
