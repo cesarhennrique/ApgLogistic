@@ -467,9 +467,14 @@ superpowers:test-driven-development e animation-performance.
    interpola a câmera com damping (THREE.MathUtils.damp, lambda 4),
    nunca saltando.
 6. src/three/JourneyCanvas.tsx (client, carregado com next/dynamic
-   ssr:false): Canvas fixo atrás do conteúdo da Home, aria-hidden, dpr
-   [1, 2], com placeholders (caixas coloridas) por capítulo nas posições
-   em que cada cena vai ficar.
+   ssr:false): Canvas sticky (top 0, 100svh) dentro de um wrapper
+   #journey que contém o Hero E a trilha #journey-track. O hero é o
+   capítulo 0, então o 3D já aparece atrás do h1. Quando o wrapper sai da
+   tela, o canvas rola junto e para de renderizar (frameloop "never" via
+   IntersectionObserver). aria-hidden, dpr [1, 2], com placeholders
+   (caixas coloridas) por capítulo nas posições em que cada cena vai
+   ficar. O gradiente do hero continua como fundo até o canvas montar
+   (fade-in de 600ms, sem salto).
 7. src/three/useJourneyScroll.ts: ScrollTrigger num wrapper
    #journey-track com altura de 600vh (scrub true) que escreve
    journeyProgress.value. Os textos dos capítulos (site.ts) ficam em
@@ -478,8 +483,9 @@ superpowers:test-driven-development e animation-performance.
    liga OrbitControls + um <input type="range"> fixo que escreve o
    progresso. Ambos funcionam também em produção, sem custo quando
    desligados.
-9. Insira a jornada na Home entre o Hero e Services, usando o
-   #journey-slot.
+9. Monte na Home: wrapper #journey = [Hero (com o #journey-slot) +
+   #journey-track], depois Services. Os textos dos capítulos 1 a 5
+   aparecem só dentro da trilha; o texto do capítulo 0 é o próprio Hero.
 10. e2e: /?p=0.5 renderiza um canvas e não gera erros de console.
 
 Pronto quando: lint, typecheck, test e e2e passam e o scroll move a
