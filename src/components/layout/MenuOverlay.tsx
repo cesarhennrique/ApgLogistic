@@ -105,13 +105,13 @@ export function MenuOverlay({ id, open, onClose }: Props) {
       // visibility only transitions on close (it must flip to visible at once so focus() works on open)
       className="group/menu pointer-events-none invisible fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-navy-900 opacity-0 transition-[opacity,visibility] duration-150 ease-out data-[open=true]:pointer-events-auto data-[open=true]:visible data-[open=true]:opacity-100 data-[open=true]:transition-opacity data-[open=true]:duration-200"
     >
-      <div className="mx-auto flex h-16 w-full max-w-7xl shrink-0 items-center justify-between px-4 md:h-20 md:px-10">
+      <div className="site-container flex h-16 shrink-0 items-center justify-between md:h-20">
         <TransitionLink
           href="/"
           onClick={onClose}
           className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sand-50"
         >
-          <Image src="/brand/logo-white.svg" alt={site.name} width={4960} height={2953} className="h-9 w-auto md:h-11" />
+          <Image src="/brand/logo-mark-white.svg" alt={site.name} width={4960} height={2423} className="h-8 w-auto md:h-10" />
         </TransitionLink>
         <button
           type="button"
@@ -126,7 +126,7 @@ export function MenuOverlay({ id, open, onClose }: Props) {
         </button>
       </div>
 
-      <nav aria-label={site.ui.menuLabel} className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 md:px-10 md:py-12">
+      <nav aria-label={site.ui.menuLabel} className="site-container flex-1 py-8 md:py-12">
         <ul className="flex flex-col gap-2 md:gap-3">
           {site.nav.map((item) =>
             "children" in item ? (
@@ -156,7 +156,7 @@ export function MenuOverlay({ id, open, onClose }: Props) {
         </ul>
       </nav>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-wrap gap-x-8 gap-y-2 px-4 pb-8 text-sm text-steel-400 md:px-10">
+      <div className="site-container flex flex-wrap gap-x-8 gap-y-2 pb-8 text-sm text-steel-400">
         {site.phones.map((p) => (
           <a key={p.href} href={p.href} className="hover:text-sand-50 focus-visible:outline-2 focus-visible:outline-sand-50">
             {p.display}

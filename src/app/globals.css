@@ -13,6 +13,14 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
+  --animate-marquee: marquee 40s linear infinite;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
   /* fallbacks; next/font sets the real --font-display / --font-mono on <html> */
   --font-display: ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-display);
@@ -27,6 +35,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* one grid for header, hero and every section: logo, h1 and menu button share the same margin */
+@utility site-container {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 64px);
+}
+
 @utility mask-arrow {
   mask: url(/brand/arrow.svg) center / contain no-repeat;
 }
@@ -37,10 +53,49 @@
   animation: reveal-failsafe 0s 2s forwards;
 }
 
+/* SplitText line masks clip at the line box; the extra block room keeps Ç, J, Q and capital accents whole */
+.reveal-line-mask {
+  padding-block: 0.12em;
+  margin-block: -0.12em;
+}
+
+/* CoverageMap routes draw in (stroke-dashoffset, per spec §4) once the map is in view; static without JS */
+.route-line {
+  stroke-dasharray: 1;
+  transition: stroke-dashoffset 1.2s var(--ease-out);
+}
+
+.js .route-line {
+  stroke-dashoffset: 1;
+}
+
+.js [data-inview] .route-line {
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-line {
+    transition: none;
+  }
+
+  .js .route-line {
+    stroke-dashoffset: 0;
+  }
+}
+
 @keyframes reveal-failsafe {
   to {
     opacity: 1;
   }
+}
+
+/* focus outline colour follows the surface: sand on navy, navy on sand sections */
+:root {
+  --focus-ring: var(--color-sand-50);
+}
+
+[data-surface="light"] {
+  --focus-ring: var(--color-navy-900);
 }
 
 body {

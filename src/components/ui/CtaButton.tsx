@@ -17,7 +17,7 @@ export function CtaButton({ href, variant = "primary", children }: Props) {
   return (
     <TransitionLink
       href={href}
-      className={`group inline-flex min-h-11 items-center gap-3 px-4 py-3 text-sm font-semibold uppercase tracking-wide whitespace-nowrap transition-transform duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-sand-50 motion-reduce:transition-none motion-reduce:active:scale-100 md:px-6 md:text-base ${v.button}`}
+      className={`group inline-flex min-h-11 items-center gap-3 px-4 py-3 text-sm font-semibold uppercase tracking-wide whitespace-nowrap transition-transform duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--focus-ring) motion-reduce:transition-none motion-reduce:active:scale-100 md:px-6 md:text-base ${v.button}`}
     >
       {children}
       {/* arrow.svg as a mask over currentColor, so it can be white on red */}

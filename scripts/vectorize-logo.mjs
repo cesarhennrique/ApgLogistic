@@ -1,4 +1,5 @@
-// Vectorizes assets-src/logo/logo-original.png into public/brand/*.svg and src/app/icon.svg,
+// Vectorizes assets-src/logo/logo-original.png into public/brand/*.svg (logo, logo-white,
+// logo-mark-white, arrow) and src/app/icon.svg,
 // then checks the rendered logo.svg against the PNG pixel by pixel.
 // Usage: node scripts/vectorize-logo.mjs
 import { execSync } from "node:child_process";
@@ -64,6 +65,25 @@ writeFileSync(
 );
 writeFileSync("public/brand/arrow.svg", svg(arrowBox, redPath));
 
+// header mark: APG + arrows without the "Transporte e Logística" band, which is noise at 40px.
+// The band is the first row in the lower half that is ≥90% blue.
+let bandTop = height;
+for (let y = height >> 1; y < height && bandTop === height; y++) {
+  let n = 0;
+  for (let x = 0; x < width; x++) n += blue.out[y * width + x] === 0 ? 1 : 0;
+  if (n > width * 0.9) bandTop = y;
+}
+if (bandTop === height) throw new Error("band not found");
+const markBlue = Buffer.from(blue.out);
+markBlue.fill(255, (bandTop - 2) * width);
+let markBottom = 0;
+for (let p = 0; p < markBlue.length; p++) if (markBlue[p] === 0) markBottom = (p / width) | 0;
+const markBox = viewBox({ ...union(blue.box, red.box), y1: markBottom });
+writeFileSync(
+  "public/brand/logo-mark-white.svg",
+  svg(markBox, (await trace(markBlue, "#FFFFFF")) + redPath.replace(RED, "#FFFFFF")),
+);
+
 // favicon: the red arrow centred on a navy tile, 82% of the tile width
 const [ax, ay, aw, ah] = arrowBox;
 const scale = (64 * 0.82) / Math.max(aw, ah);
@@ -77,7 +97,7 @@ writeFileSync(
 );
 
 execSync(
-  "npx --yes svgo --multipass -q public/brand/logo.svg public/brand/logo-white.svg public/brand/arrow.svg src/app/icon.svg",
+  "npx --yes svgo --multipass -q public/brand/logo.svg public/brand/logo-white.svg public/brand/arrow.svg public/brand/logo-mark-white.svg src/app/icon.svg",
   { stdio: "inherit" },
 );
 

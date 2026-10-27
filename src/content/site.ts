@@ -197,13 +197,14 @@ export const site = {
   services,
 
   differentials: [
-    { title: "Frota própria", text: "Frota 100% própria, sem terceirização." },
+    { figure: "100%", title: "Frota própria", text: "Frota 100% própria, sem terceirização." },
     {
+      figure: "35.000 m²",
       title: "Terminal próprio integrado a Suape",
       text: "35.000 m² de pátio e capacidade para 4.000 TEUs estáticos.",
     },
-    { title: "Rastreamento", text: "Todos os veículos rastreados." },
-    { title: "Atendimento 24h", text: "Equipe disponível 24 horas por dia." },
+    { figure: "100%", title: "Rastreamento", text: "Todos os veículos rastreados." },
+    { figure: "24h", title: "Atendimento 24h", text: "Equipe disponível 24 horas por dia." },
   ],
 
   timeline: [
@@ -227,6 +228,45 @@ export const site = {
   values: ["Segurança", "Pontualidade", "Transparência", "Compromisso com o cliente"],
 
   cta: { quote: "Solicitar cotação", specialist: "Fale com um especialista" },
+
+  // Home sections. `code` is the ContainerCode label (spec §5); titles follow the section names in spec §4.
+  home: {
+    hero: {
+      code: "Quem somos",
+      subtitle:
+        "Do navio de cabotagem em Suape à entrega fracionada: frota própria, terminal próprio e atendimento 24 h.",
+    },
+    services: { code: "Serviços", title: "Do porto ao destino final", more: "Ver serviço" },
+    stats: { code: "Números", title: "A operação em números" },
+    differentials: { code: "Por que a APG", title: "Por que a APG" },
+    clients: { code: "Clientes", title: "Clientes" },
+    coverage: {
+      code: "Mapa de atuação",
+      title: "Mapa de atuação",
+      text: "Matriz em Cabo de Santo Agostinho – PE, ao lado do Porto de Suape, e filial em Salvador – BA. Entregas fracionadas em Pernambuco e na Bahia.",
+      highlight: ["PE", "BA"],
+      hubs: [
+        { label: "Suape", lon: -34.96, lat: -8.39 },
+        { label: "Salvador", lon: -38.5, lat: -12.97 },
+      ],
+      // confirmar com cliente: destinos ilustrativos dentro de PE e BA, sem rótulo no mapa
+      routes: [
+        { from: "Suape", lon: -35.98, lat: -8.28 },
+        { from: "Suape", lon: -36.49, lat: -8.89 },
+        { from: "Suape", lon: -40.5, lat: -9.39 },
+        { from: "Suape", lon: -38.5, lat: -12.97 },
+        { from: "Salvador", lon: -38.97, lat: -12.27 },
+        { from: "Salvador", lon: -40.84, lat: -14.86 },
+        { from: "Salvador", lon: -45.0, lat: -12.15 },
+        { from: "Salvador", lon: -40.5, lat: -9.41 },
+      ],
+    },
+    finalCta: {
+      code: "Contato",
+      title: "Fale com um especialista",
+      text: "Cotação de transporte de containers, armazenagem e entregas fracionadas. Atendimento 24 h.",
+    },
+  },
 
   nav,
 

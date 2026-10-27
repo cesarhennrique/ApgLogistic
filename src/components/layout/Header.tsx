@@ -34,18 +34,18 @@ export function Header() {
           aria-hidden="true"
           className={`absolute inset-0 border-b border-sand-50/10 bg-navy-900/90 backdrop-blur-md transition-opacity duration-200 ease-out ${solid ? "opacity-100" : "opacity-0"}`}
         />
-        <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 md:h-20 md:px-10">
+        <div className="site-container relative flex h-16 items-center justify-between gap-3 md:h-20">
           <TransitionLink
             href="/"
             className="shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sand-50"
           >
             <Image
-              src="/brand/logo-white.svg"
+              src="/brand/logo-mark-white.svg"
               alt={site.name}
               width={4960}
-              height={2953}
+              height={2423}
               priority
-              className="h-9 w-auto md:h-11"
+              className="h-8 w-auto md:h-10"
             />
           </TransitionLink>
           <div className="flex items-center gap-2 md:gap-6">

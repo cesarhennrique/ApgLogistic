@@ -1,13 +1,22 @@
-import { RevealText } from "@/components/motion/RevealText";
-import { site } from "@/content/site";
+import { Clients } from "@/components/home/Clients";
+import { CoverageMap } from "@/components/home/CoverageMap";
+import { Differentials } from "@/components/home/Differentials";
+import { FinalCta } from "@/components/home/FinalCta";
+import { Hero } from "@/components/home/Hero";
+import { Services } from "@/components/home/Services";
+import { Stats } from "@/components/home/Stats";
 
-// provisória: a Home real entra nos prompts 04 e 08–13
+// Backgrounds alternate navy / sand for rhythm; Clients stays hidden until there are logos.
 export default function Home() {
   return (
-    <main className="flex min-h-svh flex-1 items-center justify-center p-6">
-      <RevealText as="h1" immediate className="font-condensed text-5xl font-bold uppercase md:text-8xl">
-        {site.tagline}
-      </RevealText>
+    <main className="flex-1">
+      <Hero />
+      <Services />
+      <Stats />
+      <Differentials />
+      <Clients />
+      <CoverageMap />
+      <FinalCta />
     </main>
   );
 }

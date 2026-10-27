@@ -37,7 +37,7 @@ async function CurrentYear() {
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-sand-50/10">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4 md:px-10 md:py-20">
+      <div className="site-container grid gap-10 py-14 md:grid-cols-4 md:py-20">
         <div>
           <Image src="/brand/logo-white.svg" alt={site.name} width={4960} height={2953} className="h-12 w-auto" />
           <p className="mt-4 max-w-56 text-sm text-steel-400">{site.tagline}</p>
@@ -62,7 +62,7 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 border-t border-sand-50/10 px-4 py-8 text-sm text-steel-400 md:flex-row md:items-center md:justify-between md:px-10">
+      <div className="site-container flex flex-col gap-6 border-t border-sand-50/10 py-8 text-sm text-steel-400 md:flex-row md:items-center md:justify-between">
         <nav aria-label={site.ui.footerNav}>
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             {links.map((l) => (
