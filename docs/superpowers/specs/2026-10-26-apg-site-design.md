@@ -156,7 +156,7 @@ Cada seção recebe um rótulo em mono, pequeno, no canto, inspirado no formato 
   - `Lighting` e `RouteLine` recebem o progresso global.
 - **Geometria:**
   - containers, portêiner, pátio e galpão são construídos com primitivas em código, com `InstancedMesh` para os containers;
-  - o casco do navio e a cabine do caminhão são GLB, comprimidos com meshopt e texturas KTX2 via gltf-transform.
+  - o casco do navio e a cabine do caminhão são GLB, comprimidos com meshopt e texturas WebP via gltf-transform.
 - **Orçamento:** até 1,5 MB de assets 3D e até 200 mil triângulos.
 
 ### Níveis de qualidade
