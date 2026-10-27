@@ -238,6 +238,16 @@ frontend-design:frontend-design, animate e emil-design-eng.
    botão, Enter, Esc) e navegar para /sobre pelo menu (crie páginas
    provisórias para todas as rotas do spec, cada uma com h1).
 
+7. Correção do RevealText (piscada acima da dobra): adicione a prop
+   `immediate`. Com ela, não há ScrollTrigger: o texto já nasce escondido
+   via CSS antes do paint (script inline no <head> que adiciona a classe
+   `js` no <html>, e a regra `.js [data-reveal-immediate] { opacity: 0 }`)
+   e revela no mount. Fallback de segurança: animação CSS que força
+   opacity 1 depois de 2s, caso o JS falhe. Sem JS, o texto aparece
+   normal. Teste e2e: no carregamento de /dev/ui, o h1 com immediate
+   nunca é visível antes da animação (capture a opacity no
+   DOMContentLoaded) e termina visível.
+
 Pronto quando: lint, typecheck, test e e2e passam.
 Commit: "feat: navegação, footer, WhatsApp e transição de página"
 ````
