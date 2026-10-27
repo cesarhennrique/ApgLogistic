@@ -290,6 +290,24 @@ enquanto o hero usa um placeholder.
 9. Ajuste e2e/smoke.spec.ts: a Home mostra os 3 serviços e o texto
    "1.900" depois de rolar até os números.
 
+10. Correções visuais vistas no print do Prompt 03:
+   - RevealText corta acentos e descendentes (o "Ç" de CONFIANÇA perde a
+     cedilha). Cada linha da máscara precisa de padding-block 0.12em com
+     margin-block -0.12em, para o clip não comer Ç, J, Q e acentos de
+     caixa alta. Teste e2e: o bounding box do glifo "Ç" inteiro fica
+     dentro da área visível da linha.
+   - Grid único: crie um container de layout (max-width 1440px, padding
+     lateral clamp(16px, 4vw, 64px)) usado pelo Header, pelo Hero e por
+     todas as seções, para o logo, o h1 e o botão de menu alinharem na
+     mesma margem.
+   - Logo no header: altura mínima de 40px no desktop e 32px no mobile,
+     para a faixa "Transporte e Logística" não virar ruído. Se mesmo assim
+     ficar ilegível, use no header a versão sem a faixa (só APG + setas)
+     e deixe a completa para o footer.
+   - Hero: h1 alinhado à esquerda, ocupando no máximo 2 linhas, com
+     subtítulo e CTA embaixo e ContainerCode acima. Nada de texto
+     centralizado solto na tela.
+
 Pronto quando: lint, typecheck, test e e2e passam, sem overflow
 horizontal em 375px.
 Commit: "feat: seções HTML da Home"
