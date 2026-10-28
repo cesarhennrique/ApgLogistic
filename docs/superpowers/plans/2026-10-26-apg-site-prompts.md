@@ -805,6 +805,23 @@ Leia o CLAUDE.md e o spec, seção 3 (capítulos 3, 5 e assinatura).
 5. Mostre o total de triângulos no ?debug e confirme que está abaixo de
    200 mil.
 
+6. Regras herdadas: todo material novo usa withSkyFog; respeite as
+   novas SCENE_POSITIONS (porto em z −110, o resto deslocado junto).
+7. Refino da carreta APG (ela é a estrela do capítulo 'highway', em
+   close): hoje a cabine lê como uma caixa e o para-brisa é um buraco
+   preto.
+   - Cabine com cantos arredondados (bevel maior), defletor de teto,
+     para-lamas arqueados sobre as rodas, degraus, para-sol escuro.
+   - Para-brisa e janelas: vidro com reflexo do céu (environment +
+     fresnel) e um leve interior visível (painel, volante em silhueta),
+     nunca preto chapado.
+   - Faixa navy e seta vermelha mais largas e legíveis na lateral, e
+     o logo APG (Decal) visível no plano lateral do travelling.
+   - Faróis com glow e luz de posição âmbar acesos à noite.
+   Continue até 20 mil triângulos.
+8. Screenshots: p=0.45, 0.5, 0.55 (travelling na estrada), 0.85, 0.9 e
+   0.97 (mapa e saída para navy).
+
 Pronto quando: lint, typecheck, test e e2e passam e a jornada de 0 a 1
 está completa e contínua.
 Commit: "feat: estrada, distribuição e linha do trajeto"
