@@ -499,30 +499,58 @@ Commit: "feat: fundação da cena 3D e trilha de scroll"
 Leia o CLAUDE.md e o spec, seção 3 (progressão da luz). Use a skill
 animation-performance.
 
-1. src/three/scene/Environment.tsx:
-   - céu: gradiente em shader numa esfera invertida, com cores
-     interpoladas por progresso: pôr do sol (0–0.4: sunset no horizonte,
-     navy no topo), anoitecer (0.4–0.6) e noite (0.6–1);
-   - HDRI da Poly Haven em public/3d/hdri/ (veja o guia de assets) só
-     para reflexos (environment, sem background), com intensidade
-     ligada ao progresso.
-2. src/three/scene/Ocean.tsx: plano com shader próprio, com ondas
-   Gerstner leves no vertex (3 ondas), fresnel, reflexo do céu e
-   brilho do sol em sunset. Detalhe de superfície com o normal map de
-   public/3d/textures/water-normal.webp. Some (opacity → 0) depois do
-   capítulo 2.
-3. src/three/scene/Lighting.tsx: directional (sol) com cor, intensidade
-   e ângulo dependentes do progresso, e ambient + hemisphere. Sombras só
-   do sol, shadow map 2048 no tier high e 1024 no low, com câmera de
-   sombra ajustada ao capítulo atual.
-4. Névoa exponencial (FogExp2) com cor sincronizada ao céu.
-5. Keyframes de cor e luz num só lugar: src/three/lightKeys.ts, com
-   função pura sampleLight(t) e teste unitário de continuidade (sem
-   saltos entre 0.39 e 0.41).
+Alvo visual do hero: pôr do sol em Suape. Sol baixo perto do horizonte,
+à esquerda do quadro; horizonte laranja (sunset) subindo para navy no
+topo; a água reflete uma faixa dourada do sol até a câmera; névoa leve
+fundindo mar e céu. Tem que parecer cinema, não demo de three.js.
 
-Pronto quando: lint, typecheck, test e e2e passam. Com ?debug,
+0. Assets (CC0/MIT; registre cada um em assets-src/LICENSES.md):
+   - HDRI: consulte https://api.polyhaven.com/assets?t=hdris&c=sunrise-sunset,
+     escolha um céu limpo de sol baixo sobre água ou campo aberto e baixe
+     a versão 1k .hdr (URL em https://api.polyhaven.com/files/<id>) para
+     public/3d/hdri/sunset-1k.hdr. Diga qual escolheu.
+   - Normal map da água: baixe
+     https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/waternormals.jpg
+     para assets-src/3d/ e converta com sharp para
+     public/3d/textures/water-normal.webp (1024px, qualidade 85).
+1. Renderer: toneMapping ACESFilmic, outputColorSpace SRGB, exposure
+   ligado ao progresso (vem de sampleLight).
+2. src/three/lightKeys.ts: keyframes de céu (topo, horizonte), sol (cor,
+   intensidade, elevação, azimute), ambient, hemisphere, névoa (cor,
+   densidade) e exposure em t = 0, 0.4, 0.6, 1 (pôr do sol, pôr do sol
+   tardio, anoitecer, noite). Função pura sampleLight(t) com interpolação
+   suave. Teste de continuidade: nenhuma grandeza salta mais de 2% entre
+   t e t+0.001 em todo o intervalo.
+3. src/three/scene/Sky.tsx: esfera invertida com shader de gradiente
+   (horizonte → topo) e disco do sol com halo suave, cores de
+   sampleLight. Estrelas discretas (Points) que aparecem só depois de 0.6.
+4. HDRI só para reflexos (scene.environment, sem background), com
+   environmentIntensity de sampleLight.
+5. src/three/scene/Ocean.tsx: plano com shader próprio: 3 ondas Gerstner
+   leves no vertex; fresnel; reflexo da cor do céu; faixa especular do
+   sol; detalhe com water-normal.webp em duas escalas rolando em direções
+   diferentes. Some (opacity → 0) entre 0.38 e 0.42, quando a câmera sai
+   do porto.
+6. src/three/scene/Lighting.tsx: directional (sol) + ambient +
+   hemisphere de sampleLight. Sombras só do sol, shadow map 2048 (o tier
+   low vem no Prompt 15), com a câmera de sombra seguindo o capítulo
+   atual.
+7. Névoa FogExp2 com cor e densidade de sampleLight, igual ao horizonte
+   do céu (sem costura visível).
+8. Hero vivo: com progresso 0, a câmera "respira" (deriva por tempo de
+   ±0.3 unidades e ±0.5° em ciclo de 12 s, somada ao rig). Desligado com
+   reduced motion.
+9. Legibilidade: atrás do texto do hero, um degradê navy (60% → 0, do
+   lado do texto) em HTML. Confira o contraste do h1 sobre o céu mais
+   claro no screenshot.
+10. Mantenha os placeholders dos outros capítulos.
+11. e2e: screenshots em /?p=0, 0.3, 0.5, 0.7 e 1 (desktop e mobile)
+    salvos em e2e/__screenshots__/journey/ para eu revisar a direção de
+    arte. Sem erros de console.
+
+Pronto quando: lint, typecheck, test e e2e passam e, com ?debug,
 arrastando de 0 a 1, a luz vai de pôr do sol a noite sem saltos.
-Commit: "feat: ambiente, mar e iluminação da jornada"
+Commit: "feat: céu, mar e iluminação da jornada"
 ````
 
 ## Prompt 10 — Containers, portêiner e terminal (procedurais)
@@ -651,7 +679,10 @@ pareça um filme.
    altura da cabine; terminal em vista aérea; distribution mergulhando
    no galpão e abrindo para o mapa. Sem cortes, sem viradas bruscas
    (limite de rotação de 35° por 0.1 de progresso; adicione um teste em
-   camera-path.test.ts).
+   camera-path.test.ts). Hoje o smootherstep por segmento zera a
+   velocidade em cada fronteira (efeito "anda e para"). Troque por:
+   câmera chega à cena no meio do capítulo, segura enquanto o texto é
+   lido (velocidade baixa, não zero) e segue sem parar na fronteira.
 2. Textos dos capítulos (HTML sobreposto): cada um entra com RevealText
    no início da faixa e sai com fade/translateY no fim. O número de cada
    capítulo usa Counter. ContainerCode por capítulo. Posição do texto
