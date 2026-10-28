@@ -763,6 +763,13 @@ mas não crie nem baixe GLB agora.
 6. Screenshots: p=0 (navio no hero), 0.15, 0.3, 0.4 (container na
    carreta) e 0.45 (faróis acendendo).
 
+7. Header durante a jornada: hoje ele vira uma barra navy sólida assim
+   que o scroll passa de 80px, o que corta o quadro do 3D (veja p=0.15).
+   Enquanto #journey estiver na tela, o header fica transparente, com um
+   degradê navy muito sutil só atrás dele (40% → 0, 120px) para o logo e
+   o menu continuarem legíveis. Ele só fica sólido depois que #journey
+   sai da tela. Teste e2e: em /?p=0.3 o header não tem fundo sólido.
+
 Pronto quando: lint, typecheck, test e e2e passam, total abaixo de 200
 mil triângulos em todos os frames, e o hero mostra o navio entrando ao
 pôr do sol.
