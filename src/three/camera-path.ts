@@ -20,11 +20,11 @@ const v = (x: number, y: number, z: number) => new Vector3(x, y, z);
 export const CAMERA_KEYS = [
   // Hero: low over the water, pitched ~12° down so the horizon and the ship sit above the h1 (legibility).
   { position: v(-2, 2.5, 16), target: v(0, -1, 0) },
-  // Crane: from over the water, along the quay: the ship's bay and the spreader seating on the box, clear
-  // of the crane's legs.
-  { position: v(16, 9, -14), target: v(30, 8, -56) },
+  // Crane: from over the water, ~100 m back: the whole 70 m silhouette against the sunset, the spreader
+  // seating on the ship's box below it.
+  { position: v(18, 10, 40), target: v(34, 28, -56) },
   // Load: down the truck lane, between the legs, the box coming onto the trailer.
-  { position: v(50, 7, -20), target: v(42, 8, -56) },
+  { position: v(52, 7, -20), target: v(44, 8, -56) },
   // Highway (Prompt 12).
   { position: v(104, 4, -120), target: v(86, 1, -136) },
   // Terminal: aerial over the CONE yard.

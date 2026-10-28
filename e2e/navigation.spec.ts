@@ -25,6 +25,7 @@ test("navigates to /sobre through the menu", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Menu", exact: true }).click();
   await page.getByRole("dialog", { name: "Menu principal" }).getByRole("link", { name: "Sobre" }).click();
-  await expect(page).toHaveURL(/\/sobre$/);
+  // Curtain, then the dev server compiles /sobre on first hit while Home's 3D still loads the CPU.
+  await expect(page).toHaveURL(/\/sobre$/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { level: 1, name: "Sobre" })).toBeVisible();
 });

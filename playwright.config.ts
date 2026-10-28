@@ -5,6 +5,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  // Every Home test renders the 3D journey in software GL (SwiftShader, itself multi-threaded); more than 3
+  // such pages at once starve the timing-sensitive tests.
+  workers: 3,
   use: { baseURL: "http://localhost:3000", trace: "on-first-retry" },
   projects: [
     {

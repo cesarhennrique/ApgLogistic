@@ -3,52 +3,40 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import {
+  AdditiveBlending,
   CylinderGeometry,
   type Group,
   InstancedMesh,
   MeshStandardMaterial,
   Object3D,
+  PlaneGeometry,
+  ShaderMaterial,
   Vector3,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { SCENE_POSITIONS } from "../camera-path";
 import { sampleLight } from "../lightKeys";
 import { beam, block } from "../models/craneGeometry";
 import { TERMINAL_BLOCKS } from "../models/stackLayout";
+import {
+  DOCK_FLOOR,
+  DOCK_PITCH,
+  DOCKS_PER_FACE,
+  HALL,
+  laneX,
+  laneZ,
+  MAST_HEIGHT,
+  MASTS,
+  xs,
+  YARD,
+  zs,
+} from "../models/terminalLayout";
 import { journeyProgress } from "../progress";
-import { createConcreteMaterial, yardUniforms } from "./concrete";
+import { createConcreteMaterial } from "./concrete";
 import { ContainerStacks } from "./ContainerStacks";
-import { lostInFog, withSkyFog } from "./skyShared";
+import { lostInFog, skyUniforms, withSkyFog } from "./skyShared";
+import { SODIUM_GLSL, yardUniforms } from "./yardLight";
 
-const [tx, , tz] = SCENE_POSITIONS.terminal;
 const v = (x: number, y: number, z: number) => new Vector3(x, y, z);
-
-// Yard slab, local to the terminal.
-const YARD = { x0: tx - 62, x1: tx + 62, z0: tz - 70, z1: tz + 48 };
-
-// Warehouse (cross-docking): 46 docks, 23 on each long face; the front faces the yard.
-const DOCKS_PER_FACE = 23;
-const DOCK_PITCH = 3.6;
-const HALL = { x: tx, z: tz - 45, length: DOCKS_PER_FACE * DOCK_PITCH + 1.2, depth: 18, height: 10 };
-const DOCK_FLOOR = 1.3;
-
-// Lanes run between the stack blocks: x between columns, z between the two rows and in front of the hall.
-const xs = [...new Set(TERMINAL_BLOCKS.map((b) => b.x))].sort((a, b) => a - b);
-const zs = [...new Set(TERMINAL_BLOCKS.map((b) => b.z))].sort((a, b) => b - a);
-const hx = TERMINAL_BLOCKS[0].hx;
-const hz = TERMINAL_BLOCKS[0].hz;
-// Blocks share one size, so a lane between two blocks sits midway between their centers.
-const laneX = xs.slice(1).map((x, i) => (x + xs[i]) / 2);
-const laneZ = [(zs[0] + zs[1]) / 2, (zs[1] - hz + HALL.z + HALL.depth / 2) / 2];
-
-// High-mast lights at the lane crossings and the yard's ends.
-const MASTS: [number, number][] = [
-  ...laneX.flatMap((x) => laneZ.map((z) => [x, z] as [number, number])),
-  [xs[0] - hx - 6, laneZ[0]],
-  [xs[xs.length - 1] + hx + 6, laneZ[0]],
-  ...laneX.map((x) => [x, zs[0] + hz + 6] as [number, number]),
-];
-const MAST_HEIGHT = 25;
 
 const floorMaterial = createConcreteMaterial({
   outlines: TERMINAL_BLOCKS,
@@ -56,7 +44,6 @@ const floorMaterial = createConcreteMaterial({
     ...laneX.map((x) => ({ from: [x, YARD.z0 + 30] as [number, number], to: [x, YARD.z1 - 2] as [number, number] })),
     ...laneZ.map((z) => ({ from: [YARD.x0 + 2, z] as [number, number], to: [YARD.x1 - 2, z] as [number, number] })),
   ],
-  lamps: MASTS,
 });
 const cladding = withSkyFog(new MeshStandardMaterial({ color: "#b9bcc2", roughness: 0.7, metalness: 0.2 }));
 const roofing = withSkyFog(new MeshStandardMaterial({ color: "#7f838a", roughness: 0.8 }));
@@ -123,6 +110,51 @@ function instancedAt(geometry: InstancedMesh["geometry"], material: MeshStandard
   return mesh;
 }
 
+// Sodium pools: additive quads on the slab under each mast, soft radial falloff, faded by the fog.
+const POOL_RADIUS = 17;
+const poolMaterial = new ShaderMaterial({
+  uniforms: { ...yardUniforms, uFogDensity: skyUniforms.uFogDensity },
+  transparent: true,
+  depthWrite: false,
+  blending: AdditiveBlending,
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    varying vec3 vWorld;
+    void main() {
+      vUv = uv * 2.0 - 1.0;
+      vec4 world = modelMatrix * instanceMatrix * vec4(position, 1.0);
+      vWorld = world.xyz;
+      gl_Position = projectionMatrix * viewMatrix * world;
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform float uLamps;
+    uniform float uFogDensity;
+    varying vec2 vUv;
+    varying vec3 vWorld;
+    void main() {
+      float fall = pow(1.0 - smoothstep(0.0, 1.0, length(vUv)), 2.0);
+      float d = distance(cameraPosition, vWorld);
+      float seen = exp(-uFogDensity * uFogDensity * d * d);
+      gl_FragColor = vec4(${SODIUM_GLSL} * 0.85 * uLamps * fall * seen, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }
+  `,
+});
+const pools = new InstancedMesh(
+  new PlaneGeometry(POOL_RADIUS * 2, POOL_RADIUS * 2).rotateX(-Math.PI / 2),
+  poolMaterial,
+  MASTS.length,
+);
+MASTS.forEach(([x, z], i) => {
+  const o = new Object3D();
+  o.position.set(x, 0.05, z);
+  o.updateMatrix();
+  pools.setMatrixAt(i, o.matrix);
+});
+pools.computeBoundingSphere();
+
 const light = sampleLight(0);
 // Everything the terminal draws fits in this sphere.
 const BOUNDS = { center: v((YARD.x0 + YARD.x1) / 2, 10, (YARD.z0 + YARD.z1) / 2), radius: 90 };
@@ -152,6 +184,7 @@ export function Terminal() {
   useFrame(({ camera }) => {
     group.current!.visible = !lostInFog(camera.position, BOUNDS.center, BOUNDS.radius);
     const { lamps } = sampleLight(journeyProgress.value, light);
+    pools.visible = lamps > 0;
     yardUniforms.uLamps.value = lamps;
     lampPaint.emissiveIntensity = lamps * 4;
   });
@@ -174,6 +207,7 @@ export function Terminal() {
       {meshes.map((m) => (
         <primitive key={m.uuid} object={m} />
       ))}
+      <primitive object={pools} />
 
       {STACKERS.map(({ at: [x, z], heading }, i) => (
         <group key={i} position={[x, 0, z]} rotation-y={heading}>

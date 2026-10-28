@@ -1,4 +1,3 @@
-import { Color } from "three";
 import { CRANE_POSITION, QUAY_TOP, SHIP_DECK_Y, SHIP_PICK_POINT } from "../anchors";
 import { SCENE_POSITIONS } from "../camera-path";
 import { CONTAINER, type ContainerType } from "./containerGeometry";
@@ -15,29 +14,16 @@ export type StackedContainer = {
   tier: number;
   color: string;
   apg: boolean;
+  // In the block's camera-facing front slot (row toward the chapter's camera, first bay).
+  front: boolean;
 };
 
-// Real carrier colors, desaturated and a touch darker so the yard reads as one muted field (no logos).
-const CARRIERS = [
-  "#42b0d5", // light blue
-  "#d1a83c", // ochre
-  "#1f4a8c", // dark blue
-  "#e8601c", // orange
-  "#2e7d4f", // green
-  "#2f5fa8", // blue
-  "#b4006e", // magenta
-  "#b5272d", // red
-  "#a8a39a", // leasing grey
-  "#8b4a2f", // leasing brown
-].map((hex) => {
-  const c = new Color(hex);
-  const hsl = { h: 0, s: 0, l: 0 };
-  c.getHSL(hsl);
-  return `#${c.setHSL(hsl.h, hsl.s * 0.55, hsl.l * 0.92).getHexString()}`;
-});
+// Eight matte carrier tones, distinct enough to read at dusk (no logos): rust, ocean blue, petrol, ochre,
+// green, grey, ice white, wine.
+export const CARRIER_COLORS = ["#9c3b2e", "#2e5e8c", "#2f7a78", "#c08a2e", "#3f6b45", "#8a8f96", "#d9d6cf", "#6e2a35"];
 
-// Brand navy, a hair lighter than navy-900 so it still reads at dusk. The red stripe is its own mesh.
-export const APG_NAVY = "#121c4a";
+// APG navy; the red stripe is its own mesh.
+export const APG_NAVY = "#1a2350";
 
 type Block = {
   area: StackedContainer["area"];
@@ -49,6 +35,8 @@ type Block = {
   bays: number; // 40' slots along -Z
   maxTier: number;
   apgShare: number;
+  // The row the chapter's camera sees first: its first bay is topped with an APG box.
+  frontRow: "first" | "last";
   // Slots left empty (by row-bay key): the crane's working slot on the ship.
   skip?: (row: number, bay: number, tier: number) => boolean;
 };
@@ -69,10 +57,11 @@ const BLOCKS: Block[] = [
     bays: 3,
     maxTier: 2,
     apgShare: 0.25,
+    frontRow: "first",
     skip: (row, bay, tier) => row === 1 && bay === 1 && tier === 1,
   },
-  // Port stacks on the quay, inland of the crane and past it, so the crane shots look at it clear.
-  { area: "port", x: CRANE_POSITION.x + 12, z: CRANE_POSITION.z - 18, base: QUAY_TOP, rows: 5, bays: 3, maxTier: 4, apgShare: 0.12 },
+  // Port stacks on the quay, inland of the crane's land legs and past it, so the crane shots look at it clear.
+  { area: "port", x: CRANE_POSITION.x + 20, z: CRANE_POSITION.z - 18, base: QUAY_TOP, rows: 5, bays: 3, maxTier: 4, apgShare: 0.12, frontRow: "first" },
   // CONE terminal: two rows of three blocks, lanes between them; the warehouse sits behind (Terminal.tsx).
   ...[30, -6].flatMap((dz) =>
     [-40, -10, 20].map((dx) => ({
@@ -84,6 +73,8 @@ const BLOCKS: Block[] = [
       bays: 2,
       maxTier: 3,
       apgShare: 0.35,
+      // The aerial camera comes in from +X.
+      frontRow: "last" as const,
     })),
   ),
 ];
@@ -114,16 +105,23 @@ export function buildStacks(): StackedContainer[] {
         const twenties = b.area !== "ship" && random() < 0.3;
         // Taller toward the middle of a block, never empty on the ship.
         const tiers = Math.max(b.area === "ship" ? b.maxTier : 1, Math.ceil(random() * b.maxTier));
-        for (let tier = 0; tier < tiers; tier++) {
-          if (b.skip?.(row, bay, tier)) continue;
-          const y = b.base + tier * H;
-          const spots: [ContainerType, number][] = twenties ? [["20", z - half20], ["20", z + half20]] : [["40", z]];
-          for (const [type, sz] of spots) {
-            const apg = random() < b.apgShare;
-            const color = apg ? APG_NAVY : CARRIERS[Math.floor(random() * CARRIERS.length)];
-            out.push({ type, area: b.area, block, position: [x, y, sz], rotated: false, tier, color, apg });
+        const front = row === (b.frontRow === "first" ? 0 : b.rows - 1) && bay === 0;
+        const spots: [ContainerType, number][] = twenties ? [["20", z - half20], ["20", z + half20]] : [["40", z]];
+        spots.forEach(([type, sz]) => {
+          let below: string | null = null;
+          for (let tier = 0; tier < tiers; tier++) {
+            if (b.skip?.(row, bay, tier)) continue;
+            // No two equal colors stacked; the box under a forced APG top can't be APG either.
+            const avoid: Set<string | null> = new Set([below, front && tier === tiers - 2 ? APG_NAVY : null]);
+            const apg: boolean = (front && tier === tiers - 1) || (random() < b.apgShare && !avoid.has(APG_NAVY));
+            let i = Math.floor(random() * CARRIER_COLORS.length);
+            while (avoid.has(CARRIER_COLORS[i])) i = (i + 1) % CARRIER_COLORS.length;
+            const color: string = apg ? APG_NAVY : CARRIER_COLORS[i];
+            const y = b.base + tier * H;
+            out.push({ type, area: b.area, block, position: [x, y, sz], rotated: false, tier, color, apg, front });
+            below = color;
           }
-        }
+        });
       }
     }
   });

@@ -8,7 +8,8 @@ export const QUAY_EDGE_X = 32;
 
 // Crane base: center between its four legs, on the quay.
 // Off to the right of the hero's view, so from the hero it's a silhouette on the horizon, not a wall.
-export const CRANE_POSITION = new Vector3(40, QUAY_TOP, -56);
+// Its sea-side legs (30 m gauge) stand 2 m in from the quay edge.
+export const CRANE_POSITION = new Vector3(QUAY_EDGE_X + 17, QUAY_TOP, -56);
 
 // Ship's deck bay the crane works: bottom-center of the container it picks. The GLB hull (Prompt 11)
 // must put its deck under this point.
@@ -18,4 +19,4 @@ export const SHIP_PICK_POINT = new Vector3(26, SHIP_DECK_Y + 2.59, -56);
 // Bottom-center of the container once it rests on the APG trailer, in the lane between the crane's legs.
 // The truck (Prompt 11) is placed so its trailer bed sits exactly here.
 export const TRAILER_BED_HEIGHT = 1.45;
-export const TRUCK_LOAD_POINT = new Vector3(42, QUAY_TOP + TRAILER_BED_HEIGHT, -56);
+export const TRUCK_LOAD_POINT = new Vector3(44, QUAY_TOP + TRAILER_BED_HEIGHT, -56);

@@ -25,8 +25,24 @@ const crane = buildCraneGeometry();
 const trolley = buildTrolleyGeometry();
 const spreader = buildSpreaderGeometry(CONTAINER["40"].length);
 
-const steel = withSkyFog(new MeshStandardMaterial({ color: "#c9ccd1", roughness: 0.55, metalness: 0.35 }));
-const house = withSkyFog(new MeshStandardMaterial({ color: "#e9e6df", roughness: 0.6, metalness: 0.1 }));
+// Light grey steel with a warm rim: silhouette edges catch the low sun, strongest on the sun's side.
+const steelBase = new MeshStandardMaterial({ color: "#c9ccd1", roughness: 0.55, metalness: 0.35 });
+steelBase.customProgramCacheKey = () => "crane-rim";
+steelBase.onBeforeCompile = (shader) => {
+  shader.fragmentShader = shader.fragmentShader.replace(
+    "#include <emissivemap_fragment>",
+    /* glsl */ `#include <emissivemap_fragment>
+    float rim = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 3.0);
+    vec3 sunView = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz);
+    totalEmissiveRadiance += uSunColor * uSunIntensity * rim * (0.12 + 0.3 * max(dot(normal, sunView), 0.0));`,
+  );
+};
+const steel = withSkyFog(steelBase);
+// Sand details (machinery house, boom head) and the A-frame's red obstruction lights.
+const house = withSkyFog(new MeshStandardMaterial({ color: "#d8c8a6", roughness: 0.65, metalness: 0.1 }));
+const navLights = withSkyFog(
+  new MeshStandardMaterial({ color: "#3a0d0a", emissive: "#ff2a1a", emissiveIntensity: 4, roughness: 0.4 }),
+);
 const dark = withSkyFog(new MeshStandardMaterial({ color: "#30353f", roughness: 0.5, metalness: 0.3 }));
 const spreaderPaint = withSkyFog(new MeshStandardMaterial({ color: "#c99a3a", roughness: 0.5, metalness: 0.3 }));
 const navy = withSkyFog(new MeshStandardMaterial({ color: APG_NAVY, roughness: 0.72, metalness: 0.15 }));
@@ -57,7 +73,7 @@ const state = craneState(0);
 // Everything the port draws (quay, crane up to its apex, ship bay, stacks) fits in this sphere.
 const BOUNDS = {
   center: new Vector3((QUAY.x0 + QUAY.x1) / 2 - 10, 15, (QUAY.z0 + QUAY.z1) / 2),
-  radius: 75,
+  radius: 95,
 };
 
 export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
@@ -105,6 +121,7 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
       <group position={CRANE_POSITION}>
         <mesh geometry={crane.structure} material={steel} castShadow receiveShadow />
         <mesh geometry={crane.house} material={house} castShadow receiveShadow />
+        <mesh geometry={crane.lights} material={navLights} />
         <mesh ref={trolleyRef} geometry={trolley} material={dark} position-y={CRANE.trolleyY} castShadow />
       </group>
       <mesh ref={spreaderRef} geometry={spreader} material={spreaderPaint} castShadow />

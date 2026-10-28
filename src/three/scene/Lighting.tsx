@@ -14,6 +14,8 @@ import { skyUniforms } from "./skyShared";
 
 // Cinema cheat: the light never grazes below 8°, so the ground still reads while the sky's sun sits on the horizon.
 const MIN_LIGHT_ELEVATION = 8;
+// The key runs hotter than the sky's sun value, so lit faces separate from the cool hemisphere fill.
+const KEY_GAIN = 1.5;
 // The crane is 46 m tall and the CONE yard ~100 m across: a 100 m box, lit from 120 m out. Only ±60 m deep
 // around the target: the low sun points down the journey, and a deeper box drags the next chapter's
 // stacks into the shadow pass.
@@ -50,13 +52,13 @@ export function Lighting() {
 
     // The shadow camera follows what the journey camera is looking at, so the current chapter casts shadows.
     sampleCamera(p, cam);
-    sunDirection(light.sunAzimuth, Math.max(light.sunElevation, MIN_LIGHT_ELEVATION), dir);
+    sunDirection(light.keyAzimuth, Math.max(light.sunElevation, MIN_LIGHT_ELEVATION), dir);
     const s = sun.current!;
     s.position.copy(cam.target).addScaledVector(dir, SHADOW_DISTANCE);
     s.target.position.copy(cam.target);
     s.target.updateMatrixWorld();
     s.color.copy(light.sunColor);
-    s.intensity = light.sunIntensity;
+    s.intensity = light.sunIntensity * KEY_GAIN;
 
     ambient.current!.color.copy(light.ambientColor);
     ambient.current!.intensity = light.ambientIntensity;

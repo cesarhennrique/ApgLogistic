@@ -9,6 +9,9 @@ type LightKey = {
   // Degrees. Elevation above the horizon; azimuth from -Z (the hero's view), negative to the left.
   sunElevation: number;
   sunAzimuth: number;
+  // The key (directional) light's azimuth. The sun's at the hero, where the disc is in frame; across the port
+  // it swings toward the sea side so the faces the camera sees take the warm light (cinema cheat).
+  keyAzimuth: number;
   ambientColor: Color;
   ambientIntensity: number;
   hemiSky: Color;
@@ -27,7 +30,8 @@ export type LightSample = Omit<LightKey, "t"> & { fogColor: Color };
 
 const c = (hex: string) => new Color(hex);
 
-// Sunset (chapters 0–2), late sunset, dusk on the highway (3), night with the lights on (4–5).
+// Sunset (hero), the port at golden hour (1–2), late sunset, dusk on the highway (3), night with the lights
+// on (4–5).
 export const LIGHT_KEYS: LightKey[] = [
   {
     t: 0,
@@ -37,14 +41,36 @@ export const LIGHT_KEYS: LightKey[] = [
     sunIntensity: 2.6,
     sunElevation: 2,
     sunAzimuth: -14,
+    keyAzimuth: -14,
     ambientColor: c("#f2c9a0"),
-    ambientIntensity: 0.25,
-    hemiSky: c("#8a90c8"),
-    hemiGround: c("#3a2418"),
-    hemiIntensity: 0.6,
+    ambientIntensity: 0.08,
+    hemiSky: c("#6b86c9"),
+    hemiGround: c("#2b1e1a"),
+    hemiIntensity: 0.9,
     fogDensity: 0.012,
     exposure: 1,
-    envIntensity: 0.6,
+    envIntensity: 0.35,
+    stars: 0,
+    lamps: 0,
+  },
+  {
+    // The port at golden hour: thin haze (the crane shots look ~100 m out), key light raking from the sea side.
+    t: 0.2,
+    skyTop: c("#141e55"),
+    skyHorizon: c("#ea7c3a"),
+    sunColor: c("#ffa863"),
+    sunIntensity: 2.4,
+    sunElevation: 1.5,
+    sunAzimuth: -15,
+    keyAzimuth: -70,
+    ambientColor: c("#f0b890"),
+    ambientIntensity: 0.07,
+    hemiSky: c("#6580c6"),
+    hemiGround: c("#2a1c1a"),
+    hemiIntensity: 0.85,
+    fogDensity: 0.005,
+    exposure: 1,
+    envIntensity: 0.3,
     stars: 0,
     lamps: 0,
   },
@@ -56,14 +82,15 @@ export const LIGHT_KEYS: LightKey[] = [
     sunIntensity: 2,
     sunElevation: 0.8,
     sunAzimuth: -16,
+    keyAzimuth: -80,
     ambientColor: c("#e8a27a"),
-    ambientIntensity: 0.2,
-    hemiSky: c("#6f6fa8"),
-    hemiGround: c("#2a1a16"),
-    hemiIntensity: 0.5,
-    fogDensity: 0.01,
+    ambientIntensity: 0.07,
+    hemiSky: c("#5f78c0"),
+    hemiGround: c("#24181a"),
+    hemiIntensity: 0.8,
+    fogDensity: 0.006,
     exposure: 0.95,
-    envIntensity: 0.45,
+    envIntensity: 0.3,
     stars: 0,
     lamps: 0,
   },
@@ -75,12 +102,13 @@ export const LIGHT_KEYS: LightKey[] = [
     sunIntensity: 0.25,
     sunElevation: -3,
     sunAzimuth: -18,
+    keyAzimuth: -60,
     ambientColor: c("#7a86b8"),
     ambientIntensity: 0.18,
     hemiSky: c("#4a5a9a"),
     hemiGround: c("#1a1424"),
     hemiIntensity: 0.45,
-    fogDensity: 0.008,
+    fogDensity: 0.006,
     exposure: 0.85,
     envIntensity: 0.2,
     stars: 0,
@@ -95,6 +123,7 @@ export const LIGHT_KEYS: LightKey[] = [
     sunIntensity: 0.35,
     sunElevation: -14,
     sunAzimuth: -20,
+    keyAzimuth: -40,
     ambientColor: c("#5a6ba8"),
     ambientIntensity: 0.15,
     hemiSky: c("#2a3a78"),
@@ -113,6 +142,7 @@ const NUMBERS = [
   "sunIntensity",
   "sunElevation",
   "sunAzimuth",
+  "keyAzimuth",
   "ambientIntensity",
   "hemiIntensity",
   "fogDensity",

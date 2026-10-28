@@ -148,6 +148,12 @@ function buildStripe({ length: L, width: W, height: H }: (typeof CONTAINER)[Cont
     const x = side * (W / 2 - WALL_OUT + 0.01);
     b.quad(new Vector3(x, y0, -hl), new Vector3(x, y0, hl), new Vector3(x, y1, hl), new Vector3(x, y1, -hl), new Vector3(side, 0, 0));
   }
+  // Across both ends, between the posts and just in front of the door bars.
+  const hw = W / 2 - POST;
+  for (const side of [-1, 1]) {
+    const z = side * (L / 2 - 0.005);
+    b.quad(new Vector3(-hw, y0, z), new Vector3(hw, y0, z), new Vector3(hw, y1, z), new Vector3(-hw, y1, z), new Vector3(0, 0, side));
+  }
   return b.build();
 }
 

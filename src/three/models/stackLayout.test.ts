@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CRANE_POSITION, SHIP_PICK_POINT, TRUCK_LOAD_POINT } from "../anchors";
 import { SCENE_POSITIONS } from "../camera-path";
 import { CONTAINER } from "./containerGeometry";
-import { buildStacks, STACKS, type StackedContainer } from "./stackLayout";
+import { APG_NAVY, buildStacks, CARRIER_COLORS, STACKS, type StackedContainer } from "./stackLayout";
 
 type Box = { min: number[]; max: number[] };
 
@@ -73,6 +73,36 @@ describe("STACKS", () => {
       );
     expect(at(SHIP_PICK_POINT.y)).toHaveLength(0);
     expect(at(SHIP_PICK_POINT.y - CONTAINER["40"].height).map((c) => c.type)).toEqual(["40"]);
+  });
+
+  it("paints with the eight carrier tones and APG navy only", () => {
+    const allowed = new Set([...CARRIER_COLORS, APG_NAVY]);
+    expect(CARRIER_COLORS).toEqual(["#9c3b2e", "#2e5e8c", "#2f7a78", "#c08a2e", "#3f6b45", "#8a8f96", "#d9d6cf", "#6e2a35"]);
+    expect(APG_NAVY).toBe("#1a2350");
+    for (const c of STACKS) expect(allowed.has(c.color)).toBe(true);
+    for (const c of STACKS) expect(c.apg).toBe(c.color === APG_NAVY);
+  });
+
+  it("never stacks two boxes of the same color directly on each other", () => {
+    for (const c of STACKS) {
+      if (c.tier === 0) continue;
+      const below = STACKS.find(
+        (o) =>
+          o.tier === c.tier - 1 &&
+          Math.abs(o.position[0] - c.position[0]) < 0.01 &&
+          Math.abs(o.position[2] - c.position[2]) < 0.01,
+      )!;
+      expect(c.color, `tier ${c.tier} at ${c.position.join(",")}`).not.toBe(below.color);
+    }
+  });
+
+  it("tops each block's camera-facing front slot with an APG box", () => {
+    for (const block of new Set(STACKS.map((c) => c.block))) {
+      const front = STACKS.filter((c) => c.block === block && c.front);
+      expect(front.length, `block ${block}`).toBeGreaterThan(0);
+      const top = Math.max(...front.map((c) => c.tier));
+      expect(front.filter((c) => c.tier === top).some((c) => c.apg), `block ${block}`).toBe(true);
+    }
   });
 
   it("is deterministic, so screenshots stay stable", () => {

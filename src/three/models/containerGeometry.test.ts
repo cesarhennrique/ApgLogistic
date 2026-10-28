@@ -74,6 +74,16 @@ describe("getContainerGeometry", () => {
     }
   });
 
+  it("wraps the APG stripe across both ends too, so it reads end-on from the crane shots", () => {
+    for (const type of ["20", "40"] as const) {
+      const pos = getStripeGeometry(type).attributes.position;
+      const hl = CONTAINER[type].length / 2;
+      const zs = Array.from({ length: pos.count }, (_, i) => pos.getZ(i));
+      expect(zs.some((z) => z > hl - 0.06 && z <= hl)).toBe(true);
+      expect(zs.some((z) => z < -hl + 0.06 && z >= -hl)).toBe(true);
+    }
+  });
+
   it("stays inside the triangle budget (up to 400 instances share 120k with the rest)", () => {
     const tris = (type: ContainerType) => getContainerGeometry(type).attributes.position.count / 3;
     expect(tris("20")).toBeLessThanOrEqual(260);

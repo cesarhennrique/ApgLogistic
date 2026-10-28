@@ -1,8 +1,7 @@
 import { MeshStandardMaterial } from "three";
 import { withSkyFog } from "./skyShared";
+import { yardUniforms } from "./yardLight";
 
-// Yard lights (0–1), written per frame by the Terminal from sampleLight().lamps.
-export const yardUniforms = { uLamps: { value: 0 } };
 
 type Rect = { x: number; z: number; hx: number; hz: number };
 type Segment = { from: [number, number]; to: [number, number] };
@@ -14,8 +13,6 @@ export type ConcreteMarkings = {
   dashes?: Segment[];
   // Solid yellow lines (quay edge, safety lines).
   solids?: Segment[];
-  // Light-mast positions: warm pools on the slab once the lamps come on.
-  lamps?: [number, number][];
 };
 
 const f = (n: number) => n.toFixed(3);
@@ -34,10 +31,9 @@ export function createConcreteMaterial(m: ConcreteMarkings = {}) {
       (s) => `paint = mix(paint, vec4(0.95, 0.72, 0.16, 1.0), line(p, vec2(${f(s.from[0])}, ${f(s.from[1])}), vec2(${f(s.to[0])}, ${f(s.to[1])}), false));`,
     ),
   ].join("\n");
-  const pools = (m.lamps ?? []).map(([x, z]) => `pool += exp(-dot(p - vec2(${f(x)}, ${f(z)}), p - vec2(${f(x)}, ${f(z)})) / 420.0);`).join("\n");
 
   // Each call bakes different markings into the GLSL; the closure's source is identical, so key on the code.
-  const key = `concrete|${paint}|${pools}`;
+  const key = `concrete|${paint}`;
   material.customProgramCacheKey = () => key;
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, yardUniforms);
@@ -79,18 +75,12 @@ export function createConcreteMaterial(m: ConcreteMarkings = {}) {
         // Slab joints every 6 m.
         vec2 g = abs(fract(p / 6.0 + 0.5) - 0.5) * 6.0;
         diffuseColor.rgb *= mix(0.72, 1.0, smoothstep(0.0, 0.05, min(g.x, g.y)));
+        // At night the slab sinks to ~#2e2f36, darker than the boxes, so the sodium pools carry the yard.
+        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.075, 0.08, 0.12), uLamps);
         vec4 paint = vec4(0.0);
         ${paint}
-        // Paint scuffed by the same wear.
-        diffuseColor.rgb = mix(diffuseColor.rgb, paint.rgb, paint.a * (0.65 + 0.35 * wear));`,
-      )
-      .replace(
-        "#include <emissivemap_fragment>",
-        /* glsl */ `#include <emissivemap_fragment>
-        float pool = 0.0;
-        ${pools}
-        // Sodium-warm pools under the masts.
-        totalEmissiveRadiance += vec3(1.0, 0.62, 0.3) * 0.7 * uLamps * pool;`,
+        // Paint scuffed by the same wear, dimmed with the slab at night.
+        diffuseColor.rgb = mix(diffuseColor.rgb, paint.rgb * mix(1.0, 0.5, uLamps), paint.a * (0.65 + 0.35 * wear));`,
       );
   };
   return withSkyFog(material);

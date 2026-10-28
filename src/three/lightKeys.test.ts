@@ -12,8 +12,12 @@ function flatten(s: LightSample): number[] {
 }
 
 describe("sampleLight", () => {
-  it("has keys at sunset, late sunset, dusk and night", () => {
-    expect(LIGHT_KEYS.map((k) => k.t)).toEqual([0, 0.4, 0.6, 1]);
+  it("has keys at sunset, the port at golden hour, late sunset, dusk and night", () => {
+    expect(LIGHT_KEYS.map((k) => k.t)).toEqual([0, 0.2, 0.4, 0.6, 1]);
+  });
+
+  it("clears the haze for the port: half the hero's fog by the crane beat", () => {
+    expect(sampleLight(0.15).fogDensity).toBeLessThan(sampleLight(0).fogDensity / 2);
   });
 
   it("hits each key exactly on its t", () => {
