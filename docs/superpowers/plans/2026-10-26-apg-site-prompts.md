@@ -827,41 +827,188 @@ está completa e contínua.
 Commit: "feat: estrada, distribuição e linha do trajeto"
 ````
 
-## Prompt 13 — Textos dos capítulos e direção de câmera
+> **Revisão 2026-10-28:** a jornada deixou de ser um mundo contínuo (céu, mar, névoa) e virou uma sequência de **palcos de estúdio e vistas de cima**. Leia a seção 3 do spec e `docs/reference-analysis.md`. Os Prompts 13 a 13c abaixo substituem o antigo Prompt 13. Os modelos dos Prompts 10 a 12 (containers, portêiner, navio, carreta, mapa, RouteLine) são reaproveitados.
+
+## Prompt 13 — Arquitetura de palcos, luz de estúdio e hero do mapa
 
 ````text
-Leia o CLAUDE.md e o spec, seção 3 (tabela de capítulos). Use as
-skills animate e emil-design-eng.
+Leia o CLAUDE.md, o spec (seção 3 revisada em 2026-10-28 e seção 6
+"Cena 3D") e docs/reference-analysis.md. Use as skills
+animation-performance, frontend-design:frontend-design e
+superpowers:test-driven-development.
 
-Este é o prompt de "direção de cinema": o objetivo é que a jornada
-pareça um filme.
+Mudança de direção: nada de céu, mar, horizonte ou névoa. Cada capítulo
+é um palco isolado, com fundo de cor sólida da paleta, luz de estúdio e
+câmera própria. Objetos impecáveis, não cenário.
 
-1. Revise os 7 pontos de camera-path.ts para cada capítulo ter um
-   enquadramento intencional: hero em plano aberto baixo sobre a água;
-   crane com a câmera subindo pela perna do portêiner; load com câmera
-   acompanhando o container no ar; highway em travelling lateral na
-   altura da cabine; terminal em vista aérea; distribution mergulhando
-   no galpão e abrindo para o mapa. Sem cortes, sem viradas bruscas
-   (limite de rotação de 35° por 0.1 de progresso; adicione um teste em
-   camera-path.test.ts). Hoje o smootherstep por segmento zera a
-   velocidade em cada fronteira (efeito "anda e para"). Troque por:
-   câmera chega à cena no meio do capítulo, segura enquanto o texto é
-   lido (velocidade baixa, não zero) e segue sem parar na fronteira.
-2. Textos dos capítulos (HTML sobreposto): cada um entra com RevealText
-   no início da faixa e sai com fade/translateY no fim. O número de cada
-   capítulo usa Counter. ContainerCode por capítulo. Posição do texto
-   alternando esquerda/direita para não cobrir o foco da câmera.
-3. Indicador de progresso lateral: 6 marcas verticais (uma por
-   capítulo), com a marca ativa em vermelho. Clicável: rola até o
-   capítulo (lenis.scrollTo). aria-label por marca.
-4. Indicador "role para descobrir" no hero, que some ao começar o
-   scroll.
-5. Mobile (largura < 768): a trilha cai de 600vh para 450vh, os textos
-   ficam embaixo e o FOV é ajustado para enquadrar o mesmo assunto.
+1. Remover o mundo: apague Sky, Ocean, a névoa (skyFog/withSkyFog e
+   FogExp2), o bake de environment do céu, lightKeys e o degradê do hero
+   que existia por causa do céu. Remova os testes correspondentes. Os
+   materiais voltam a ser MeshStandard/MeshPhysical normais.
+2. src/three/stages/: um componente por palco (HeroMapStage,
+   CraneStage, LoadStage, HighwayStage, TerminalStage,
+   DistributionStage). Cada um exporta o grupo da cena e suas chaves de
+   câmera (position, target, fov) para início, meio e fim do capítulo.
+   src/three/stages/index.ts monta a tabela STAGES por ChapterId.
+   Neste prompt, os palcos 1 a 5 só posicionam os modelos já existentes;
+   o acabamento vem nos Prompts 13b e 13c.
+3. Render seletivo: só o palco atual e o vizinho (durante a transição)
+   ficam com visible=true. Teste unitário: activeStages(t) retorna 1 ou
+   2 ids, nunca mais.
+4. Câmera: CameraRig passa a interpolar entre as chaves do palco atual
+   e, nas transições, do palco atual para o próximo. Remova
+   camera-path.ts e o spline global (e os testes). Sem paradas bruscas:
+   a velocidade não zera na fronteira (teste numérico).
+5. Fundo: stageBackground(t) em src/three/stages/background.ts
+   interpola a cor de fundo (scene.background e a cor do HTML por trás do
+   canvas): navy-900 no hero, sand-50 de 0.05 a 0.4, navy-900 de 0.42 a
+   0.6, sand-50 de 0.62 a 0.9, navy-900 em 1. Transições de 0.02 a 0.05
+   de progresso. Teste de continuidade.
+6. Luz de estúdio (src/three/studio/Studio.tsx):
+   - scene.environment = RoomEnvironment (PMREM, 0 bytes);
+   - luz principal suave a 45° (sombras), preenchimento frio fraco,
+     recorte (rim) atrás;
+   - sombra de contato: AccumulativeShadows do drei (RandomizedLight)
+     nos palcos de estúdio, ou ContactShadows quando o palco se move;
+   - toneMapping ACES ou AgX (escolha o que der melhor contraste nos
+     containers e diga qual escolheu).
+7. Pós-processamento (@react-three/postprocessing): N8AO (oclusão de
+   ambiente), SMAA, Bloom leve (só emissive acima de 1), Noise (grão de
+   2–3%) e Vignette sutil. Tudo num EffectComposer.
+8. HeroMapStage (palco 0, fundo navy):
+   - malha do Nordeste (public/images/map/nordeste.svg) em 3D inclinado
+     (~35°): contornos dos estados em linhas finas sand-50 a 35% e
+     interior em grade de pontos;
+   - 5 rotas de cabotagem vindas do mar (curvas 3D em arco) convergindo
+     em Suape, desenhadas como linhas red-500 com brilho que percorre a
+     rota em loop (por tempo);
+   - Suape: ponto que pulsa (anel que expande e some, a cada 2,4 s);
+   - rótulos mono pequenos: "SUAPE · PE" e "SALVADOR · BA";
+   - órbita lenta da câmera guiada por tempo (±6° em 20 s), parada com
+     reduced motion;
+   - o texto do hero continua à esquerda e o mapa ocupa a metade direita.
+9. Transição hero → crane (0 a 0.05): a câmera mergulha em direção a
+   Suape enquanto o fundo vai de navy para sand e o CraneStage aparece.
+10. Screenshots de e2e/__screenshots__/journey/ em p = 0, 0.03, 0.1,
+    0.3, 0.5, 0.7, 0.9 e 1 (desktop e mobile).
 
-Pronto quando: lint, typecheck, test e e2e passam. Grave um vídeo de
-tela do scroll completo em desktop e em mobile para revisão.
-Commit: "feat: direção de câmera e textos da jornada"
+Pronto quando: lint, typecheck, test e e2e passam, não sobra referência a
+Sky/Ocean/skyFog no código, e o hero mostra o mapa com as rotas
+chegando em Suape sobre navy.
+Commit: "feat: jornada em palcos, luz de estúdio e hero do mapa"
+````
+
+## Prompt 13b — Estúdio do portêiner e da carreta (capítulos 1 e 2)
+
+````text
+Leia o CLAUDE.md e o spec, seção 3. Use as skills
+frontend-design:frontend-design e animation-performance.
+
+Objetivo: os capítulos 1 e 2 têm que parecer foto de produto premium,
+sobre fundo sand-50, com objetos isolados e impecáveis.
+
+1. Composição do CraneStage: portêiner inteiro, um recorte do navio
+   (proa + as 2 baias de pilhas perto do portêiner, sem o resto do casco)
+   e um plano de cais mínimo (laje de concreto claro com borda e
+   cabeços de amarração). Nada além disso no quadro. O plano do chão se
+   funde ao fundo sand (sem linha de horizonte: chão com a mesma cor do
+   fundo e sombra de contato).
+2. Materiais premium (src/three/materials/):
+   - paintedMetal(color): MeshPhysical, roughness 0.45–0.6 com
+     variação por ruído, clearcoat 0.15, desgaste sutil nas arestas
+     (ruído + curvatura aproximada por normal);
+   - containerPaint: igual, com sujeira leve na base e marcas de
+     escorrimento verticais sutis;
+   - glass, rubber, chrome para a carreta;
+   - concreto claro para o cais.
+   Todos procedurais (0 bytes de textura).
+3. Detalhe que vende realismo: placas de identificação nos containers
+   (código "APGU 199601 6" em mono nas portas do container APG, via
+   texto do drei ou textura de canvas), cabos do spreader com leve
+   catenária, luzes de aviso no spreader.
+4. LoadStage: a câmera gira até o perfil da carreta. O container cruza
+   e assenta, com um pequeno "assentamento" (desce 3 cm, sobe 1 cm, em
+   180 ms) quando os twist locks travam. O logo APG fica legível na
+   porta da cabine nesse quadro final.
+5. Câmeras: lentes longas (fov 18–28) como fotografia de produto, com
+   leve dolly enquanto o capítulo avança. O objeto principal ocupa o
+   terço direito e o texto fica à esquerda.
+6. Sombras: AccumulativeShadows enquanto o palco está parado; quando o
+   portêiner ou o container se movem, troque para ContactShadows para não
+   haver rastro.
+7. Screenshots em p = 0.08, 0.15, 0.25, 0.35 e 0.4 (desktop e mobile).
+
+Pronto quando: lint, typecheck, test e e2e passam e os 5 screenshots
+parecem foto de estúdio (fundo limpo, sombra suave, sem horizonte).
+Commit: "feat: estúdio do portêiner e da carreta"
+````
+
+## Prompt 13c — Estrada, terminal de cima e distribuição (capítulos 3 a 5)
+
+````text
+Leia o CLAUDE.md e o spec, seção 3. Reaproveite Highway, Distribution,
+RouteLine e o mapa do Prompt 12 dentro dos novos palcos.
+
+1. HighwayStage (fundo navy-900): a carreta em perfil, em close, rodando
+   no lugar. Rodas giram; faixas da pista, postes e guard rail passam em
+   parallax (3 camadas em velocidades diferentes); faróis e luz de
+   posição acesos com bloom. A linha vermelha corre sob as rodas, de
+   ponta a ponta do quadro. Sem céu: acima da pista, só o navy.
+2. TerminalStage (fundo sand-50, vista de cima ortográfica ou fov 12 de
+   bem alto): planta estilizada do terminal CONE.
+   - Pátio com pilhas coloridas (vistas de cima, com sombra de contato),
+     galpão com as 46 docas numeradas, portaria e vias.
+   - A carreta, vista de cima, entra pela portaria seguindo a linha
+     vermelha e encosta numa doca no fim do capítulo.
+   - Anotações de planta em mono (linhas de cota finas navy a 40%):
+     "35.000 m²" no pátio, "4.000 TEUs" nas pilhas, "46 docas" no
+     galpão. As anotações entram uma a uma com o progresso.
+3. DistributionStage: zoom out contínuo a partir do terminal até o mapa
+   de PE e BA (mesma malha do hero, agora em vista de cima sobre sand).
+   A linha vermelha ramifica em 24 rotas com vans (vistas de cima)
+   seguindo cada uma; os destinos acendem em pontos red-500. No fim, o
+   fundo escurece para navy e o mapa some, encaixando na seção Serviços.
+4. A RouteLine é uma só peça narrativa: ela nasce nas rotas do hero,
+   aparece sob a carreta no capítulo 3, guia a carreta no 4 e ramifica no
+   5. Cada palco desenha o seu trecho; a cor, a espessura e o brilho são
+   idênticos.
+5. Orçamento por palco: até 200 mil triângulos (mostre no ?debug).
+6. Screenshots em p = 0.45, 0.55, 0.65, 0.75, 0.85, 0.95 e 1.
+
+Pronto quando: lint, typecheck, test e e2e passam e a jornada de 0 a 1
+roda sem cortes secos, alternando navy e sand.
+Commit: "feat: estrada, terminal de cima e distribuição"
+````
+
+## Prompt 13d — Direção, textos e mobile
+
+````text
+Leia o CLAUDE.md e o spec, seção 3. Use as skills animate e
+emil-design-eng.
+
+1. Textos dos capítulos: entram com RevealText no início da faixa e
+   saem com fade e translateY no fim. O número de cada capítulo usa
+   Counter, com ContainerCode acima. Cor do texto acompanha o fundo
+   (sand-50 sobre navy, navy-900 sobre sand), trocando junto com
+   stageBackground. Contraste AA medido em cada screenshot.
+2. Composição: o texto nunca cobre o objeto principal do palco. Defina,
+   por palco, o lado do texto e a área segura do objeto; teste e2e que
+   compara o bounding box do texto com a projeção do objeto principal na
+   tela (sem sobreposição em 1440x900 e 375x812).
+3. Indicador de progresso lateral: 6 marcas (uma por capítulo), a ativa
+   em red-500, clicáveis (lenis.scrollTo), com aria-label.
+4. "Role para descobrir" no hero, que some ao começar o scroll.
+5. Mobile (< 768px): trilha de 600vh para 450vh; texto embaixo e objeto
+   em cima; fov e chaves de câmera próprias por palco para o objeto caber
+   inteiro (o portêiner não pode ser cortado).
+6. Header: transparente sobre a jornada, com a cor do logo e do menu
+   acompanhando o fundo (branco sobre navy, navy sobre sand).
+7. Grave um vídeo de tela do scroll completo em desktop e em mobile
+   (Playwright video) em e2e/__videos__/ para revisão.
+
+Pronto quando: lint, typecheck, test e e2e passam e o vídeo mostra a
+jornada inteira sem texto sobre objeto e sem paradas bruscas.
+Commit: "feat: direção, textos e mobile da jornada"
 ````
 
 ## Prompt 14 — Miniaturas 3D dos serviços e heros internos
@@ -903,17 +1050,18 @@ Leia o CLAUDE.md e o spec, seção 6 "Níveis de qualidade". Use a skill
 animation-performance e superpowers:test-driven-development para
 pickTier.
 
-1. Instale @react-three/postprocessing e detect-gpu.
+1. Instale detect-gpu (@react-three/postprocessing já existe).
 2. src/three/quality.ts: pickTier({ webgl, reducedMotion, gpuTier }):
    sem webgl ou com reducedMotion dá 'static'; gpuTier ≤ 1 dá 'low';
    senão 'high'. Testes para as 4 combinações. useQualityTier() usa
    detect-gpu (getGPUTier) e o PerformanceMonitor do drei, que rebaixa
    de high para low se o fps ficar abaixo de 30 por 2 s. Nunca sobe
    de volta na mesma sessão.
-3. Tier high: EffectComposer com Bloom (luminanceThreshold 0.9, só
-   luzes, faróis e linha vermelha), SMAA, Vignette leve e o Ocean
-   completo. Tier low: sem composer, sombras 1024, metade das
-   instâncias de vegetação e containers do fundo, dpr máximo 1.5.
+3. O EffectComposer já existe desde o Prompt 13. Tier high: composer
+   completo (N8AO, SMAA, Bloom, Noise, Vignette) e AccumulativeShadows.
+   Tier low: sem composer (só SMAA via antialias nativo), ContactShadows
+   em resolução 512, metade das instâncias de containers do fundo, dpr
+   máximo 1.5.
 4. Tier static: script scripts/capture-fallbacks.ts (Playwright) que
    abre /?p=X&capture=1 para X em [0, 0.1, 0.3, 0.5, 0.7, 0.9] em 1920x1080
    e em 750x1334, salva em public/images/fallback/<chapter>-<desktop|mobile>.webp
@@ -1035,7 +1183,7 @@ Pronto quando: o preview está no ar e o smoke passa contra ele.
 |---|---|
 | 1. Objetivo e metas | 15, 16, 17, 18 |
 | 2. Insumos | Guia de assets + 01 |
-| 3. Jornada 3D | 08–13 |
+| 3. Jornada 3D | 08–12, 13, 13b, 13c, 13d |
 | 4. Estrutura e páginas | 03, 04, 05, 14 |
 | 5. Identidade visual | 01, 02, 16, 17 |
 | 6. Arquitetura (formulários, SEO, LGPD, a11y) | 06, 07, 15, 17 |

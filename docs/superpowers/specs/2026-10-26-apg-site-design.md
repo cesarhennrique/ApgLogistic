@@ -48,21 +48,25 @@ Endereços:
 
 ## 3. Jornada 3D da Home
 
-Uma cena 3D contínua, sem cortes. A câmera avança conforme o scroll, e cada capítulo exibe um texto em HTML sobreposto.
+> **Revisão 2026-10-28:** a versão anterior (mundo 3D contínuo com céu, mar e névoa) foi substituída. Motivo: em tempo real, simular o mundo inteiro lia como "desenho animado". A análise da referência (`docs/reference-analysis.md`) mostrou que o impacto vem de **objetos impecáveis isolados** e **vistas de cima**, não de cenário.
 
-| # | Faixa de scroll | Cena | Texto |
-|---|---|---|---|
-| 0 | Hero (antes de 0%) | Pôr do sol em Suape. Navio de cabotagem entra devagar, com reflexo e rastro na água | Logo APG, "Transportando confiança desde 1996", CTA "Solicitar cotação" |
-| 1 | 0–20% | A câmera sobe até o portêiner. O spreader desce e trava no container | "1.900 TEUs por mês" (contador) |
-| 2 | 20–40% | O container é içado, cruza o quadro e desce na carreta APG (cabine com logo e vermelho da marca) | "O braço rodoviário da cabotagem no Brasil" |
-| 3 | 40–60% | A carreta sai do porto. Travelling lateral pela BR-101, com faróis acendendo e postes passando | "Frota 100% própria e rastreada · 24h" |
-| 4 | 60–80% | Chegada ao terminal CONE. Vista aérea do pátio com pilhas de containers | "35.000 m² · 4.000 TEUs estáticos · 46 docas" |
-| 5 | 80–100% | A câmera entra num galpão. Vans e caminhões pequenos saem em leque sobre o mapa de PE e BA | "500 entregas fracionadas por dia" |
-| — | Saída | A cena escurece em navy e dá lugar às seções HTML da Home | — |
+A jornada é uma sequência de **palcos** (stages), um por capítulo, num único canvas. Não há céu, horizonte nem névoa. Cada palco tem fundo de cor sólida da marca, luz de estúdio e uma câmera própria. A troca de palco acontece por movimento de câmera e por transição da cor de fundo, sincronizados ao scroll.
 
-- **Assinatura visual:** uma linha vermelha, derivada da seta do logo, desenha o trajeto no chão da cena durante toda a jornada, ligando porto, estrada, terminal e cliente.
-- **Estilo:** "miniatura cinematográfica". Os modelos são limpos e estilizados, não fotorrealistas. A luz é de cinema, com névoa, reflexo na água e bloom nas luzes.
-- **Progressão da luz:** pôr do sol (capítulos 0–2), anoitecer na estrada (capítulo 3) e noite com luzes acesas (capítulos 4–5).
+| # | Faixa | Fundo | Palco | Texto |
+|---|---|---|---|---|
+| 0 | Hero | navy-900 | **Mapa do litoral do Nordeste** em 3D inclinado (malha IBGE em linhas finas e pontos). Rotas de cabotagem chegam do mar em arcos luminosos e convergem em Suape, que pulsa. Câmera orbita devagar, guiada por tempo | Logo APG, "Transportando confiança desde 1996", CTA |
+| → | 0–0.05 | navy → sand-50 | A câmera mergulha em Suape e o fundo clareia | — |
+| 1 | 0–0.2 | sand-50 | **Estúdio:** portêiner isolado e um recorte do navio (proa e pilhas), sobre um plano de cais mínimo. O spreader desce e trava no container APG | "1.900 TEUs por mês" (contador) |
+| 2 | 0.2–0.4 | sand-50 | **Estúdio:** a câmera gira até o perfil. O container cruza e assenta na carreta APG, com o logo legível na porta | "O braço rodoviário da cabotagem no Brasil" |
+| 3 | 0.4–0.6 | navy-900 | **Faixa escura:** carreta em perfil rodando (rodas girando, faixas e postes passando em parallax), faróis acesos. A linha vermelha corre sob as rodas | "Frota 100% própria e rastreada · 24h" |
+| 4 | 0.6–0.8 | sand-50 | **Vista de cima:** planta estilizada do terminal CONE (pátio, pilhas coloridas, galpão com 46 docas). A carreta, vista de cima, segue a linha vermelha e encosta numa doca. Números aparecem como anotações de planta, em mono | "35.000 m² · 4.000 TEUs estáticos · 46 docas" |
+| 5 | 0.8–1 | sand-50 → navy-900 | **Vista de cima, zoom out:** o terminal vira um ponto no mapa de PE e BA. A linha vermelha ramifica em 24 rotas com vans até os dois estados | "500 entregas fracionadas por dia" |
+| — | Saída | navy-900 | O mapa escurece e dá lugar à seção Serviços | — |
+
+- **Assinatura visual:** a seta vermelha do logo é a linha do trajeto. Ela aparece no hero (rotas), corre sob a carreta (capítulo 3) e guia a carreta e as vans nos capítulos 4 e 5.
+- **Estilo:** "estúdio de produto". Os modelos procedurais existentes (containers, portêiner, navio, carreta) recebem materiais PBR de qualidade (pintura metálica, variação de rugosidade, desgaste sutil nas arestas), luz de estúdio, sombra de contato suave e oclusão de ambiente. Nada de cenário: o fundo é sempre cor sólida da paleta.
+- **Ritmo de cor:** navy (hero) → sand (capítulos 1–2) → navy (3) → sand (4–5) → navy (Serviços).
+- **Opcional (momentos-chave):** os capítulos 1 e 2 podem ser renderizados offline com path tracing (`three-gpu-pathtracer`) a partir da mesma cena e tocados como sequência de frames no tier alto. Fica para depois do marco 2, se o tempo real não bastar.
 
 ## 4. Estrutura do site
 
@@ -150,20 +154,18 @@ Cada seção recebe um rótulo em mono, pequeno, no canto, inspirado no formato 
 ### Cena 3D
 
 - **Fonte única de verdade:** um único `progress` (0–1) vindo do ScrollTrigger, guardado em `ref`. A cena lê esse valor dentro de `useFrame`, sem re-render do React por frame.
-- **Câmera (`CameraRig`):** um spline CatmullRom para a posição e outro para o ponto de foco. Cada capítulo corresponde a um trecho do spline.
-- **Componentes:** `Ship`, `Crane`, `Truck`, `Highway`, `Terminal`, `Distribution`, `RouteLine`, `Lighting`, `CameraRig`.
-  - Cada componente recebe só o progresso local do seu capítulo (0–1) e não conhece os demais.
-  - `Lighting` e `RouteLine` recebem o progresso global.
-- **Geometria:**
-  - containers, portêiner, pátio e galpão são construídos com primitivas em código, com `InstancedMesh` para os containers;
-  - o casco do navio e a cabine do caminhão são GLB, comprimidos com meshopt e texturas WebP via gltf-transform.
-- **Orçamento:** até 1,5 MB de assets 3D e até 200 mil triângulos.
+- **Palcos (`stages`):** cada capítulo é um grupo isolado (`HeroMapStage`, `CraneStage`, `LoadStage`, `HighwayStage`, `TerminalStage`, `DistributionStage`) com câmera própria. Só os palcos ativos (o atual e o vizinho numa transição) são renderizados. A câmera interpola entre as chaves do palco atual e do próximo.
+- **Fundo:** cor sólida interpolada por progresso (`stageBackground(t)`), sem céu nem névoa.
+- **Luz de estúdio:** `RoomEnvironment` do three (0 bytes) para os reflexos PBR, uma luz principal + preenchimento + recorte, sombra de contato suave (`ContactShadows` ou `AccumulativeShadows` do drei) e AO (N8AO).
+- **Pós-processamento:** SMAA, AO, bloom leve só nas luzes, granulação fina e vinheta sutil.
+- **Geometria:** procedural, reaproveitando os modelos já feitos (containers instanciados, portêiner, navio, carreta, mapa IBGE extrudado, `RouteLine`).
+- **Orçamento:** até 1,5 MB de assets 3D e até 200 mil triângulos por palco.
 
 ### Níveis de qualidade
 
 | Nível | Quando | O que muda |
 |---|---|---|
-| Alto | GPU capaz (`PerformanceMonitor` do drei) | Pós-processamento, bloom, reflexo na água |
+| Alto | GPU capaz (`PerformanceMonitor` do drei) | Pós-processamento completo (AO, bloom, SMAA, grão), sombras acumuladas |
 | Leve | GPU fraca ou fps abaixo de 30 | Sem pós-processamento, menos instâncias |
 | Estático | Sem WebGL ou `prefers-reduced-motion` | Imagens WebP renderizadas da própria cena, uma por capítulo, com os mesmos textos |
 
