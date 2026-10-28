@@ -654,41 +654,119 @@ Pronto quando: lint, typecheck, test e e2e passam e os capítulos 1, 2 e
 Commit: "feat: containers, portêiner e terminal"
 ````
 
-## Prompt 11 — Navio e carreta APG (GLB)
+## Prompt 10b — Revisão de arte do porto e do terminal
 
 ````text
-Leia o CLAUDE.md e o guia de assets
-(docs/assets/2026-10-26-apg-assets-guide.md), seção "Modelos 3D".
+Leia o CLAUDE.md. Use as skills animation-performance e
+frontend-design:frontend-design.
 
-Os arquivos otimizados estão em public/3d/models/ship.glb e
-public/3d/models/truck-cab.glb. Se algum não existir, use o fallback
-procedural descrito no item 4.
+Revisão dos screenshots de e2e/__screenshots__/journey/ (p=0.15, 0.3,
+0.7). A geometria está boa (corrugação, cabos, pilhas). O problema é de
+luz e cor: tudo virou um único tom roxo e marrom, sem contraste de
+valor. Uma "miniatura cinematográfica" precisa de cores que leiam e de
+luz que desenhe a forma.
 
-1. src/three/scene/Ship.tsx: carrega ship.glb com useGLTF (meshopt
-   decoder do drei). Materiais trocados por MeshStandardMaterial nas
-   cores da cena (casco escuro, superestrutura clara), com pilhas de
-   containers no convés via ContainerStacks. Animação: no hero, entra
-   devagar, guiada por tempo (balanço leve no eixo z); no 'crane', fica
-   atracado. Rastro na água: uma faixa de shader com espuma atrás do
-   casco, com intensidade ligada à velocidade.
-2. src/three/scene/Truck.tsx: truck-cab.glb + carreta porta-container
-   procedural (chassi, rodas instanciadas, para-lamas). Cabine branca
-   com faixas navy e vermelha. Logo APG como Decal do drei nas portas
-   (public/brand/logo.svg rasterizado para
-   public/3d/textures/apg-decal.webp em 1024px). O container APG chega
-   em TRUCK_LOAD_POINT (src/three/anchors.ts) no fim do 'load'.
-   Faróis: spotlights acesos a partir de 0.45, com cone volumétrico fake
-   (cone com material aditivo).
-3. useGLTF.preload para os dois modelos. Erro de carregamento: cai no
-   fallback procedural, sem tela branca (ErrorBoundary em volta).
-4. Fallbacks procedurais em src/three/models/ShipFallback.tsx e
-   TruckCabFallback.tsx: formas simples no mesmo estilo e na mesma
-   escala.
-5. Teste: Playwright em /?p=0.39 e /?p=0.41 sem erro de console;
-   screenshot salvo em e2e/__screenshots__ para revisão manual.
+1. Paleta dos containers: troque as cores dessaturadas por 8 tons
+   distintos, foscos mas legíveis: #9C3B2E (ferrugem), #2E5E8C (azul
+   oceano), #2F7A78 (petróleo), #C08A2E (ocre), #3F6B45 (verde),
+   #8A8F96 (cinza), #D9D6CF (branco gelo), #6E2A35 (vinho). Distribuição
+   pseudoaleatória com seed fixa, sem dois vizinhos iguais na mesma
+   pilha. APG: #1A2350 com faixa #E31E24 nas laterais, sempre visível
+   nas pilhas do primeiro plano e no container que o portêiner pega.
+2. Valor e forma: no pôr do sol, as faces voltadas para o sol recebem
+   luz quente forte e as faces opostas ficam frias (hemisphere azulado).
+   Ajuste lightKeys para que, em p=0.15 e 0.3, haja pelo menos 3 níveis
+   de valor visíveis (luz, meio-tom, sombra). Rim light quente no
+   contorno do portêiner contra o céu.
+3. Silhueta do portêiner (ship-to-shore): hoje lê como um andaime
+   genérico. Proporções reais em metros: pernas de 30 m de vão, viga
+   principal a 45 m de altura, lança de 55 m projetada sobre a água
+   (passando por cima do navio), backreach de 20 m sobre o cais,
+   A-frame no topo a ~70 m com tirantes (forestays) até a ponta da lança.
+   Cor cinza-claro #C9CCD1 com detalhes sand, e luzes de navegação
+   vermelhas no topo do A-frame (emissive).
+4. Noite no terminal (p=0.7 e 0.8): hoje o chão está mais claro que os
+   containers (valor invertido) e os postes não iluminam nada.
+   - Chão do pátio mais escuro à noite (~#2E2F36).
+   - Poças de luz de vapor de sódio: quads aditivos instanciados no chão
+     sob cada poste (cor #FFB46B, falloff radial suave), cabeça dos
+     postes emissive e um leve tom quente nas faces dos containers
+     próximos (light probe barato ou ajuste no shader por distância ao
+     poste mais próximo; sem centenas de PointLights).
+   - É a imagem "pátio à noite com luzes acesas" do spec: tem que ser
+     bonita sozinha.
+5. Orçamento: o limite total da cena é 200 mil triângulos. Os frames do
+   porto podem chegar a 140 mil neste prompt, deixando 60 mil para o
+   navio e a carreta do Prompt 11. Se passar, tire a sombra das pilhas
+   distantes antes de cortar detalhe do primeiro plano.
+6. Atualize os screenshots (inclua p=0.15, 0.3, 0.7 e 0.8).
 
-Pronto quando: lint, typecheck, test e e2e passam.
-Commit: "feat: navio e carreta APG"
+Pronto quando: lint, typecheck, test e e2e passam e os 4 screenshots
+mostram cor distinta nos containers e poças de luz no terminal à noite.
+Commit: "fix: revisão de arte do porto e do terminal"
+````
+
+## Prompt 11 — Navio e carreta APG (procedurais)
+
+````text
+Leia o CLAUDE.md e o spec, seção 3. Estilo "miniatura cinematográfica",
+coerente com o portêiner e os containers, que já são procedurais.
+Escala: 1 unidade = 1 m. Todo material usa withSkyFog.
+
+Decisão: os dois modelos são feitos em código, não em GLB. Assim ficam
+no mesmo estilo do resto da cena e não dependem de asset externo. Se no
+futuro existir public/3d/models/ship.glb ou truck-cab.glb, carregue-o no
+lugar do procedural (useGLTF + ErrorBoundary voltando ao procedural),
+mas não crie nem baixe GLB agora.
+
+1. src/three/models/shipGeometry.ts + src/three/scene/Ship.tsx:
+   navio porta-containers de cabotagem (feeder), 140 m x 22 m.
+   - Casco: seções transversais interpoladas ao longo do comprimento
+     (proa com flare e bulbo, popa com espelho), em uma BufferGeometry.
+     Costado #1B1E2B, faixa vermelha #7A1F1F abaixo da linha d'água,
+     linha d'água branca fina.
+   - Superestrutura na popa: bloco de 5 conveses com janelas (faixas
+     emissive à noite), passadiço com asas, mastro, chaminé.
+   - Convés com porões e pilhas de containers via ContainerStacks (3 a 4
+     de altura), incluindo o container APG que o portêiner pega
+     (posição em src/three/anchors.ts como SHIP_PICK_POINT, usado pelo
+     Crane).
+   - Hero: entra devagar, guiado por tempo (desliza 30 m em 12 s e
+     para), com balanço leve em z (±0.6°). No 'crane', atracado no cais,
+     sob a lança.
+   - Rastro: faixa de espuma em shader atrás do casco, ligada à
+     velocidade; some quando atraca.
+   - Até 35 mil triângulos.
+2. src/three/models/truckGeometry.ts + src/three/scene/Truck.tsx:
+   cavalo mecânico cara-chata 6x2 (estilo europeu, sem marca) +
+   carreta porta-container 40' esqueleto.
+   - Cabine: caixa com chanfros, para-brisa em vidro escuro com reflexo
+     do environment, grade, para-choque, faróis, retrovisores, quebra-sol,
+     saias laterais, tanques. Pintura branca #EDEBE6 com faixa navy
+     #1A2350 e a seta vermelha #E31E24 do logo correndo na lateral.
+   - Logo APG como Decal do drei nas portas (rasterize
+     public/brand/logo.svg para public/3d/textures/apg-decal.webp,
+     1024px, transparente).
+   - Rodas instanciadas (pneus 22.5", aro cinza), quinta roda, chassi da
+     carreta com longarinas, twist locks nos cantos.
+   - O container APG do Crane assenta exatamente em TRUCK_LOAD_POINT no
+     fim do 'load' (os twist locks alinham com as cantoneiras).
+   - Faróis: a partir de 0.45, spotlights + cone volumétrico falso
+     (cone com material aditivo e falloff), luz de posição âmbar.
+   - Até 20 mil triângulos.
+3. Remova os stand-ins "shortcut:" do Prompt 10 (casco sob o porão e
+   prancha sob TRUCK_LOAD_POINT) e as caixas provisórias do hero.
+4. Teste unitário: dimensões do casco (140 x 22, calado entre 7 e 9) e
+   da carreta (comprimento útil ≥ 12.19 para o 40').
+5. Teste de alinhamento: o container no fim do 'load' fica a menos de
+   2 cm de TRUCK_LOAD_POINT.
+6. Screenshots: p=0 (navio no hero), 0.15, 0.3, 0.4 (container na
+   carreta) e 0.45 (faróis acendendo).
+
+Pronto quando: lint, typecheck, test e e2e passam, total abaixo de 200
+mil triângulos em todos os frames, e o hero mostra o navio entrando ao
+pôr do sol.
+Commit: "feat: navio e carreta APG procedurais"
 ````
 
 ## Prompt 12 — Estrada, distribuição e linha do trajeto
