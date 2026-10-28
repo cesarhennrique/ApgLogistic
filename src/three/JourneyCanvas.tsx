@@ -10,12 +10,15 @@ import { sampleCamera } from "./camera-path";
 import { readDebugParams } from "./debug";
 import { Placeholders } from "./Placeholders";
 import { journeyProgress } from "./progress";
+import { Crane } from "./scene/Crane";
 import { Lighting } from "./scene/Lighting";
 import { Ocean } from "./scene/Ocean";
 import { Sky } from "./scene/Sky";
+import { Terminal } from "./scene/Terminal";
 
 const DebugOrbit = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugOrbit })));
 const DebugSlider = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugSlider })));
+const DebugProbe = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugProbe })));
 
 // Client-only (next/dynamic ssr:false). Lives in the sticky layer of #journey.
 export default function JourneyCanvas() {
@@ -64,9 +67,12 @@ export default function JourneyCanvas() {
             <Ocean reducedMotion={reducedMotion} />
           </Suspense>
           <Placeholders />
+          <Crane reducedMotion={reducedMotion} />
+          <Terminal />
           {debug ? (
             <Suspense fallback={null}>
               <DebugOrbit />
+              <DebugProbe />
             </Suspense>
           ) : (
             <CameraRig reducedMotion={reducedMotion} />

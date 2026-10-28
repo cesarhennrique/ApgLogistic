@@ -13,19 +13,25 @@ test("/?p=0.5 renders the journey canvas without console errors", async ({ page 
   expect(errors).toEqual([]);
 });
 
-// Art-direction review: one frame per light key region, saved for a human to look at (not diffed).
-for (const p of [0, 0.3, 0.5, 0.7, 1]) {
-  test(`/?p=${p} journey frame`, async ({ page }, testInfo) => {
-    const errors: string[] = [];
-    page.on("console", (msg) => msg.type() === "error" && errors.push(msg.text()));
-    page.on("pageerror", (err) => errors.push(err.message));
+// Art-direction review: one frame per chapter beat, saved for a human to look at (not diffed).
+// One after another: each frame renders the full port or terminal in software GL, and seven at once starve
+// the other workers' timing-sensitive tests.
+test.describe("journey frames", () => {
+  test.describe.configure({ mode: "default" });
 
-    await page.goto(`/?p=${p}`);
-    await expect(page.locator("#journey canvas")).toHaveCount(1);
-    await page.waitForLoadState("networkidle");
-    // Canvas fade-in (600 ms) plus the HDRI and the water texture settling.
-    await page.waitForTimeout(1500);
-    await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-p${p}.png` });
-    expect(errors).toEqual([]);
-  });
-}
+  for (const p of [0, 0.15, 0.3, 0.5, 0.7, 0.8, 1]) {
+    test(`/?p=${p} journey frame`, async ({ page }, testInfo) => {
+      const errors: string[] = [];
+      page.on("console", (msg) => msg.type() === "error" && errors.push(msg.text()));
+      page.on("pageerror", (err) => errors.push(err.message));
+
+      await page.goto(`/?p=${p}`);
+      await expect(page.locator("#journey canvas")).toHaveCount(1);
+      await page.waitForLoadState("networkidle");
+      // Canvas fade-in (600 ms) plus the water texture settling.
+      await page.waitForTimeout(1500);
+      await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-p${p}.png` });
+      expect(errors).toEqual([]);
+    });
+  }
+});

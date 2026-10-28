@@ -18,6 +18,8 @@ type LightKey = {
   exposure: number;
   envIntensity: number;
   stars: number;
+  // 0–1: yard lights (emissive lamps, light pools on the concrete). On from dusk.
+  lamps: number;
 };
 
 // Fog takes the horizon's color, so the sea fades into the sky without a seam.
@@ -44,6 +46,7 @@ export const LIGHT_KEYS: LightKey[] = [
     exposure: 1,
     envIntensity: 0.6,
     stars: 0,
+    lamps: 0,
   },
   {
     t: 0.4,
@@ -58,10 +61,11 @@ export const LIGHT_KEYS: LightKey[] = [
     hemiSky: c("#6f6fa8"),
     hemiGround: c("#2a1a16"),
     hemiIntensity: 0.5,
-    fogDensity: 0.013,
+    fogDensity: 0.01,
     exposure: 0.95,
     envIntensity: 0.45,
     stars: 0,
+    lamps: 0,
   },
   {
     t: 0.6,
@@ -76,10 +80,11 @@ export const LIGHT_KEYS: LightKey[] = [
     hemiSky: c("#4a5a9a"),
     hemiGround: c("#1a1424"),
     hemiIntensity: 0.45,
-    fogDensity: 0.015,
+    fogDensity: 0.008,
     exposure: 0.85,
     envIntensity: 0.2,
     stars: 0,
+    lamps: 0.35,
   },
   {
     t: 1,
@@ -95,10 +100,11 @@ export const LIGHT_KEYS: LightKey[] = [
     hemiSky: c("#2a3a78"),
     hemiGround: c("#0a0a14"),
     hemiIntensity: 0.4,
-    fogDensity: 0.018,
+    fogDensity: 0.007,
     exposure: 0.8,
     envIntensity: 0.08,
     stars: 1,
+    lamps: 1,
   },
 ];
 
@@ -113,6 +119,7 @@ const NUMBERS = [
   "exposure",
   "envIntensity",
   "stars",
+  "lamps",
 ] as const;
 
 function createSample(): LightSample {

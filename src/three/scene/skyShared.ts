@@ -26,16 +26,19 @@ vec3 skyGradient(vec3 dir) {
   // Warm haze around the sun, hugging the horizon.
   float s = max(dot(dir, uSunDir), 0.0);
   col += uSunColor * uSunIntensity * 0.12 * pow(s, 14.0) * (1.0 - smoothstep(0.0, 0.18, h));
+  // The sun's wide, faint two-lobe halo.
+  col += uSunColor * uSunIntensity * (pow(s, 220.0) * 0.22 + pow(s, 24.0) * 0.05);
   return col;
 }
 
-// Exp2 fog toward the sky's own color on the horizon in this direction, applied before tone mapping
-// (like the dome), so fogged geometry meets the sky with no seam.
+// Exp2 fog toward the sky's own color right behind the fragment, applied before tone mapping (like the
+// dome): a distant crane mast dissolves into the sky behind it, the sea into the horizon (skyGradient
+// clamps below it), with no seam either way.
 vec3 skyFog(vec3 col, vec3 worldPos) {
   vec3 toFrag = worldPos - cameraPosition;
   float d = length(toFrag);
   float f = 1.0 - exp(-uFogDensity * uFogDensity * d * d);
-  return mix(col, skyGradient(normalize(vec3(toFrag.x, 0.0, toFrag.z))), f);
+  return mix(col, skyGradient(toFrag / d), f);
 }
 
 // Breaks up 8-bit banding in the long, smooth gradients.
@@ -45,10 +48,15 @@ float dither(vec2 frag) {
 `;
 
 // three's built-in fog mixes after tone mapping and sRGB encoding, so it can never match the dome.
-// This swaps it for skyFog on a lit material (standard, physical…).
+// This swaps it for skyFog on a lit or basic material, after any patch the material already has.
 export function withSkyFog<T extends Material & { fog: boolean }>(material: T): T {
   material.fog = false;
-  material.onBeforeCompile = (shader) => {
+  const previous = material.onBeforeCompile;
+  // three caches programs by this key (default: onBeforeCompile's source), so keep the inner patch in it.
+  const key = `skyfog|${material.customProgramCacheKey()}`;
+  material.customProgramCacheKey = () => key;
+  material.onBeforeCompile = (shader, renderer) => {
+    previous.call(material, shader, renderer);
     Object.assign(shader.uniforms, skyUniforms);
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", `#include <common>
@@ -73,4 +81,13 @@ export function withSkyFog<T extends Material & { fog: boolean }>(material: T): 
       );
   };
   return material;
+}
+
+const toCenter = new Vector3();
+
+// True when even the nearest point of a sphere keeps under 2% through the fog: it can't be seen, so skip
+// drawing it (and its shadow). Pass the sphere around everything the group draws.
+export function lostInFog(camera: Vector3, center: Vector3, radius: number): boolean {
+  const d = Math.max(0, toCenter.subVectors(center, camera).length() - radius) * skyUniforms.uFogDensity.value;
+  return Math.exp(-d * d) < 0.02;
 }

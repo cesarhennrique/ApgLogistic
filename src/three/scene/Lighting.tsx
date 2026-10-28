@@ -2,9 +2,11 @@
 
 import { Environment } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type AmbientLight, type DirectionalLight, FogExp2, type HemisphereLight, Vector3 } from "three";
 import { sampleCamera } from "../camera-path";
+import { debugStats } from "../debugStats";
+import { shouldRebake } from "../envBake";
 import { sampleLight, sunDirection } from "../lightKeys";
 import { journeyProgress } from "../progress";
 import { SkyDome } from "./Sky";
@@ -12,11 +14,12 @@ import { skyUniforms } from "./skyShared";
 
 // Cinema cheat: the light never grazes below 8°, so the ground still reads while the sky's sun sits on the horizon.
 const MIN_LIGHT_ELEVATION = 8;
-const SHADOW_DISTANCE = 80;
-const SHADOW_HALF = 32;
-
-// Re-render the reflection cube only after this much progress: the sky barely changes in between.
-const ENV_STEP = 0.02;
+// The crane is 46 m tall and the CONE yard ~100 m across: a 100 m box, lit from 120 m out. Only ±60 m deep
+// around the target: the low sun points down the journey, and a deeper box drags the next chapter's
+// stacks into the shadow pass.
+const SHADOW_DISTANCE = 120;
+const SHADOW_HALF = 50;
+const SHADOW_DEPTH = 60;
 
 // One canvas, so per-frame scratch lives at module scope (no allocation, no hook values mutated).
 const fog = new FogExp2(0x000000, 0);
@@ -73,8 +76,8 @@ export function Lighting() {
         shadow-camera-right={SHADOW_HALF}
         shadow-camera-top={SHADOW_HALF}
         shadow-camera-bottom={-SHADOW_HALF}
-        shadow-camera-near={1}
-        shadow-camera-far={SHADOW_DISTANCE * 2}
+        shadow-camera-near={SHADOW_DISTANCE - SHADOW_DEPTH}
+        shadow-camera-far={SHADOW_DISTANCE + SHADOW_DEPTH}
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
       />
@@ -86,14 +89,15 @@ export function Lighting() {
 }
 
 // Reflections come from the sky dome itself, so they follow each chapter's light (and cost zero bytes).
-// With frames={1}, drei re-renders the cube whenever this component re-renders: at most once per ENV_STEP.
+// With frames={1}, drei re-bakes the cube whenever this component re-renders: only when shouldRebake says so
+// (the scroll has rested and the sky has changed), never mid-scroll.
 function SkyEnvironment() {
-  // -1: mount only after Lighting has filled the sky uniforms (so the first cube isn't black), and only once
-  // the page is idle: the first bake compiles shaders and must not land on hydration or the first scroll.
-  const [step, setStep] = useState(-1);
+  // The progress of the last bake. null: not yet; the first bake waits for Lighting's first frame (so the
+  // cube isn't black) and for an idle page (it compiles shaders and must not land on hydration).
+  const [bakedAt, setBakedAt] = useState<number | null>(null);
   const [idle, setIdle] = useState(false);
-  // Guards against repeat calls before the re-render lands: each one could re-render (and re-bake) again.
-  const requested = useRef(-1);
+  // Frame-loop bookkeeping: last seen progress, when it last moved, the bake already asked for.
+  const track = useRef({ progress: NaN, movedAt: 0, requested: null as number | null });
   useEffect(() => {
     const done = () => setIdle(true);
     // Safari has no requestIdleCallback.
@@ -104,17 +108,49 @@ function SkyEnvironment() {
     const id = requestIdleCallback(done, { timeout: 3000 });
     return () => cancelIdleCallback(id);
   }, []);
-  useFrame(() => {
+  useFrame(({ clock }) => {
     if (!idle) return;
-    const next = Math.round(journeyProgress.value / ENV_STEP);
-    if (next === requested.current) return;
-    requested.current = next;
-    setStep(next);
+    const t = track.current;
+    const progress = journeyProgress.value;
+    if (progress !== t.progress) {
+      t.progress = progress;
+      t.movedAt = clock.elapsedTime;
+    }
+    if (!shouldRebake({ progress, bakedAt: t.requested, stillFor: clock.elapsedTime - t.movedAt })) return;
+    t.requested = progress;
+    setBakedAt(progress);
   });
-  if (step === -1) return null;
+  if (bakedAt === null) return null;
   return (
-    <Environment frames={1} resolution={256}>
-      <SkyDome />
-    </Environment>
+    <>
+      <BakeTimer phase="start" />
+      <Environment frames={1} resolution={256}>
+        <SkyDome />
+      </Environment>
+      <BakeTimer phase="end" key={bakedAt} />
+    </>
   );
+}
+
+// Times a bake for the debug panel: the cube render (in the commit, between these two siblings' layout
+// effects) plus the next frame's render, where three rebuilds the PMREM and recompiles env-mapped materials.
+const bake = { start: 0, cube: 0, pending: false };
+function BakeTimer({ phase }: { phase: "start" | "end" }) {
+  useLayoutEffect(() => {
+    if (phase === "start") bake.start = performance.now();
+    else {
+      bake.cube = performance.now() - bake.start;
+      bake.pending = true;
+    }
+  });
+  useFrame(({ scene }) => {
+    if (phase === "start" || !bake.pending) return;
+    bake.pending = false;
+    const frameStart = performance.now();
+    scene.onAfterRender = () => {
+      debugStats.bakeMs = bake.cube + performance.now() - frameStart;
+      scene.onAfterRender = () => {};
+    };
+  });
+  return null;
 }

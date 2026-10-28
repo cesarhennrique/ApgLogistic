@@ -39,11 +39,10 @@ const skyMaterial = new ShaderMaterial({
       vec3 col = skyGradient(dir);
       float s = max(dot(dir, uSunDir), 0.0);
       // Disc ~0.6° with a soft rim (0.45°–0.8°), kept below white so ACES leaves it a pale sunset tone;
-      // a wide, faint two-lobe halo around it. Clipped by the horizon.
+      // clipped by the horizon. Its halo lives in skyGradient, so fogged geometry near the sun matches it.
       float disc = smoothstep(0.999903, 0.999969, s);
-      float halo = pow(s, 220.0) * 0.22 + pow(s, 24.0) * 0.05;
       float above = smoothstep(-0.003, 0.003, dir.y);
-      col += uSunColor * uSunIntensity * (disc * 0.55 + halo) * above;
+      col += uSunColor * uSunIntensity * disc * 0.55 * above;
       gl_FragColor = vec4(col, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
