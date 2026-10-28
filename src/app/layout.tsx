@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { PageCurtain } from "@/components/layout/PageCurtain";
@@ -13,6 +14,16 @@ const archivo = Archivo({
   variable: "--font-display",
   subsets: ["latin"],
   axes: ["wdth"],
+});
+
+// Static cut, not the wdth axis: WebKit on iOS ignores font-stretch and overlapped the letters.
+// ExtraCondensed (wdth 62) is the width the design was approved at.
+const archivoCondensed = localFont({
+  variable: "--font-condensed",
+  src: [
+    { path: "./fonts/ArchivoExtraCondensed-Bold.woff2", weight: "700" },
+    { path: "./fonts/ArchivoExtraCondensed-ExtraBold.woff2", weight: "800" },
+  ],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -32,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // suppressHydrationWarning: the inline script below adds the `js` class before React hydrates
     <html
       lang="pt-BR"
-      className={`${archivo.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${archivoCondensed.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

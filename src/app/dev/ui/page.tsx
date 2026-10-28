@@ -70,13 +70,13 @@ export default function DevUiPage() {
       <Section index={3} label="Tipografia">
         <div className="flex flex-wrap items-end gap-x-10 gap-y-6">
           <div>
-            <p className="font-mono-tabular mb-2 text-xs text-steel-400">Archivo · wdth 62%</p>
+            <p className="font-mono-tabular mb-2 text-xs text-steel-400">Archivo ExtraCondensed</p>
             <p data-testid="title-condensed" className="font-condensed w-fit whitespace-nowrap text-5xl font-bold uppercase md:text-7xl">
               Cabotagem
             </p>
           </div>
           <div>
-            <p className="font-mono-tabular mb-2 text-xs text-steel-400">Archivo · wdth 100%</p>
+            <p className="font-mono-tabular mb-2 text-xs text-steel-400">Archivo</p>
             <p data-testid="title-normal" className="w-fit whitespace-nowrap text-5xl font-bold uppercase md:text-7xl">
               Cabotagem
             </p>

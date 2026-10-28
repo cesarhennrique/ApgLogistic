@@ -2,11 +2,12 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
-import type { Mesh } from "three";
+import { type Mesh, MeshStandardMaterial } from "three";
 import { CHAPTERS, type ChapterId } from "./chapters";
 import { SCENE_POSITIONS } from "./camera-path";
 import { journeyProgress } from "./progress";
 import { OCEAN_FADE } from "./scene/Ocean";
+import { withSkyFog } from "./scene/skyShared";
 
 // shortcut: colored boxes mark where each scene goes; replaced by the real models in later prompts.
 const COLORS: Record<ChapterId, string> = {
@@ -17,6 +18,11 @@ const COLORS: Record<ChapterId, string> = {
   terminal: "#f3efe7",
   distribution: "#e31e24",
 };
+
+const groundMaterial = withSkyFog(new MeshStandardMaterial({ color: "#0a1338" }));
+const boxMaterials = Object.fromEntries(
+  CHAPTERS.map(({ id }) => [id, withSkyFog(new MeshStandardMaterial({ color: COLORS[id] }))]),
+) as Record<ChapterId, MeshStandardMaterial>;
 
 const BOXES: [number, number, number, number, number, number][] = [
   // x, y, z offset, then width, height, depth
@@ -32,16 +38,15 @@ export function Placeholders() {
 
   return (
     <>
-      <mesh ref={ground} rotation-x={-Math.PI / 2} position={[0, -0.02, -40]} receiveShadow>
-        <planeGeometry args={[160, 160]} />
-        <meshStandardMaterial color="#0a1338" />
+      <mesh ref={ground} rotation-x={-Math.PI / 2} position={[0, -0.02, -40]} material={groundMaterial} receiveShadow>
+        {/* Past the camera's far plane (400) in every direction, so the fog, not an edge, meets the sky. */}
+        <planeGeometry args={[1200, 1200]} />
       </mesh>
       {CHAPTERS.map(({ id }) => (
         <group key={id} position={SCENE_POSITIONS[id]}>
           {BOXES.map(([x, y, z, w, h, d], i) => (
-            <mesh key={i} position={[x, y, z]} castShadow receiveShadow>
+            <mesh key={i} position={[x, y, z]} material={boxMaterials[id]} castShadow receiveShadow>
               <boxGeometry args={[w, h, d]} />
-              <meshStandardMaterial color={COLORS[id]} />
             </mesh>
           ))}
         </group>

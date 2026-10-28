@@ -48,7 +48,7 @@ export default function JourneyCanvas() {
       >
         <Canvas
           dpr={[1, 2]}
-          shadows
+          shadows="percentage"
           frameloop={onScreen && !leaving ? "always" : "never"}
           camera={{ fov: 40, near: 0.1, far: 400, position: sampleCamera(journeyProgress.value).position }}
           onCreated={({ gl }) => {

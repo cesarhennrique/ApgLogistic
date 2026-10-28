@@ -19,7 +19,7 @@ export function Hero() {
         <RevealText
           as="h1"
           immediate
-          className="font-condensed mt-5 max-w-[9em] text-[clamp(3rem,9vw,9rem)] leading-[0.88] font-bold tracking-[-0.02em] uppercase"
+          className="font-condensed mt-5 max-w-[20ch] text-[clamp(2.5rem,6.2vw,6.5rem)] leading-[0.9] font-bold tracking-[-0.01em] uppercase"
         >
           {site.tagline}
         </RevealText>

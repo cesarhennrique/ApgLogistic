@@ -10,9 +10,21 @@ import { SKY_GLSL, skyUniforms } from "./skyShared";
 // The sea fades out while the camera leaves the port.
 export const OCEAN_FADE = [0.38, 0.42] as const;
 
-const SIZE = 400;
-// ~2.5 units per quad: every wave below is at least 5 quads long.
-const SEGMENTS = 160;
+// The grid rides with the camera: 112² quads (~25k triangles), ~0.6 units apart under the camera and
+// ~3 at 30 units (each foreground wave spans ~5 quads), widening to ~17 at the edge, deep in the fog.
+const HALF = 350;
+const SEGMENTS = 112;
+// Moves in whole steps so the near vertices don't slide through the waves (no shimmer).
+const SNAP = 1;
+
+function oceanGeometry() {
+  const g = new PlaneGeometry(2, 2, SEGMENTS, SEGMENTS).rotateX(-Math.PI / 2);
+  const pos = g.attributes.position;
+  const warp = (u: number) => HALF * (0.1 * u + 0.9 * u * u * u);
+  for (let i = 0; i < pos.count; i++) pos.setX(i, warp(pos.getX(i))).setZ(i, warp(pos.getZ(i)));
+  g.computeBoundingSphere();
+  return g;
+}
 
 const vertexShader = /* glsl */ `
   uniform float uTime;
@@ -46,10 +58,12 @@ const vertexShader = /* glsl */ `
     vec3 binormal = vec3(0.0, 0.0, 1.0);
     vec3 offset = vec3(0.0);
     for (int i = 0; i < 3; i++) offset += gerstner(WAVES[i], p, tangent, binormal);
-    // Flatten as it fades, so the ground that replaces it never pokes through a trough.
-    p += offset * uOpacity;
+    // Flatten as it fades, so the ground that replaces it never pokes through a trough; and calm the far
+    // field, where the quads are too wide to carry the waves without aliasing.
+    float amount = uOpacity * (1.0 - smoothstep(60.0, 160.0, distance(p.xz, cameraPosition.xz)));
+    p += offset * amount;
     vWorld = p;
-    vNormal = normalize(mix(vec3(0.0, 1.0, 0.0), normalize(cross(binormal, tangent)), uOpacity));
+    vNormal = normalize(mix(vec3(0.0, 1.0, 0.0), normalize(cross(binormal, tangent)), amount));
     gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
   }
 `;
@@ -90,9 +104,7 @@ const fragmentShader = /* glsl */ `
 
     vec3 col = mix(deep, reflection, fresnel) + glitter;
 
-    // Exp2 fog toward the sky's own horizon in this direction: no seam where sea meets sky.
-    float fog = 1.0 - exp(-uFogDensity * uFogDensity * dist * dist);
-    col = mix(col, skyGradient(normalize(vec3(-v.x, 0.0, -v.z))), fog);
+    col = skyFog(col, vWorld);
 
     gl_FragColor = vec4(col, uOpacity);
     #include <tonemapping_fragment>
@@ -101,7 +113,7 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-const geometry = new PlaneGeometry(SIZE, SIZE, SEGMENTS, SEGMENTS).rotateX(-Math.PI / 2);
+const geometry = oceanGeometry();
 const material = new ShaderMaterial({
   uniforms: { ...skyUniforms, uNormalMap: { value: null }, uTime: { value: 0 }, uOpacity: { value: 1 } },
   vertexShader,
@@ -118,7 +130,12 @@ export function Ocean({ reducedMotion }: { reducedMotion: boolean }) {
     material.uniforms.uNormalMap.value = normalMap;
   }, [normalMap]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ camera, clock }) => {
+    mesh.current!.position.set(
+      Math.round(camera.position.x / SNAP) * SNAP,
+      0,
+      Math.round(camera.position.z / SNAP) * SNAP,
+    );
     const opacity = 1 - MathUtils.smoothstep(journeyProgress.value, ...OCEAN_FADE);
     material.uniforms.uOpacity.value = opacity;
     // Reduced motion: a still sea.
@@ -126,6 +143,5 @@ export function Ocean({ reducedMotion }: { reducedMotion: boolean }) {
     mesh.current!.visible = opacity > 0;
   });
 
-  // Centered ahead of the port so the far edge sits deep in the fog.
-  return <mesh ref={mesh} geometry={geometry} material={material} position={[0, 0, -60]} />;
+  return <mesh ref={mesh} geometry={geometry} material={material} frustumCulled={false} />;
 }

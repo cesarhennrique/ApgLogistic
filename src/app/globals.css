@@ -26,8 +26,9 @@
   --font-sans: var(--font-display);
 }
 
+/* static ExtraCondensed cut (next/font/local in layout.tsx), not font-stretch on the variable Archivo */
 @utility font-condensed {
-  font-stretch: 62%;
+  font-family: var(--font-condensed), var(--font-display);
 }
 
 @utility font-mono-tabular {

@@ -2,11 +2,12 @@
 
 import { Environment } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Suspense, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type AmbientLight, type DirectionalLight, FogExp2, type HemisphereLight, Vector3 } from "three";
 import { sampleCamera } from "../camera-path";
-import { LIGHT_KEYS, sampleLight, sunDirection } from "../lightKeys";
+import { sampleLight, sunDirection } from "../lightKeys";
 import { journeyProgress } from "../progress";
+import { SkyDome } from "./Sky";
 import { skyUniforms } from "./skyShared";
 
 // Cinema cheat: the light never grazes below 8°, so the ground still reads while the sky's sun sits on the horizon.
@@ -14,10 +15,8 @@ const MIN_LIGHT_ELEVATION = 8;
 const SHADOW_DISTANCE = 80;
 const SHADOW_HALF = 32;
 
-// The HDRI's sun sits at u ≈ 0.6 of the equirect (atan2(z, x) ≈ 0.626 rad); turn it onto the sunset sun.
-const HDRI_SUN_ANGLE = 0.626;
-const heroSun = sunDirection(LIGHT_KEYS[0].sunAzimuth, 0);
-const HDRI_ROTATION = HDRI_SUN_ANGLE - Math.atan2(heroSun.z, heroSun.x);
+// Re-render the reflection cube only after this much progress: the sky barely changes in between.
+const ENV_STEP = 0.02;
 
 // One canvas, so per-frame scratch lives at module scope (no allocation, no hook values mutated).
 const fog = new FogExp2(0x000000, 0);
@@ -81,10 +80,41 @@ export function Lighting() {
       />
       <ambientLight ref={ambient} />
       <hemisphereLight ref={hemi} />
-      {/* Reflections only: the visible sky is the Sky dome. */}
-      <Suspense fallback={null}>
-        <Environment files="/3d/hdri/sunset-1k.hdr" environmentRotation={[0, HDRI_ROTATION, 0]} />
-      </Suspense>
+      <SkyEnvironment />
     </>
+  );
+}
+
+// Reflections come from the sky dome itself, so they follow each chapter's light (and cost zero bytes).
+// With frames={1}, drei re-renders the cube whenever this component re-renders: at most once per ENV_STEP.
+function SkyEnvironment() {
+  // -1: mount only after Lighting has filled the sky uniforms (so the first cube isn't black), and only once
+  // the page is idle: the first bake compiles shaders and must not land on hydration or the first scroll.
+  const [step, setStep] = useState(-1);
+  const [idle, setIdle] = useState(false);
+  // Guards against repeat calls before the re-render lands: each one could re-render (and re-bake) again.
+  const requested = useRef(-1);
+  useEffect(() => {
+    const done = () => setIdle(true);
+    // Safari has no requestIdleCallback.
+    if (!("requestIdleCallback" in window)) {
+      const id = setTimeout(done, 1500);
+      return () => clearTimeout(id);
+    }
+    const id = requestIdleCallback(done, { timeout: 3000 });
+    return () => cancelIdleCallback(id);
+  }, []);
+  useFrame(() => {
+    if (!idle) return;
+    const next = Math.round(journeyProgress.value / ENV_STEP);
+    if (next === requested.current) return;
+    requested.current = next;
+    setStep(next);
+  });
+  if (step === -1) return null;
+  return (
+    <Environment frames={1} resolution={256}>
+      <SkyDome />
+    </Environment>
   );
 }

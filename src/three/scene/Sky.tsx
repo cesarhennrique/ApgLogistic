@@ -38,11 +38,12 @@ const skyMaterial = new ShaderMaterial({
       vec3 dir = normalize(vDir);
       vec3 col = skyGradient(dir);
       float s = max(dot(dir, uSunDir), 0.0);
-      // Disc a bit larger than the real sun (~1.2°), soft edge, two-lobe halo; clipped by the horizon.
-      float disc = smoothstep(0.99975, 0.99985, s);
-      float halo = pow(s, 800.0) * 0.6 + pow(s, 90.0) * 0.12;
+      // Disc ~0.6° with a soft rim (0.45°–0.8°), kept below white so ACES leaves it a pale sunset tone;
+      // a wide, faint two-lobe halo around it. Clipped by the horizon.
+      float disc = smoothstep(0.999903, 0.999969, s);
+      float halo = pow(s, 220.0) * 0.22 + pow(s, 24.0) * 0.05;
       float above = smoothstep(-0.003, 0.003, dir.y);
-      col += uSunColor * uSunIntensity * (disc * 2.2 + halo) * above;
+      col += uSunColor * uSunIntensity * (disc * 0.55 + halo) * above;
       gl_FragColor = vec4(col, 1.0);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -85,6 +86,15 @@ const starMaterial = new PointsMaterial({
 });
 const light = sampleLight(0);
 
+// The dome alone: drawn around the camera by Sky, and into the cube map by SkyEnvironment.
+export function SkyDome() {
+  return (
+    <mesh material={skyMaterial} renderOrder={-1} frustumCulled={false}>
+      <sphereGeometry args={[RADIUS, 48, 24]} />
+    </mesh>
+  );
+}
+
 export function Sky() {
   const group = useRef<Group>(null);
   const stars = useRef<Points>(null);
@@ -99,9 +109,7 @@ export function Sky() {
 
   return (
     <group ref={group}>
-      <mesh material={skyMaterial} renderOrder={-1} frustumCulled={false}>
-        <sphereGeometry args={[RADIUS, 48, 24]} />
-      </mesh>
+      <SkyDome />
       <points
         ref={stars}
         geometry={starGeometry}

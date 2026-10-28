@@ -49,7 +49,10 @@ export function Header() {
             />
           </TransitionLink>
           <div className="flex items-center gap-2 md:gap-6">
-            <CtaButton href="/contato">{site.cta.quote}</CtaButton>
+            {/* Below md the hero carries the CTA; the header keeps just logo and menu. */}
+            <div className="max-md:hidden">
+              <CtaButton href="/contato">{site.cta.quote}</CtaButton>
+            </div>
             <button
               ref={buttonRef}
               type="button"
