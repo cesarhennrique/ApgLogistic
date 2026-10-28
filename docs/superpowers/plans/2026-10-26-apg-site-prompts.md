@@ -851,7 +851,13 @@ câmera própria. Objetos impecáveis, não cenário.
    câmera (position, target, fov) para início, meio e fim do capítulo.
    src/three/stages/index.ts monta a tabela STAGES por ChapterId.
    Neste prompt, os palcos 1 a 5 só posicionam os modelos já existentes;
-   o acabamento vem nos Prompts 13b e 13c.
+   o acabamento vem nos Prompts 13b e 13c. Cada palco fica na sua
+   própria origem (afastados 1 km entre si), para que os dois palcos
+   visíveis numa transição nunca se sobreponham. Remova SCENE_POSITIONS
+   e o layout de mundo contínuo (porto, pista, BR-101 encadeados): o
+   trajeto contínuo da carreta do Prompt 12 vira movimento dentro de cada
+   palco. Reaproveite a orientação do mapa (norte para −Z), os dois tons
+   de PE e BA e o TTF do Archivo para textos 3D (rótulos do mapa).
 3. Render seletivo: só o palco atual e o vizinho (durante a transição)
    ficam com visible=true. Teste unitário: activeStages(t) retorna 1 ou
    2 ids, nunca mais.
@@ -1023,7 +1029,8 @@ Leia o CLAUDE.md e o spec, seção 3. Reaproveite Highway, Distribution,
 RouteLine e o mapa do Prompt 12 dentro dos novos palcos.
 
 1. HighwayStage (fundo navy-900): a carreta em perfil, em close, rodando
-   no lugar. Rodas giram; faixas da pista, postes e guard rail passam em
+   no lugar. Rodas giram (dê aos aros furos, porcas e cubo para a
+   rotação ser visível; hoje o aro é liso); faixas da pista, postes e guard rail passam em
    parallax (3 camadas em velocidades diferentes); faróis e luz de
    posição acesos com bloom. A linha vermelha corre sob as rodas, de
    ponta a ponta do quadro. Sem céu: acima da pista, só o navy.
