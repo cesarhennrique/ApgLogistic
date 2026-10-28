@@ -12,11 +12,12 @@ import {
   MeshStandardMaterial,
 } from "three";
 import { CRANE_POSITION, QUAY_EDGE_X, QUAY_TOP, SHIP_PICK_POINT, TRUCK_LOAD_POINT } from "../anchors";
-import { craneState } from "../craneMotion";
+import { craneState, LIFT_AT } from "../craneMotion";
 import { CONTAINER, getContainerGeometry, getStripeGeometry } from "../models/containerGeometry";
 import { buildCraneGeometry, buildSpreaderGeometry, buildTrolleyGeometry, CRANE } from "../models/craneGeometry";
 import { APG_NAVY } from "../models/stackLayout";
 import { journeyProgress } from "../progress";
+import { placeOnShip } from "../shipPose";
 import { createConcreteMaterial } from "./concrete";
 import { ContainerStacks, stripeMaterial } from "./ContainerStacks";
 import { lostInFog, withSkyFog } from "./skyShared";
@@ -70,7 +71,7 @@ ropes.setAttribute("position", new BufferAttribute(new Float32Array(ROPES.length
 const CLACK = 0.12;
 
 const state = craneState(0);
-// Everything the port draws (quay, crane up to its apex, ship bay, stacks) fits in this sphere.
+// Everything the port draws (quay, crane up to its apex, the box, the quay's stacks) fits in this sphere.
 const BOUNDS = {
   center: new Vector3((QUAY.x0 + QUAY.x1) / 2 - 10, 15, (QUAY.z0 + QUAY.z1) / 2),
   radius: 95,
@@ -92,7 +93,12 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
 
     trolleyRef.current!.position.x = trolleyX - CRANE_POSITION.x;
     spreaderRef.current!.position.set(trolleyX, spreaderY, CRANE_POSITION.z);
-    boxRef.current!.position.copy(container);
+    // Still cargo: ride the ship (it glides in and rolls in the hero); then hang from the spreader.
+    if (journeyProgress.value < LIFT_AT) placeOnShip(container, boxRef.current!);
+    else {
+      boxRef.current!.position.copy(container);
+      boxRef.current!.rotation.set(0, 0, 0);
+    }
 
     if (wasLocked.current === false && locked && !reducedMotion) clackAt.current = clock.elapsedTime;
     wasLocked.current = locked;
@@ -133,7 +139,7 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
         <mesh geometry={getStripeGeometry("40")} material={stripeMaterial} />
       </group>
 
-      <ContainerStacks areas={["port", "ship"]} />
+      <ContainerStacks areas={["port"]} />
     </group>
   );
 }

@@ -16,6 +16,7 @@ export type StackedContainer = {
   apg: boolean;
   // In the block's camera-facing front slot (row toward the chapter's camera, first bay).
   front: boolean;
+  shadow: boolean;
 };
 
 // Eight matte carrier tones, distinct enough to read at dusk (no logos): rust, ocean blue, petrol, ochre,
@@ -37,7 +38,10 @@ type Block = {
   apgShare: number;
   // The row the chapter's camera sees first: its first bay is topped with an APG box.
   frontRow: "first" | "last";
-  // Slots left empty (by row-bay key): the crane's working slot on the ship.
+  minTier?: number;
+  // Casts shadows (default yes).
+  shadow?: boolean;
+  // Slots left empty (by row, bay, tier): the crane's working slot on the ship.
   skip?: (row: number, bay: number, tier: number) => boolean;
 };
 
@@ -47,19 +51,24 @@ const BAY_PITCH = CONTAINER["40"].length + 0.6;
 const [tx, , tz] = SCENE_POSITIONS.terminal;
 
 const BLOCKS: Block[] = [
-  // Ship's deck bay under the crane (the hull comes in Prompt 11). Its middle top slot is the box the crane moves.
-  {
-    area: "ship",
-    x: SHIP_PICK_POINT.x - ROW_PITCH,
-    z: SHIP_PICK_POINT.z + BAY_PITCH,
+  // The ship's deck: 7 bays of 7 rows, 3–4 high, one block per bay so each culls on its own; only the two
+  // bays by the crane cast shadows (the rest would double their triangles for shadows nobody sees). The
+  // aft-most bay's quay-side column stops below the box the crane picks (its fourth tier).
+  ...Array.from({ length: 7 }, (_, k) => ({
+    area: "ship" as const,
+    x: SHIP_PICK_POINT.x - 6 * ROW_PITCH,
+    z: SHIP_PICK_POINT.z - k * BAY_PITCH,
     base: SHIP_DECK_Y,
-    rows: 3,
-    bays: 3,
-    maxTier: 2,
-    apgShare: 0.25,
-    frontRow: "first",
-    skip: (row, bay, tier) => row === 1 && bay === 1 && tier === 1,
-  },
+    rows: 7,
+    bays: 1,
+    minTier: 3,
+    maxTier: 4,
+    apgShare: 0.12,
+    // The crane shot looks from the sea side.
+    frontRow: "first" as const,
+    shadow: k < 2,
+    skip: k === 0 ? (row: number, _bay: number, tier: number) => row === 6 && tier >= 3 : undefined,
+  })),
   // Port stacks on the quay, inland of the crane's land legs and past it, so the crane shots look at it clear.
   { area: "port", x: CRANE_POSITION.x + 20, z: CRANE_POSITION.z - 18, base: QUAY_TOP, rows: 5, bays: 3, maxTier: 4, apgShare: 0.12, frontRow: "first" },
   // CONE terminal: two rows of three blocks, lanes between them; the warehouse sits behind (Terminal.tsx).
@@ -103,8 +112,7 @@ export function buildStacks(): StackedContainer[] {
         const z = b.z - bay * BAY_PITCH;
         // A slot holds one 40' or a pair of 20' all the way up, as in a real yard; the ship bay is all 40'.
         const twenties = b.area !== "ship" && random() < 0.3;
-        // Taller toward the middle of a block, never empty on the ship.
-        const tiers = Math.max(b.area === "ship" ? b.maxTier : 1, Math.ceil(random() * b.maxTier));
+        const tiers = Math.max(b.minTier ?? 1, Math.ceil(random() * b.maxTier));
         const front = row === (b.frontRow === "first" ? 0 : b.rows - 1) && bay === 0;
         const spots: [ContainerType, number][] = twenties ? [["20", z - half20], ["20", z + half20]] : [["40", z]];
         spots.forEach(([type, sz]) => {
@@ -118,7 +126,7 @@ export function buildStacks(): StackedContainer[] {
             while (avoid.has(CARRIER_COLORS[i])) i = (i + 1) % CARRIER_COLORS.length;
             const color: string = apg ? APG_NAVY : CARRIER_COLORS[i];
             const y = b.base + tier * H;
-            out.push({ type, area: b.area, block, position: [x, y, sz], rotated: false, tier, color, apg, front });
+            out.push({ type, area: b.area, block, position: [x, y, sz], rotated: false, tier, color, apg, front, shadow: b.shadow ?? true });
             below = color;
           }
         });

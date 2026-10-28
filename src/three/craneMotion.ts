@@ -4,9 +4,9 @@ import { CONTAINER } from "./models/containerGeometry";
 
 const H = CONTAINER["40"].height;
 
-// Spreader bottom when fully hoisted: the hanging box clears the portal's 12 m sill beams and the ship's
-// deck stacks, and stays low enough to read in the load shot.
-export const HOIST_TOP = QUAY_TOP + 16;
+// Spreader bottom when fully hoisted: the hanging box clears the ship's 4-high deck stacks (and so the
+// portal's 12 m sill beams), well under the trolley.
+export const HOIST_TOP = QUAY_TOP + 22;
 // Global progress where the spreader seats on the box (the "clack"); /?p=0.15 shows it.
 export const LOCK_AT = 0.15;
 
@@ -14,9 +14,11 @@ export const LOCK_AT = 0.15;
 const TROLLEY_OUT = [0, 0.09] as const; // over the ship
 const LOWER_EMPTY = [0.09, LOCK_AT] as const; // down onto the box
 const HOIST = [0.2, 0.26] as const; // up with the box
+// Until then the box is cargo: it rides the ship.
+export const LIFT_AT = HOIST[0];
 const TROLLEY_IN = [0.26, 0.34] as const; // across, over the truck lane
 const LOWER_LOADED = [0.34, 0.4] as const; // down onto the trailer
-const RAISE_EMPTY = [0.4, 0.45] as const; // spreader lets go and climbs back
+const RAISE_EMPTY = [0.4, 0.47] as const; // spreader lets go and climbs back
 
 const seat = { ship: SHIP_PICK_POINT.y + H, truck: TRUCK_LOAD_POINT.y + H };
 

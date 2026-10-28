@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CRANE_POSITION, SHIP_PICK_POINT, TRUCK_LOAD_POINT } from "./anchors";
+import { CRANE_POSITION, SHIP_DECK_Y, SHIP_PICK_POINT, TRUCK_LOAD_POINT } from "./anchors";
 import { HOIST_TOP, LOCK_AT, craneState } from "./craneMotion";
 import { CONTAINER } from "./models/containerGeometry";
 
@@ -39,6 +39,11 @@ describe("craneState", () => {
   it("crosses the portal's side frames above their 12 m sill beams", () => {
     const sillTop = CRANE_POSITION.y + 12 + 0.35;
     for (let p = 0.26; p <= 0.34; p += 0.001) expect(craneState(p).container.y).toBeGreaterThan(sillTop);
+  });
+
+  it("carries the box over the ship's 4-high deck stacks, never through them", () => {
+    const stackTop = SHIP_DECK_Y + 4 * H;
+    for (let p = 0.26; p <= 0.34; p += 0.001) expect(craneState(p).container.y).toBeGreaterThan(stackTop + 0.5);
   });
 
   it("sets the box down exactly on TRUCK_LOAD_POINT at the end of 'load' and leaves it there", () => {

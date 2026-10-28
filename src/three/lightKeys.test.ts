@@ -16,8 +16,14 @@ describe("sampleLight", () => {
     expect(LIGHT_KEYS.map((k) => k.t)).toEqual([0, 0.2, 0.4, 0.6, 1]);
   });
 
-  it("clears the haze for the port: half the hero's fog by the crane beat", () => {
-    expect(sampleLight(0.15).fogDensity).toBeLessThan(sampleLight(0).fogDensity / 2);
+  it("clears the haze for the port: 75%+ visibility at 100 m by the crane beat", () => {
+    const d = sampleLight(0.15).fogDensity * 100;
+    expect(Math.exp(-d * d)).toBeGreaterThanOrEqual(0.75);
+  });
+
+  it("still hides the sea's far edge (350 m) in the hero's fog", () => {
+    const d = sampleLight(0).fogDensity * 350;
+    expect(Math.exp(-d * d)).toBeLessThan(0.01);
   });
 
   it("hits each key exactly on its t", () => {

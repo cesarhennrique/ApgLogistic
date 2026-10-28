@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";
@@ -10,16 +11,32 @@ import { TransitionLink } from "./TransitionLink";
 const MENU_ID = "site-menu";
 
 export function Header() {
-  const [solid, setSolid] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  // Tagged with the route it was measured on: after leaving Home, a stale "over the journey" never applies.
+  const [journey, setJourney] = useState({ path: "", visible: false });
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
-    const onScroll = () => setSolid(window.scrollY > 80);
+    const onScroll = () => setScrolled(window.scrollY > 80);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Over the 3D journey the header stays see-through (a solid bar would crop the frame); per route, since
+  // only Home has #journey.
+  useEffect(() => {
+    const el = document.getElementById("journey");
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setJourney({ path: pathname, visible: entry.isIntersecting }));
+    io.observe(el);
+    return () => io.disconnect();
+  }, [pathname]);
+
+  const overJourney = journey.path === pathname && journey.visible;
+  const solid = scrolled && !overJourney;
 
   const close = useCallback(() => {
     setOpen(false);
@@ -28,11 +45,16 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50">
+      <header className="fixed inset-x-0 top-0 z-50" data-solid={solid || undefined}>
         {/* the solid state fades in on its own layer, so only opacity animates */}
         <div
           aria-hidden="true"
           className={`absolute inset-0 border-b border-sand-50/10 bg-navy-900/90 backdrop-blur-md transition-opacity duration-200 ease-out ${solid ? "opacity-100" : "opacity-0"}`}
+        />
+        {/* Over the journey: just enough navy behind the logo and menu to read them, 40% → 0 over 120 px. */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-linear-to-b from-navy-900/40 to-transparent transition-opacity duration-200 ease-out ${overJourney ? "opacity-100" : "opacity-0"}`}
         />
         <div className="site-container relative flex h-16 items-center justify-between gap-3 md:h-20">
           <TransitionLink

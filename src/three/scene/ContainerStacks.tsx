@@ -33,7 +33,8 @@ function instanced(list: StackedContainer[], type: ContainerType, stripe: boolea
   });
   // Bounds of all instances, so a whole area is culled at once when it's off screen.
   mesh.computeBoundingSphere();
-  mesh.castShadow = !stripe;
+  // A block casts as a whole: the ship's far bays don't (see stackLayout).
+  mesh.castShadow = !stripe && items[0].shadow;
   mesh.receiveShadow = true;
   return mesh;
 }

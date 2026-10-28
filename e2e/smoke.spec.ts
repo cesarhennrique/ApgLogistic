@@ -36,9 +36,11 @@ test("the Ç of CONFIANÇA stays inside its line mask", async ({ page }) => {
   await page.goto("/");
   const h1 = page.locator("h1[data-reveal-immediate]");
   // Polled: the line is still settling while the reveal (and the re-split on font load) runs.
-  // Without the mask padding the glyph box never fits, so this times out.
+  // Without the mask padding the glyph box never fits, so this times out. 15 s: the hero's 3D (the ship and
+  // the port) loads the CPU in software GL while the reveal runs.
   await expect
-    .poll(() =>
+    .poll(
+      () =>
       h1.evaluate((el) => {
         const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
         for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -53,6 +55,7 @@ test("the Ç of CONFIANÇA stays inside its line mask", async ({ page }) => {
         }
         return false;
       }),
+      { timeout: 15_000 },
     )
     .toBe(true);
 });

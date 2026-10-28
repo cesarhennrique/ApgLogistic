@@ -13,8 +13,10 @@ import { journeyProgress } from "./progress";
 import { Crane } from "./scene/Crane";
 import { Lighting } from "./scene/Lighting";
 import { Ocean } from "./scene/Ocean";
+import { Ship } from "./scene/Ship";
 import { Sky } from "./scene/Sky";
 import { Terminal } from "./scene/Terminal";
+import { Truck } from "./scene/Truck";
 
 const DebugOrbit = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugOrbit })));
 const DebugSlider = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugSlider })));
@@ -67,7 +69,10 @@ export default function JourneyCanvas() {
             <Ocean reducedMotion={reducedMotion} />
           </Suspense>
           <Placeholders />
+          {/* Before Crane: its box rides the ship until lifted, so the ship's pose must be fresh. */}
+          <Ship reducedMotion={reducedMotion} />
           <Crane reducedMotion={reducedMotion} />
+          <Truck />
           <Terminal />
           {debug ? (
             <Suspense fallback={null}>
