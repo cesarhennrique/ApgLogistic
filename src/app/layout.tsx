@@ -46,7 +46,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Footer />
         <WhatsAppButton />
         <PageCurtain />
-        <Analytics />
+        {/* In dev it only fetches a debug script from Vercel's CDN, which WebKit gets a 403 for (breaks e2e). */}
+        {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
   );

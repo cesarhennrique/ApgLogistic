@@ -8,6 +8,11 @@ export function Hero() {
     // Transparent: the gradient and the 3D live in the sticky layer of #journey (JourneyStage).
     <section className="relative isolate flex min-h-svh flex-col overflow-hidden">
       <div id="journey-slot" aria-hidden="true" className="absolute inset-0 -z-10" />
+      {/* Legibility: navy 60% held behind the text (the sun's glitter path runs under it), then → 0 below the sun. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-t from-navy-900/60 via-navy-900/60 via-70% to-transparent to-90% md:via-60% md:to-85%"
+      />
 
       <div className="site-container mt-auto pt-32 pb-16 md:pb-24">
         <ContainerCode index={1} label={site.home.hero.code} />

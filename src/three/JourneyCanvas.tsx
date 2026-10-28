@@ -2,6 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { ACESFilmicToneMapping, SRGBColorSpace } from "three";
 import { NAVIGATE_EVENT } from "@/components/layout/PageCurtain";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { CameraRig } from "./CameraRig";
@@ -9,6 +10,9 @@ import { sampleCamera } from "./camera-path";
 import { readDebugParams } from "./debug";
 import { Placeholders } from "./Placeholders";
 import { journeyProgress } from "./progress";
+import { Lighting } from "./scene/Lighting";
+import { Ocean } from "./scene/Ocean";
+import { Sky } from "./scene/Sky";
 
 const DebugOrbit = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugOrbit })));
 const DebugSlider = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugSlider })));
@@ -44,12 +48,21 @@ export default function JourneyCanvas() {
       >
         <Canvas
           dpr={[1, 2]}
+          shadows
           frameloop={onScreen && !leaving ? "always" : "never"}
           camera={{ fov: 40, near: 0.1, far: 400, position: sampleCamera(journeyProgress.value).position }}
-          onCreated={() => setReady(true)}
+          onCreated={({ gl }) => {
+            // Exposure follows the journey (Lighting, from sampleLight).
+            gl.toneMapping = ACESFilmicToneMapping;
+            gl.outputColorSpace = SRGBColorSpace;
+            setReady(true);
+          }}
         >
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[20, 30, 10]} intensity={1.6} />
+          <Lighting />
+          <Sky />
+          <Suspense fallback={null}>
+            <Ocean reducedMotion={reducedMotion} />
+          </Suspense>
           <Placeholders />
           {debug ? (
             <Suspense fallback={null}>

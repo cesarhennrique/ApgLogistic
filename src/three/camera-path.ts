@@ -15,7 +15,8 @@ const v = (x: number, y: number, z: number) => new Vector3(x, y, z);
 
 // One key per chapter boundary (t = 0, 0.2 … 1): the camera arrives on a scene as its chapter ends.
 export const CAMERA_KEYS = [
-  { position: v(-2, 2.5, 16), target: v(0, 1.5, 0) },
+  // Hero: low over the water, pitched ~12° down so the horizon and the ship sit above the h1 (legibility).
+  { position: v(-2, 2.5, 16), target: v(0, -1, 0) },
   { position: v(4, 9, -4), target: v(10, 4, -14) },
   { position: v(26, 6, -22), target: v(18, 1, -30) },
   { position: v(20, 3, -44), target: v(10, 1, -50) },
