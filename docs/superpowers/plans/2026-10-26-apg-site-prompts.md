@@ -553,6 +553,55 @@ arrastando de 0 a 1, a luz vai de pôr do sol a noite sem saltos.
 Commit: "feat: céu, mar e iluminação da jornada"
 ````
 
+## Prompt 09b — Correções da revisão de arte do Prompt 09
+
+````text
+Leia o CLAUDE.md. Use as skills animation-performance e
+frontend-design:frontend-design.
+
+Revisão dos screenshots de e2e/__screenshots__/journey/. A direção
+(pôr do sol sobre o mar) está certa. Corrija:
+
+1. Fonte condensed sem eixo variável (risco no iPhone): no WebKit as
+   letras do h1 saem sobrepostas porque o font-stretch do eixo wdth não é
+   aplicado. Baixe o zip oficial do Archivo
+   (https://github.com/google/fonts/tree/main/ofl/archivo, arquivos
+   estáticos, ou o "Download family" do Google Fonts), pegue
+   Archivo_Condensed-Bold.ttf e Archivo_Condensed-ExtraBold.ttf
+   (subset latin, convertidos para woff2) e carregue com next/font/local
+   como --font-condensed. A utilidade .font-condensed passa a usar essa
+   família (sem font-stretch). Mantenha o Archivo variável do Google para
+   o resto do texto. O teste e2e de largura continua passando, e um
+   screenshot do WebKit em mobile mostra as letras sem sobreposição.
+   Registre a licença OFL em assets-src/LICENSES.md.
+2. A cena é a estrela, não o h1: o título ocupa demais o quadro.
+   Reduza o h1 do hero para clamp(2.5rem, 6.2vw, 6.5rem), com no máximo
+   2 linhas no desktop, e max-width 14ch. O texto fica no terço inferior
+   esquerdo e o terço superior direito fica livre para o sol e o navio.
+3. Header no mobile: abaixo de 768px, o CTA "Solicitar cotação" do
+   header some (o hero já tem um). Ficam o logo e o botão de menu.
+4. HDRI fora do orçamento (1,1 MB): apague public/3d/hdri/ e gere o
+   environment a partir do próprio Sky (Environment do drei com
+   frames={1}, resolution 256, contendo o Sky; refaça só quando o
+   progresso mudar mais de 0.02). Zero bytes e os reflexos passam a
+   acompanhar a cor do céu de cada capítulo. Atualize LICENSES.md.
+5. Borda do chão visível no horizonte (screenshot p=0.5: linha curva
+   marcando o fim do plano): o chão precisa ir além do alcance da névoa,
+   ou os shaders do chão e do mar precisam misturar com a cor do
+   horizonte por distância. Não pode haver linha de horizonte além da
+   natural céu/mar.
+6. Sol: o disco está estourado em branco e com borda dura. Disco menor,
+   cor sunset clara (não branca), borda suave e halo maior e mais tênue.
+7. Mar: reduza para ~25 mil triângulos (grade com mais densidade perto
+   da câmera e menos no fundo, ou plano que acompanha a câmera em x/z)
+   sem perder as ondas visíveis no primeiro plano.
+8. Atualize os screenshots de e2e/__screenshots__/journey/.
+
+Pronto quando: lint, typecheck, test e e2e passam e o total de
+public/3d/ fica abaixo de 300 KB.
+Commit: "fix: revisão de arte do céu, mar e hero"
+````
+
 ## Prompt 10 — Containers, portêiner e terminal (procedurais)
 
 ````text
@@ -576,8 +625,8 @@ chanfrados, sem fotorrealismo.
    em 120 ms). No capítulo 'load': o container sobe, cruza e desce até
    o ponto exato da carreta (exporte TRUCK_LOAD_POINT de
    src/three/anchors.ts, que o Prompt 11 vai consumir).
-4. src/three/scene/Terminal.tsx: pátio CONE com piso (texturas
-   public/3d/textures/concrete-*.webp), faixas pintadas,
+4. src/three/scene/Terminal.tsx: pátio CONE com piso de concreto
+   procedural (ruído no shader, 0 bytes de textura), faixas pintadas,
    pilhas (via ContainerStacks), galpão com 46 docas (portas
    instanciadas), postes com luz que acendem na noite (emissive ligado
    ao progresso) e reach stackers simplificados.
