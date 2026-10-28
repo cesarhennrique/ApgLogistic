@@ -139,7 +139,43 @@ Cada seção recebe um rótulo em mono, pequeno, no canto, inspirado no formato 
 ### Logo e loading
 
 - Variações do logo: original, monocromática branca (fundos escuros) e só a seta (favicon e ícone de loading).
-- Tela de loading: fundo navy, a seta vermelha desenha o percurso, contador de %. Meta: menos de 2 s em 4G.
+
+### Loading e abertura do hero (revisão 2026-10-28)
+
+O loading e a entrada do hero são **uma coreografia só**: as setas do logo que carregam a página viram as rotas vermelhas que chegam em Suape no mapa do hero.
+
+**Loading** (fundo navy-900, só na primeira visita da sessão):
+
+| Elemento | Comportamento |
+|---|---|
+| As 3 setas do logo, centradas | Desenhadas em traço red-500 da esquerda para a direita, na proporção do carregamento **real** (fontes + assets 3D + primeiro frame do canvas) |
+| Contador mono `000` → `100` | Tabular, abaixo das setas, sincronizado ao carregamento |
+| Linha de status (mono, steel-400) | Muda por faixa: "Atracando em Suape…" (0–40%), "Içando container…" (40–80%), "Liberando carreta…" (80–100%) |
+| Coordenada fixa no canto inferior | `SUAPE · PE · 08°23′S 34°57′W` |
+| Saída (100%) | As setas disparam para a direita e saem da tela (450 ms, ease-in). O traço delas continua como as rotas do mapa do hero |
+| Tempo | Mínimo 1,2 s, máximo 4 s. Depois de 4 s sai mesmo sem o 3D, e o mapa entra com fade quando ficar pronto |
+
+**Entrada do hero** (a partir da saída do loading; em visitas seguintes da sessão, a mesma sequência comprimida em 600 ms):
+
+| t (ms) | Elemento |
+|---|---|
+| 0 | Contornos dos estados do Nordeste se desenham (900 ms); a grade de pontos aparece em onda radial a partir de Suape |
+| 300 | As 5 rotas vermelhas chegam do mar até Suape (1.200 ms, escalonadas). Suape pulsa quando a primeira chega |
+| 500 | ContainerCode `APGU 1996-01 · QUEM SOMOS` digita caractere a caractere (400 ms) |
+| 650 | h1 revela linha a linha com máscara (700 ms por linha, 90 ms entre linhas) |
+| 1100 | Subtítulo: fade + 12 px para cima (500 ms) |
+| 1300 | CTA "Solicitar cotação" e link secundário "Ver a operação ↓" (rola até o capítulo 1); header desce do topo (400 ms) |
+| 1600 | Faixa inferior: indicador "Role para descobrir", relógio ao vivo `SUAPE 19:42` (fuso America/Recife) e ticker mono `1.900 TEUs/mês · 500 entregas/dia · desde 1996 · 24h` |
+
+**Interação no hero:**
+- Parallax do mapa com o mouse (inclinação de até ±2°, com damping), desligado em touch e em reduced motion.
+- Hover em Suape mostra o rótulo "Terminal CONE · Cabo de Santo Agostinho".
+
+**Regras:**
+- Fundo só navy-900 com grão fino e vinheta radial muito suave. Nada de degradê colorido.
+- O h1 existe no HTML desde o início (LCP). O loading é uma camada `aria-hidden` por cima e não bloqueia o paint.
+- Com reduced motion: sem loading animado (fade de 200 ms) e o hero aparece completo, sem coreografia.
+- Meta: o loading termina em menos de 2 s em 4G.
 
 ## 6. Arquitetura técnica
 

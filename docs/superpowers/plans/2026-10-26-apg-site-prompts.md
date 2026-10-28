@@ -898,6 +898,79 @@ chegando em Suape sobre navy.
 Commit: "feat: jornada em palcos, luz de estúdio e hero do mapa"
 ````
 
+## Prompt 13e — Loading e abertura do hero
+
+````text
+Leia o CLAUDE.md e o spec, seção 5 "Loading e abertura do hero
+(revisão 2026-10-28)". As tabelas de lá são a especificação exata
+(tempos, textos, faixas). Use as skills animate, emil-design-eng e
+animation-performance.
+
+Ideia central: o loading e a entrada do hero são uma coreografia só.
+As setas do logo que carregam a página viram as rotas vermelhas que
+chegam em Suape no mapa do hero.
+
+1. src/components/intro/IntroTimeline.ts: uma timeline GSAP única que
+   orquestra o loader e a entrada do hero, com os tempos da tabela do
+   spec, exposta como playIntro({ short: boolean }). Os elementos se
+   registram por data-intro="<nome>". Nenhum componente anima a própria
+   entrada por conta própria no hero.
+2. src/components/intro/Loader.tsx (client, só na primeira visita da
+   sessão, sessionStorage com try/catch):
+   - fundo navy-900 com grão fino;
+   - as 3 setas de public/brand/arrow.svg em traço red-500, desenhadas
+     por stroke-dashoffset na proporção do carregamento real;
+   - contador mono 000 → 100 (tabular) e a linha de status por faixa;
+   - coordenada "SUAPE · PE · 08°23′S 34°57′W" no canto inferior;
+   - progresso real = média ponderada de document.fonts.ready (20%),
+     useProgress do drei (60%) e o primeiro frame renderizado do canvas
+     (20%); o contador nunca anda para trás;
+   - mínimo 1,2 s e máximo 4 s; na saída, as setas disparam para a
+     direita (450 ms, ease-in) e a cortina some.
+   aria-hidden, sem bloquear o paint do h1.
+3. Ponte loader → mapa: no momento da saída, o HeroMapStage começa o
+   desenho das rotas a partir do lado do mar, para parecer que o traço
+   das setas continuou dentro do mapa.
+4. Entrada do HeroMapStage: contornos se desenhando (900 ms), grade
+   de pontos em onda radial a partir de Suape, 5 rotas escalonadas
+   (1.200 ms), pulso de Suape quando a primeira rota chega. Exponha
+   isso como uma função intro(t) do palco, chamada pela timeline.
+5. Hero HTML:
+   - ContainerCode com efeito de digitação (400 ms);
+   - h1 com RevealText controlado pela timeline (prop `manual`), 700 ms
+     por linha, 90 ms entre linhas;
+   - subtítulo, CTA e o link secundário "Ver a operação ↓"
+     (lenis.scrollTo até o início do capítulo 1);
+   - header descendo do topo;
+   - faixa inferior com "Role para descobrir", relógio ao vivo
+     "SUAPE 19:42" (Intl.DateTimeFormat com timeZone America/Recife,
+     atualizado a cada minuto, sem hydration mismatch: renderize só no
+     client) e o ticker mono com os números de site.ts (marquee lento,
+     pausa no hover e em reduced motion).
+6. Interação: parallax do mapa com o mouse (±2°, damping), só com
+   pointer fino; hover em Suape mostra "Terminal CONE · Cabo de Santo
+   Agostinho" (raycast no ponto ou hit area HTML posicionada pela
+   projeção do ponto).
+7. Visitas seguintes na sessão: sem loader e playIntro({ short: true }),
+   a mesma sequência em 600 ms.
+8. Reduced motion: sem loader (fade de 200 ms) e o hero aparece
+   completo, sem coreografia.
+9. Preload: os assets do primeiro palco têm prioridade; os demais
+   palcos são criados depois do LCP (requestIdleCallback).
+10. Testes:
+   - unit: a função de progresso do loader é monotônica e chega a 100;
+   - e2e: primeira visita mostra o loader e termina em menos de 4 s;
+     segunda visita na sessão não mostra; com reduced motion não há
+     loader; o h1 está no DOM desde o primeiro HTML;
+   - grave um vídeo (Playwright video) da primeira visita em desktop e
+     mobile em e2e/__videos__/intro-*.webm para revisão.
+
+Pronto quando: lint, typecheck, test e e2e passam, o vídeo mostra a
+sequência da tabela do spec sem engasgos e o Lighthouse mobile mantém
+LCP < 2,5 s.
+Commit: "feat: loading e abertura do hero"
+````
+
 ## Prompt 13b — Estúdio do portêiner e da carreta (capítulos 1 e 2)
 
 ````text
@@ -1077,31 +1150,9 @@ Pronto quando: lint, typecheck, test e e2e passam, e com CPU throttling
 Commit: "feat: níveis de qualidade, pós-processamento e fallback estático"
 ````
 
-## Prompt 16 — Tela de loading e pré-carregamento
+## Prompt 16 — (removido)
 
-````text
-Leia o CLAUDE.md e o spec, seção 5 "Logo e loading". Use a skill
-animate.
-
-1. src/components/layout/Loader.tsx: só na primeira visita da sessão
-   (sessionStorage com try/catch). Fundo navy-900, a seta vermelha
-   (arrow.svg) desenha o percurso (stroke-dashoffset) e contador mono de
-   0 a 100%, ligado ao useProgress do drei (assets 3D) + document.fonts.ready.
-2. Mínimo de 600 ms e máximo de 4 s: depois disso, sai mesmo que o 3D
-   ainda esteja carregando (o 3D entra com fade quando ficar pronto).
-3. Saída: a cortina sobe, igual à transição de página, e o h1 do hero
-   dispara o RevealText.
-4. O texto do hero existe no HTML desde o início (LCP). O loader só
-   cobre visualmente e não bloqueia o paint do h1 (aria-hidden no
-   loader, h1 no DOM).
-5. Preload: os GLB e as texturas são pedidos com prioridade baixa
-   depois do LCP. Fontes com display swap e preload só dos pesos usados.
-6. e2e: a segunda navegação na mesma sessão não mostra o loader.
-
-Pronto quando: lint, typecheck, test e e2e passam e o Lighthouse mobile
-mostra LCP < 2,5 s.
-Commit: "feat: loading e pré-carregamento"
-````
+> O loading e o pré-carregamento foram incorporados ao **Prompt 13e**, junto com a abertura do hero. Pule para o Prompt 17.
 
 ## Prompt 17 — Passe de motion e acessibilidade
 
