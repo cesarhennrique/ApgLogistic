@@ -781,8 +781,8 @@ Commit: "feat: navio e carreta APG procedurais"
 ````text
 Leia o CLAUDE.md e o spec, seção 3 (capítulos 3, 5 e assinatura).
 
-1. src/three/scene/Highway.tsx: trecho da BR-101 com asfalto (textura
-   public/3d/textures/asphalt-*.webp do guia), faixas pintadas, guard
+1. src/three/scene/Highway.tsx: trecho da BR-101 com asfalto procedural
+   (ruído no shader, como o concreto; 0 bytes de textura), faixas pintadas, guard
    rail instanciado, postes instanciados com luz e vegetação baixa
    estilizada (instanced cones/esferas). Ilusão de movimento: a estrada
    rola em loop (offset de UV e reposicionamento das instâncias) enquanto
