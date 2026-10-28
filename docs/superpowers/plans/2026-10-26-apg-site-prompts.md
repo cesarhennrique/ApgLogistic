@@ -636,6 +636,19 @@ chanfrados, sem fotorrealismo.
    proporcionais (6.06 x 2.44 x 2.59 e 12.19 x 2.44 x 2.59, em unidades
    da cena).
 
+7. Regras herdadas do Prompt 09b:
+   - todo material novo usa withSkyFog (src/three/scene/skyShared.ts),
+     senão aparece a emenda de névoa no horizonte;
+   - substitua as caixas provisórias dos capítulos crane, load e terminal
+     pelos modelos novos (as do hero e da highway ficam para os Prompts 11
+     e 12).
+8. Rebake do environment: hoje ele refaz a cada 0.02 de progresso, o que
+   dá cerca de 50 travadas ao longo do scroll num celular. Passe a refazer
+   só quando o scroll parar por 200 ms e o progresso tiver mudado 0.05 ou
+   mais. Mostre o tempo do último bake (ms) no painel do ?debug.
+9. Screenshots atualizados em e2e/__screenshots__/journey/, incluindo
+   /?p=0.15 (spreader travando) e /?p=0.3 (container no ar).
+
 Pronto quando: lint, typecheck, test e e2e passam e os capítulos 1, 2 e
 4 estão visualmente completos com ?debug.
 Commit: "feat: containers, portêiner e terminal"
