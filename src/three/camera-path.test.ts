@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CAMERA_KEYS, sampleCamera } from "./camera-path";
+import { CAMERA_KEYS, KEY_TIMES, sampleCamera } from "./camera-path";
 import { CHAPTERS } from "./chapters";
 
 describe("sampleCamera", () => {
@@ -26,9 +26,19 @@ describe("sampleCamera", () => {
 
   it("eases into each key, so a tiny step near a key barely moves", () => {
     const k = CAMERA_KEYS[1].position;
-    const near = sampleCamera(0.2 - 1e-4).position.distanceTo(k);
-    const mid = sampleCamera(0.1).position.distanceTo(k);
+    const near = sampleCamera(KEY_TIMES[1] - 1e-4).position.distanceTo(k);
+    const mid = sampleCamera(KEY_TIMES[1] / 2).position.distanceTo(k);
     expect(near).toBeLessThan(mid * 1e-4);
+  });
+
+  it("reaches each scene on its beat: the crane's lock, the landing, the highway, the yard, the map", () => {
+    expect(KEY_TIMES).toEqual([0, 0.15, 0.4, 0.52, 0.75, 0.95]);
+    KEY_TIMES.forEach((t, i) => expect(sampleCamera(t).position.distanceTo(CAMERA_KEYS[i].position)).toBeLessThan(1e-9));
+  });
+
+  it("holds on the map through the exit to navy (0.95–1)", () => {
+    const last = CAMERA_KEYS[CAMERA_KEYS.length - 1].position;
+    expect(sampleCamera(0.97).position.distanceTo(last)).toBeLessThan(1e-9);
   });
 
   it("writes into the given output without allocating", () => {

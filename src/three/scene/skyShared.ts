@@ -50,6 +50,9 @@ float dither(vec2 frag) {
 // three's built-in fog mixes after tone mapping and sRGB encoding, so it can never match the dome.
 // This swaps it for skyFog on a lit or basic material, after any patch the material already has.
 export function withSkyFog<T extends Material & { fog: boolean }>(material: T): T {
+  // Idempotent: patching twice (an effect re-run, StrictMode) would declare everything twice and fail to compile.
+  if (material.userData.skyFog) return material;
+  material.userData.skyFog = true;
   material.fog = false;
   const previous = material.onBeforeCompile;
   // three caches programs by this key (default: onBeforeCompile's source), so keep the inner patch in it.
@@ -58,18 +61,24 @@ export function withSkyFog<T extends Material & { fog: boolean }>(material: T): 
   material.onBeforeCompile = (shader, renderer) => {
     previous.call(material, shader, renderer);
     Object.assign(shader.uniforms, skyUniforms);
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>
-        varying vec3 vSkyFogWorld;`)
-      .replace(
-        "#include <project_vertex>",
-        `#include <project_vertex>
+    shader.vertexShader = shader.vertexShader.replace("#include <common>", `#include <common>
+        varying vec3 vSkyFogWorld;`);
+    shader.vertexShader = shader.vertexShader.includes("#include <project_vertex>")
+      ? shader.vertexShader.replace(
+          "#include <project_vertex>",
+          `#include <project_vertex>
         vec4 skyFogPos = vec4(transformed, 1.0);
         #ifdef USE_INSTANCING
           skyFogPos = instanceMatrix * skyFogPos;
         #endif
         vSkyFogWorld = (modelMatrix * skyFogPos).xyz;`,
-      );
+        )
+      : // Lines (LineMaterial) have no project_vertex, but set mvPosition before fog_vertex.
+        shader.vertexShader.replace(
+          "#include <fog_vertex>",
+          `#include <fog_vertex>
+        vSkyFogWorld = (inverse(viewMatrix) * vec4(mvPosition.xyz, 1.0)).xyz;`,
+        );
     shader.fragmentShader = shader.fragmentShader
       .replace("#include <common>", `#include <common>
         ${SKY_GLSL}

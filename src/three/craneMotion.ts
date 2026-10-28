@@ -19,6 +19,8 @@ export const LIFT_AT = HOIST[0];
 const TROLLEY_IN = [0.26, 0.34] as const; // across, over the truck lane
 const LOWER_LOADED = [0.34, 0.4] as const; // down onto the trailer
 const RAISE_EMPTY = [0.4, 0.47] as const; // spreader lets go and climbs back
+// The box is on the trailer: from here it is the truck's to carry.
+export const LIFT_DONE = RAISE_EMPTY[0];
 
 const seat = { ship: SHIP_PICK_POINT.y + H, truck: TRUCK_LOAD_POINT.y + H };
 

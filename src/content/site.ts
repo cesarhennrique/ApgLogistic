@@ -220,6 +220,8 @@ export const site = {
     { id: "terminal", text: "35.000 m² · 4.000 TEUs estáticos · 46 docas" },
     { id: "distribution", text: "500 entregas fracionadas por dia" },
   ] satisfies ChapterText[],
+  // Text painted inside the 3D journey (spec §3, chapter 3).
+  journeyScene: { highwaySign: "BR-101 · SUAPE" },
 
   // confirmar com cliente
   mission:

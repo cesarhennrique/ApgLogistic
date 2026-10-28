@@ -3,13 +3,15 @@
 import { useMemo } from "react";
 import { Color, InstancedMesh, MeshStandardMaterial, Object3D } from "three";
 import { type ContainerType, getContainerGeometry, getStripeGeometry } from "../models/containerGeometry";
-import { STACKS, type StackedContainer } from "../models/stackLayout";
+import { APG_NAVY, STACKS, type StackedContainer } from "../models/stackLayout";
 import { withSkyFog } from "./skyShared";
 import { withYardLight } from "./yardLight";
 
 // White base: each instance's color comes from the layout (carrier palette or APG navy). At night the faces
 // turned to the yard's masts pick up a warm cast (withYardLight).
 export const containerMaterial = withSkyFog(withYardLight(new MeshStandardMaterial({ roughness: 0.72, metalness: 0.15 })));
+// The APG box the crane moves and the truck carries.
+export const apgBoxMaterial = withSkyFog(new MeshStandardMaterial({ color: APG_NAVY, roughness: 0.72, metalness: 0.15 }));
 export const stripeMaterial = withSkyFog(new MeshStandardMaterial({ color: "#e31e24", roughness: 0.6 }));
 
 const TYPES: ContainerType[] = ["20", "40"];

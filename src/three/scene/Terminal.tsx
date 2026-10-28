@@ -3,14 +3,11 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import {
-  AdditiveBlending,
   CylinderGeometry,
   type Group,
   InstancedMesh,
   MeshStandardMaterial,
   Object3D,
-  PlaneGeometry,
-  ShaderMaterial,
   Vector3,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -33,8 +30,8 @@ import {
 import { journeyProgress } from "../progress";
 import { createConcreteMaterial } from "./concrete";
 import { ContainerStacks } from "./ContainerStacks";
-import { lostInFog, skyUniforms, withSkyFog } from "./skyShared";
-import { SODIUM_GLSL, yardUniforms } from "./yardLight";
+import { lostInFog, withSkyFog } from "./skyShared";
+import { createLampPools, yardUniforms } from "./yardLight";
 
 const v = (x: number, y: number, z: number) => new Vector3(x, y, z);
 
@@ -110,43 +107,7 @@ function instancedAt(geometry: InstancedMesh["geometry"], material: MeshStandard
   return mesh;
 }
 
-// Sodium pools: additive quads on the slab under each mast, soft radial falloff, faded by the fog.
-const POOL_RADIUS = 17;
-const poolMaterial = new ShaderMaterial({
-  uniforms: { ...yardUniforms, uFogDensity: skyUniforms.uFogDensity },
-  transparent: true,
-  depthWrite: false,
-  blending: AdditiveBlending,
-  vertexShader: /* glsl */ `
-    varying vec2 vUv;
-    varying vec3 vWorld;
-    void main() {
-      vUv = uv * 2.0 - 1.0;
-      vec4 world = modelMatrix * instanceMatrix * vec4(position, 1.0);
-      vWorld = world.xyz;
-      gl_Position = projectionMatrix * viewMatrix * world;
-    }
-  `,
-  fragmentShader: /* glsl */ `
-    uniform float uLamps;
-    uniform float uFogDensity;
-    varying vec2 vUv;
-    varying vec3 vWorld;
-    void main() {
-      float fall = pow(1.0 - smoothstep(0.0, 1.0, length(vUv)), 2.0);
-      float d = distance(cameraPosition, vWorld);
-      float seen = exp(-uFogDensity * uFogDensity * d * d);
-      gl_FragColor = vec4(${SODIUM_GLSL} * 0.85 * uLamps * fall * seen, 1.0);
-      #include <tonemapping_fragment>
-      #include <colorspace_fragment>
-    }
-  `,
-});
-const pools = new InstancedMesh(
-  new PlaneGeometry(POOL_RADIUS * 2, POOL_RADIUS * 2).rotateX(-Math.PI / 2),
-  poolMaterial,
-  MASTS.length,
-);
+const pools = createLampPools(17, MASTS.length);
 MASTS.forEach(([x, z], i) => {
   const o = new Object3D();
   o.position.set(x, 0.05, z);

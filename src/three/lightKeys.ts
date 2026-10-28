@@ -129,7 +129,7 @@ export const LIGHT_KEYS: LightKey[] = [
     hemiSky: c("#2a3a78"),
     hemiGround: c("#0a0a14"),
     hemiIntensity: 0.4,
-    fogDensity: 0.007,
+    fogDensity: 0.0045,
     exposure: 0.8,
     envIntensity: 0.08,
     stars: 1,

@@ -1,5 +1,6 @@
-import type { MeshStandardMaterial } from "three";
+import { AdditiveBlending, InstancedMesh, type MeshStandardMaterial, PlaneGeometry, ShaderMaterial } from "three";
 import { MAST_HEIGHT, MASTS } from "../models/terminalLayout";
+import { skyUniforms } from "./skyShared";
 
 // Yard lights (0–1), written per frame by the Terminal from sampleLight().lamps.
 export const yardUniforms = { uLamps: { value: 0 } };
@@ -50,4 +51,41 @@ export function withYardLight<T extends MeshStandardMaterial>(material: T): T {
       );
   };
   return material;
+}
+
+// Sodium pools: additive quads on the ground under each lamp, soft radial falloff, faded by the fog; one shared
+// material, lit by uLamps. The caller places the instances (the terminal's masts, the highway's poles).
+const poolMaterial = new ShaderMaterial({
+  uniforms: { ...yardUniforms, uFogDensity: skyUniforms.uFogDensity },
+  transparent: true,
+  depthWrite: false,
+  blending: AdditiveBlending,
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    varying vec3 vWorld;
+    void main() {
+      vUv = uv * 2.0 - 1.0;
+      vec4 world = modelMatrix * instanceMatrix * vec4(position, 1.0);
+      vWorld = world.xyz;
+      gl_Position = projectionMatrix * viewMatrix * world;
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform float uLamps;
+    uniform float uFogDensity;
+    varying vec2 vUv;
+    varying vec3 vWorld;
+    void main() {
+      float fall = pow(1.0 - smoothstep(0.0, 1.0, length(vUv)), 2.0);
+      float d = distance(cameraPosition, vWorld);
+      float seen = exp(-uFogDensity * uFogDensity * d * d);
+      gl_FragColor = vec4(${SODIUM_GLSL} * 0.85 * uLamps * fall * seen, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }
+  `,
+});
+
+export function createLampPools(radius: number, count: number) {
+  return new InstancedMesh(new PlaneGeometry(radius * 2, radius * 2).rotateX(-Math.PI / 2), poolMaterial, count);
 }

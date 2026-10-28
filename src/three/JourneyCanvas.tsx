@@ -11,8 +11,11 @@ import { readDebugParams } from "./debug";
 import { Placeholders } from "./Placeholders";
 import { journeyProgress } from "./progress";
 import { Crane } from "./scene/Crane";
+import { Distribution } from "./scene/Distribution";
+import { Highway } from "./scene/Highway";
 import { Lighting } from "./scene/Lighting";
 import { Ocean } from "./scene/Ocean";
+import { RouteLine } from "./scene/RouteLine";
 import { Ship } from "./scene/Ship";
 import { Sky } from "./scene/Sky";
 import { Terminal } from "./scene/Terminal";
@@ -72,7 +75,10 @@ export default function JourneyCanvas() {
           {/* Before Crane: its box rides the ship until lifted, so the ship's pose must be fresh. */}
           <Ship reducedMotion={reducedMotion} />
           <Crane reducedMotion={reducedMotion} />
-          <Truck />
+          <Truck reducedMotion={reducedMotion} />
+          <Highway reducedMotion={reducedMotion} />
+          <Distribution />
+          <RouteLine />
           <Terminal />
           {debug ? (
             <Suspense fallback={null}>

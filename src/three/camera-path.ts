@@ -8,14 +8,14 @@ export const SCENE_POSITIONS: Record<ChapterId, [number, number, number]> = {
   hero: [0, 0, 0],
   crane: [49, 0, -110],
   load: [44, 0, -110],
-  highway: [130, 0, -175],
+  highway: [130, 0, -190],
   terminal: [130, 0, -260],
   distribution: [40, 0, -380],
 };
 
 const v = (x: number, y: number, z: number) => new Vector3(x, y, z);
 
-// One key per chapter boundary (t = 0, 0.2 … 1): the camera arrives on a scene as its chapter ends.
+// One key per scene, reached at KEY_TIMES.
 // shortcut: framing is first-pass, at the meter scale; Prompt 13 directs the camera properly.
 export const CAMERA_KEYS = [
   // Hero: low over the water, pitched ~12° down so the horizon and the ship sit above the h1 (legibility).
@@ -25,12 +25,13 @@ export const CAMERA_KEYS = [
   { position: v(-55, 22, -66), target: v(30, 26, -116) },
   // Load: down the truck lane, between the legs, the box coming onto the trailer.
   { position: v(52, 7, -74), target: v(44, 8, -110) },
-  // Highway (Prompt 12).
-  { position: v(144, 4, -165), target: v(126, 1, -181) },
+  // Highway: beside the truck at cab height, across the opposite carriageway (its left side and logo).
+  { position: v(136, 3.6, -205), target: v(128, 2.2, -183) },
   // Terminal: aerial over the CONE yard.
   { position: v(165, 55, -205), target: v(130, 0, -262) },
-  // Distribution (Prompt 12).
-  { position: v(54, 14, -362), target: v(40, 0, -380) },
+  // Distribution: high over the map from the south, north up so it reads as a map: the warehouse at Suape
+  // (top right) and the vans fanning out over PE and BA.
+  { position: v(-15, 125, -185), target: v(-15, 0, -318) },
 ];
 
 const positionCurve = new CatmullRomCurve3(CAMERA_KEYS.map((k) => k.position));
@@ -39,15 +40,22 @@ const segments = CAMERA_KEYS.length - 1;
 
 export type CameraSample = { position: Vector3; target: Vector3 };
 
+// When the camera sits on each key: the crane's lock (0.15), the box landing on the trailer (0.4), beside the
+// truck on the highway (0.52), over the yard (0.75), over the map (0.95), held through the exit to navy.
+// shortcut: eases to a stop on every key; Prompt 13 replaces this with arrive-hold-continue per chapter.
+export const KEY_TIMES = [0, 0.15, 0.4, 0.52, 0.75, 0.95];
+
 // Smootherstep inside each segment, so the camera eases in and out of every key.
 export function sampleCamera(
   t: number,
   out: CameraSample = { position: new Vector3(), target: new Vector3() },
 ): CameraSample {
-  const p = MathUtils.clamp(t, 0, 1) * segments;
-  const i = Math.min(Math.floor(p), segments - 1);
+  const p = MathUtils.clamp(t, 0, 1);
+  let i = 0;
+  while (i < segments - 1 && p > KEY_TIMES[i + 1]) i++;
+  const local = MathUtils.clamp((p - KEY_TIMES[i]) / (KEY_TIMES[i + 1] - KEY_TIMES[i]), 0, 1);
   // getPoint (not getPointAt) hits key i exactly at i / segments.
-  const u = (i + MathUtils.smootherstep(p - i, 0, 1)) / segments;
+  const u = (i + MathUtils.smootherstep(local, 0, 1)) / segments;
   positionCurve.getPoint(u, out.position);
   targetCurve.getPoint(u, out.target);
   return out;

@@ -12,14 +12,13 @@ import {
   MeshStandardMaterial,
 } from "three";
 import { CRANE_POSITION, QUAY_EDGE_X, QUAY_TOP, SHIP_PICK_POINT, TRUCK_LOAD_POINT } from "../anchors";
-import { craneState, LIFT_AT } from "../craneMotion";
+import { craneState, LIFT_AT, LIFT_DONE } from "../craneMotion";
 import { CONTAINER, getContainerGeometry, getStripeGeometry } from "../models/containerGeometry";
 import { buildCraneGeometry, buildSpreaderGeometry, buildTrolleyGeometry, CRANE } from "../models/craneGeometry";
-import { APG_NAVY } from "../models/stackLayout";
 import { journeyProgress } from "../progress";
 import { placeOnShip } from "../shipPose";
 import { createConcreteMaterial } from "./concrete";
-import { ContainerStacks, stripeMaterial } from "./ContainerStacks";
+import { apgBoxMaterial, ContainerStacks, stripeMaterial } from "./ContainerStacks";
 import { lostInFog, withSkyFog } from "./skyShared";
 
 const crane = buildCraneGeometry();
@@ -46,7 +45,6 @@ const navLights = withSkyFog(
 );
 const dark = withSkyFog(new MeshStandardMaterial({ color: "#30353f", roughness: 0.5, metalness: 0.3 }));
 const spreaderPaint = withSkyFog(new MeshStandardMaterial({ color: "#c99a3a", roughness: 0.5, metalness: 0.3 }));
-const navy = withSkyFog(new MeshStandardMaterial({ color: APG_NAVY, roughness: 0.72, metalness: 0.15 }));
 const ropeMaterial = withSkyFog(new LineBasicMaterial({ color: "#1c1f26" }));
 
 // Quay: from the edge inland, painted with the edge safety line and the crane's truck lane.
@@ -93,6 +91,8 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
 
     trolleyRef.current!.position.x = trolleyX - CRANE_POSITION.x;
     spreaderRef.current!.position.set(trolleyX, spreaderY, CRANE_POSITION.z);
+    // Landed (0.4): the truck carries its own copy from here.
+    boxRef.current!.visible = journeyProgress.value < LIFT_DONE;
     // Still cargo: ride the ship (it glides in and rolls in the hero); then hang from the spreader.
     if (journeyProgress.value < LIFT_AT) placeOnShip(container, boxRef.current!);
     else {
@@ -135,7 +135,7 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
 
       {/* The APG box the crane moves: from the ship's bay to the trailer. */}
       <group ref={boxRef} position={SHIP_PICK_POINT}>
-        <mesh geometry={getContainerGeometry("40")} material={navy} castShadow receiveShadow />
+        <mesh geometry={getContainerGeometry("40")} material={apgBoxMaterial} castShadow receiveShadow />
         <mesh geometry={getStripeGeometry("40")} material={stripeMaterial} />
       </group>
 
