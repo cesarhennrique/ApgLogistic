@@ -49,3 +49,6 @@ next-env.d.ts
 
 # skills de terceiros copiadas localmente
 /.claude/skills/
+
+# vídeos de referência (uso interno, não publicar)
+/assets-src/reference/
