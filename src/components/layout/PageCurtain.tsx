@@ -10,6 +10,9 @@ const EASE_IN_OUT = "cubic-bezier(0.77, 0, 0.175, 1)";
 
 let play: ((href: string) => void) | null = null;
 
+// Fired when a curtain navigation starts, so heavy work (the 3D render loop) can stop competing with it.
+export const NAVIGATE_EVENT = "apg:navigate";
+
 /** Plays the curtain and navigates. Returns false when no curtain is mounted. */
 export function playCurtain(href: string): boolean {
   if (!play) return false;
@@ -30,6 +33,7 @@ export function PageCurtain() {
       const arrow = arrowRef.current;
       if (busy.current || !curtain || !arrow) return;
       busy.current = true;
+      window.dispatchEvent(new Event(NAVIGATE_EVENT));
       curtain.animate([{ translate: "0 100%" }, { translate: "0 0" }], {
         duration: 400,
         easing: EASE_DRAWER,
