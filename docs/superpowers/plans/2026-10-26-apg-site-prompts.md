@@ -971,6 +971,28 @@ chegam em Suape no mapa do hero.
    - grave um vídeo (Playwright video) da primeira visita em desktop e
      mobile em e2e/__videos__/intro-*.webm para revisão.
 
+11. Correções do hero vistas nos screenshots do Prompt 13:
+   - Inclinação: o mapa está quase de cima; aplique a inclinação de ~35°
+     de verdade (câmera mais baixa), para dar profundidade.
+   - Área segura: o mapa invade o h1 ("1996" sobre a Bahia). Defina a
+     coluna do texto como área proibida e ajuste escala e posição do
+     mapa para que a projeção dele nunca cruze o bounding box do bloco de
+     texto em 1440x900 e 1920x1080 (teste e2e).
+   - As rotas não podem sair cortadas pela borda direita: elas nascem
+     dentro do quadro, no mar, a leste de Suape.
+   - Pontos do mapa redondos (discard por distância no fragment shader),
+     não quadrados, inclusive no mergulho.
+   - Rótulos "SUAPE · PE" e "SALVADOR · BA": tamanho fixo em pixels (HTML
+     posicionado pela projeção, ou sizeAttenuation=false) e fade out no
+     começo do mergulho.
+   - Mobile: o mapa ocupa a metade de cima da tela (Suape visível, rotas
+     inteiras) e o texto fica na metade de baixo, sem sobreposição; h1
+     mobile em clamp(2.25rem, 10vw, 3rem). Hoje sobram 40% de tela vazia
+     no topo e o mapa fica atrás do texto.
+   - Header legível em qualquer palco: logo e menu trocam de cor com o
+     fundo (branco sobre navy, navy-900 sobre sand), em 200 ms, usando
+     stageBackground. O CTA vermelho continua igual.
+
 Pronto quando: lint, typecheck, test e e2e passam, o vídeo mostra a
 sequência da tabela do spec sem engasgos e o Lighthouse mobile mantém
 LCP < 2,5 s.
@@ -992,7 +1014,15 @@ sobre fundo sand-50, com objetos isolados e impecáveis.
    cabeços de amarração). Nada além disso no quadro. O plano do chão se
    funde ao fundo sand (sem linha de horizonte: chão com a mesma cor do
    fundo e sombra de contato).
-2. Materiais premium (src/three/materials/):
+2. Contraste (o p=0.1 do Prompt 13 ficou lavado: portêiner branco sobre
+   sand, sem separação): portêiner em cinza-grafite #4A4F5A com detalhes
+   sand-50 e faixas de advertência amarelo/preto no spreader; luz
+   principal mais forte e mais dura (sombras visíveis no cais), fundo
+   sand-50 e chão um tom mais escuro (#E6E0D4) que se funde ao fundo por
+   degradê radial; exposição ajustada para os containers terem cor
+   saturada. Meta: o objeto principal tem contraste de luminância de
+   pelo menos 3:1 contra o fundo.
+3. Materiais premium (src/three/materials/):
    - paintedMetal(color): MeshPhysical, roughness 0.45–0.6 com
      variação por ruído, clearcoat 0.15, desgaste sutil nas arestas
      (ruído + curvatura aproximada por normal);
@@ -1033,7 +1063,10 @@ RouteLine e o mapa do Prompt 12 dentro dos novos palcos.
    rotação ser visível; hoje o aro é liso); faixas da pista, postes e guard rail passam em
    parallax (3 camadas em velocidades diferentes); faróis e luz de
    posição acesos com bloom. A linha vermelha corre sob as rodas, de
-   ponta a ponta do quadro. Sem céu: acima da pista, só o navy.
+   ponta a ponta do quadro. Sem céu: acima da pista, só o navy. Remova
+   árvores, arbustos e grama (no p=0.5 do Prompt 13 eles deixaram a cena
+   com cara de brinquedo): o palco tem só pista escura, faixas, guard
+   rail e postes, como um estúdio noturno.
 2. TerminalStage (fundo sand-50, vista de cima ortográfica ou fov 12 de
    bem alto): planta estilizada do terminal CONE.
    - Pátio com pilhas coloridas (vistas de cima, com sombra de contato),
