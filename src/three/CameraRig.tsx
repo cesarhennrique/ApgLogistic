@@ -1,57 +1,48 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import { MathUtils, Vector3 } from "three";
-import { sampleCamera } from "./camera-path";
+import { MathUtils, type PerspectiveCamera, Vector3 } from "three";
 import { journeyProgress } from "./progress";
+import { sampleStageCamera } from "./stages/camera";
 
-const LAMBDA = 4;
+// The hero's slow orbit: ±6° about the map's vertical axis, a 20 s cycle, fading out as the dive begins.
+const ORBIT = MathUtils.degToRad(6);
+const ORBIT_PERIOD = 20;
+const ORBIT_FADE = 0.03;
+const Y = new Vector3(0, 1, 0);
 
-// Hero breathing: a slow drift that keeps the frame alive before the scroll starts.
-const BREATH_PERIOD = 12;
-const BREATH_DRIFT = 0.3;
-const BREATH_ROLL = MathUtils.degToRad(0.5);
-// Fades out over the first few percent of scroll, so leaving the hero never jumps.
-const BREATH_FADE = 0.03;
+// The keys are framed for 16:10. Narrower screens keep that horizontal view (up to 75° vertical) instead of
+// cropping the sides, where Suape and the routes sit.
+const FRAME_ASPECT = 1.6;
+const MAX_FOV = 75;
+const fitFov = (fov: number, aspect: number) =>
+  aspect >= FRAME_ASPECT
+    ? fov
+    : Math.min(MAX_FOV, MathUtils.radToDeg(2 * Math.atan((Math.tan(MathUtils.degToRad(fov) / 2) * FRAME_ASPECT) / aspect)));
 
-function dampVector(current: Vector3, goal: Vector3, delta: number) {
-  current.set(
-    MathUtils.damp(current.x, goal.x, LAMBDA, delta),
-    MathUtils.damp(current.y, goal.y, LAMBDA, delta),
-    MathUtils.damp(current.z, goal.z, LAMBDA, delta),
-  );
-}
+const pose = sampleStageCamera(0);
+const offset = new Vector3();
 
+// Follows the stage cameras (sampleStageCamera): no damping of its own, Lenis already smooths the scroll and the
+// path is continuous in position and speed.
 export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
-  const goal = useRef(sampleCamera(journeyProgress.value));
-  // The rig's own state; the camera is this plus the breathing, so the drift never feeds back into the damping.
-  const rig = useRef<{ position: Vector3; look: Vector3 } | null>(null);
-
-  useFrame(({ camera, clock }, delta) => {
-    sampleCamera(journeyProgress.value, goal.current);
-    const { position, target } = goal.current;
-    // First frame (and reduced motion) snaps; otherwise ease toward the path, never jumping.
-    if (!rig.current) {
-      rig.current = { position: position.clone(), look: target.clone() };
-    } else if (reducedMotion) {
-      rig.current.position.copy(position);
-      rig.current.look.copy(target);
-    } else {
-      dampVector(rig.current.position, position, delta);
-      dampVector(rig.current.look, target, delta);
+  useFrame(({ camera, clock }) => {
+    const p = journeyProgress.value;
+    sampleStageCamera(p, pose);
+    const weight = reducedMotion ? 0 : 1 - MathUtils.smoothstep(p, 0, ORBIT_FADE);
+    if (weight > 0) {
+      const angle = ORBIT * Math.sin((2 * Math.PI * clock.elapsedTime) / ORBIT_PERIOD) * weight;
+      offset.subVectors(pose.position, pose.target).applyAxisAngle(Y, angle);
+      pose.position.copy(pose.target).add(offset);
     }
-    camera.position.copy(rig.current.position);
-    camera.lookAt(rig.current.look);
-
-    if (reducedMotion) return;
-    const weight = 1 - MathUtils.smoothstep(journeyProgress.value, 0, BREATH_FADE);
-    if (weight === 0) return;
-    // Added after lookAt, on top of the rig: the path stays the source of truth.
-    const a = (clock.elapsedTime / BREATH_PERIOD) * Math.PI * 2;
-    camera.translateX(Math.sin(a) * BREATH_DRIFT * weight);
-    camera.translateY(Math.sin(2 * a + 1) * BREATH_DRIFT * 0.5 * weight);
-    camera.rotateZ(Math.sin(a + 0.6) * BREATH_ROLL * weight);
+    camera.position.copy(pose.position);
+    camera.lookAt(pose.target);
+    const perspective = camera as PerspectiveCamera;
+    const fov = fitFov(pose.fov, perspective.aspect);
+    if (perspective.fov !== fov) {
+      perspective.fov = fov;
+      perspective.updateProjectionMatrix();
+    }
   });
 
   return null;

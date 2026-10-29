@@ -1,10 +1,11 @@
-import { SCENE_POSITIONS } from "../camera-path";
 import { TERMINAL_BLOCKS } from "./stackLayout";
 
 // The CONE terminal's layout around its stack blocks (meters, world space). Pure data: Terminal builds it,
 // the yard lights and the container material read the mast positions.
 
-const [tx, , tz] = SCENE_POSITIONS.terminal;
+// In the terminal stage's own frame: the yard is laid out around the origin.
+const tx = 0;
+const tz = 0;
 // Yard slab, local to the terminal.
 export const YARD = { x0: tx - 62, x1: tx + 62, z0: tz - 70, z1: tz + 48 };
 

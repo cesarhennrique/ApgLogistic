@@ -10,7 +10,9 @@ test("home loads with h1 and no console errors", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Transportando confiança desde 1996" }),
   ).toBeVisible();
-  await page.waitForLoadState("networkidle");
+  // Not "networkidle": the hero map's labels (troika text) run a worker whose blob: script never "finishes".
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(2500);
   expect(errors).toEqual([]);
 });
 

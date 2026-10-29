@@ -3,21 +3,24 @@
 import { OrbitControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useState } from "react";
-import { sampleCamera } from "./camera-path";
+import { sampleStageCamera } from "./stages/camera";
 import { debugStats } from "./debugStats";
 import { journeyProgress } from "./progress";
 
 // Loaded only with ?debug, so production pays nothing when it is off.
 export function DebugOrbit() {
-  return <OrbitControls makeDefault target={sampleCamera(journeyProgress.value).target} />;
+  return <OrbitControls makeDefault target={sampleStageCamera(journeyProgress.value).target} />;
 }
 
-// Inside the canvas: copies renderer.info (last frame, shadow pass included) for the panel.
+// Inside the canvas: copies renderer.info for the panel. The post passes reset it per render, so it accumulates
+// the whole last frame (shadow and post passes included) and resets here, before the next one renders.
 export function DebugProbe() {
   useFrame(({ gl }) => {
+    gl.info.autoReset = false;
     debugStats.triangles = gl.info.render.triangles;
     debugStats.calls = gl.info.render.calls;
-  });
+    gl.info.reset();
+  }, -1);
   return null;
 }
 
@@ -48,8 +51,6 @@ export function DebugSlider() {
         <dd data-testid="debug-triangles">{stats.triangles.toLocaleString("pt-BR")}</dd>
         <dt>draw calls</dt>
         <dd>{stats.calls}</dd>
-        <dt>last env bake</dt>
-        <dd data-testid="debug-bake">{stats.bakeMs === null ? "—" : `${stats.bakeMs.toFixed(1)} ms`}</dd>
       </dl>
     </div>
   );

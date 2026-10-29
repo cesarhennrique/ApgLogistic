@@ -1,5 +1,4 @@
 import { CRANE_POSITION, QUAY_TOP, SHIP_DECK_Y, SHIP_PICK_POINT } from "../anchors";
-import { SCENE_POSITIONS } from "../camera-path";
 import { CONTAINER, type ContainerType } from "./containerGeometry";
 
 export type StackedContainer = {
@@ -48,7 +47,9 @@ type Block = {
 const ROW_PITCH = CONTAINER["40"].width + 0.3;
 const BAY_PITCH = CONTAINER["40"].length + 0.6;
 
-const [tx, , tz] = SCENE_POSITIONS.terminal;
+// The terminal's blocks in its stage's own frame (around the origin); port and ship blocks use the port anchors.
+const tx = 0;
+const tz = 0;
 
 const BLOCKS: Block[] = [
   // The ship's deck: 7 bays of 7 rows, 3–4 high, one block per bay so each culls on its own; only the two

@@ -2,8 +2,7 @@
 
 import { useGLTF } from "@react-three/drei";
 import { Component, type ReactNode, Suspense, useMemo } from "react";
-import type { Material, Mesh } from "three";
-import { withSkyFog } from "./skyShared";
+import type { Mesh } from "three";
 
 // A GLB dropped into public/3d/models/ replaces the procedural model (next.config only sets the URL when the
 // file exists, so nothing fetches a missing file). Authored in meters, with the procedural model's origin.
@@ -28,8 +27,6 @@ function Glb({ url }: { url: string }) {
       const mesh = o as Mesh;
       if (!mesh.isMesh) return;
       mesh.castShadow = mesh.receiveShadow = true;
-      // Same fog as the rest of the scene, or its horizon shows a seam.
-      if (!Array.isArray(mesh.material)) mesh.material = withSkyFog((mesh.material as Material & { fog: boolean }).clone());
     });
     return copy;
   }, [scene]);

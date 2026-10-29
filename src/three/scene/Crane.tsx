@@ -6,46 +6,30 @@ import {
   BufferAttribute,
   BufferGeometry,
   type Group,
-  Vector3,
   LineBasicMaterial,
   type Mesh,
   MeshStandardMaterial,
 } from "three";
 import { CRANE_POSITION, QUAY_EDGE_X, QUAY_TOP, SHIP_PICK_POINT, TRUCK_LOAD_POINT } from "../anchors";
-import { craneState, LIFT_AT, LIFT_DONE } from "../craneMotion";
+import { craneState, LIFT_DONE } from "../craneMotion";
 import { CONTAINER, getContainerGeometry, getStripeGeometry } from "../models/containerGeometry";
 import { buildCraneGeometry, buildSpreaderGeometry, buildTrolleyGeometry, CRANE } from "../models/craneGeometry";
 import { journeyProgress } from "../progress";
-import { placeOnShip } from "../shipPose";
 import { createConcreteMaterial } from "./concrete";
 import { apgBoxMaterial, ContainerStacks, stripeMaterial } from "./ContainerStacks";
-import { lostInFog, withSkyFog } from "./skyShared";
 
 const crane = buildCraneGeometry();
 const trolley = buildTrolleyGeometry();
 const spreader = buildSpreaderGeometry(CONTAINER["40"].length);
 
-// Light grey steel with a warm rim: silhouette edges catch the low sun, strongest on the sun's side.
-const steelBase = new MeshStandardMaterial({ color: "#c9ccd1", roughness: 0.55, metalness: 0.35 });
-steelBase.customProgramCacheKey = () => "crane-rim";
-steelBase.onBeforeCompile = (shader) => {
-  shader.fragmentShader = shader.fragmentShader.replace(
-    "#include <emissivemap_fragment>",
-    /* glsl */ `#include <emissivemap_fragment>
-    float rim = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 3.0);
-    vec3 sunView = normalize((viewMatrix * vec4(uSunDir, 0.0)).xyz);
-    totalEmissiveRadiance += uSunColor * uSunIntensity * rim * (0.12 + 0.3 * max(dot(normal, sunView), 0.0));`,
-  );
-};
-const steel = withSkyFog(steelBase);
+// Light grey steel; the studio's rim light draws its silhouette.
+const steel = new MeshStandardMaterial({ color: "#c9ccd1", roughness: 0.55, metalness: 0.35 });
 // Sand details (machinery house, boom head) and the A-frame's red obstruction lights.
-const house = withSkyFog(new MeshStandardMaterial({ color: "#d8c8a6", roughness: 0.65, metalness: 0.1 }));
-const navLights = withSkyFog(
-  new MeshStandardMaterial({ color: "#3a0d0a", emissive: "#ff2a1a", emissiveIntensity: 4, roughness: 0.4 }),
-);
-const dark = withSkyFog(new MeshStandardMaterial({ color: "#30353f", roughness: 0.5, metalness: 0.3 }));
-const spreaderPaint = withSkyFog(new MeshStandardMaterial({ color: "#c99a3a", roughness: 0.5, metalness: 0.3 }));
-const ropeMaterial = withSkyFog(new LineBasicMaterial({ color: "#1c1f26" }));
+const house = new MeshStandardMaterial({ color: "#d8c8a6", roughness: 0.65, metalness: 0.1 });
+const navLights = new MeshStandardMaterial({ color: "#3a0d0a", emissive: "#ff2a1a", emissiveIntensity: 4, roughness: 0.4 });
+const dark = new MeshStandardMaterial({ color: "#30353f", roughness: 0.5, metalness: 0.3 });
+const spreaderPaint = new MeshStandardMaterial({ color: "#c99a3a", roughness: 0.5, metalness: 0.3 });
+const ropeMaterial = new LineBasicMaterial({ color: "#1c1f26" });
 
 // Quay: from the edge inland, painted with the edge safety line and the crane's truck lane.
 const QUAY = { x0: QUAY_EDGE_X, x1: QUAY_EDGE_X + 66, z0: CRANE_POSITION.z - 64, z1: CRANE_POSITION.z + 30 };
@@ -69,14 +53,7 @@ ropes.setAttribute("position", new BufferAttribute(new Float32Array(ROPES.length
 const CLACK = 0.12;
 
 const state = craneState(0);
-// Everything the port draws (quay, crane up to its apex, the box, the quay's stacks) fits in this sphere.
-const BOUNDS = {
-  center: new Vector3((QUAY.x0 + QUAY.x1) / 2 - 10, 15, (QUAY.z0 + QUAY.z1) / 2),
-  radius: 95,
-};
-
 export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
-  const port = useRef<Group>(null);
   const trolleyRef = useRef<Mesh>(null);
   const spreaderRef = useRef<Mesh>(null);
   const boxRef = useRef<Group>(null);
@@ -84,8 +61,7 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
   const wasLocked = useRef<boolean | null>(null);
   const clackAt = useRef(-Infinity);
 
-  useFrame(({ camera, clock }) => {
-    port.current!.visible = !lostInFog(camera.position, BOUNDS.center, BOUNDS.radius);
+  useFrame(({ clock }) => {
     craneState(journeyProgress.value, state);
     const { trolleyX, spreaderY, container, locked } = state;
 
@@ -93,12 +69,7 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
     spreaderRef.current!.position.set(trolleyX, spreaderY, CRANE_POSITION.z);
     // Landed (0.4): the truck carries its own copy from here.
     boxRef.current!.visible = journeyProgress.value < LIFT_DONE;
-    // Still cargo: ride the ship (it glides in and rolls in the hero); then hang from the spreader.
-    if (journeyProgress.value < LIFT_AT) placeOnShip(container, boxRef.current!);
-    else {
-      boxRef.current!.position.copy(container);
-      boxRef.current!.rotation.set(0, 0, 0);
-    }
+    boxRef.current!.position.copy(container);
 
     if (wasLocked.current === false && locked && !reducedMotion) clackAt.current = clock.elapsedTime;
     wasLocked.current = locked;
@@ -115,7 +86,7 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
   });
 
   return (
-    <group ref={port}>
+    <group>
       <mesh
         material={quayMaterial}
         position={[(QUAY.x0 + QUAY.x1) / 2, (QUAY_TOP - 4) / 2, (QUAY.z0 + QUAY.z1) / 2]}

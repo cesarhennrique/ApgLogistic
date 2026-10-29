@@ -17,11 +17,9 @@ import {
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { site } from "@/content/site";
-import { sampleLight } from "../lightKeys";
-import { HIGHWAY, loopX } from "../models/highwayLayout";
+import { CRUISE, HIGHWAY, loopX } from "../models/highwayLayout";
 import { journeyProgress } from "../progress";
-import { truckPoseAt } from "../truckPose";
-import { withSkyFog } from "./skyShared";
+import { inView } from "../stages/inView";
 import { createLampPools } from "./yardLight";
 
 const {
@@ -38,14 +36,12 @@ const carriageway = 2 * lane;
 // Half-width of the paved road (median + carriageway + shoulder), then the grass verges beyond it.
 const PAVED = median + carriageway + shoulder;
 const HALF = PAVED + verge;
-// Seen from about 0.42 (leaving the port) to 0.78 (over the terminal); hidden and not updated otherwise.
-const SHOWN = [0.42, 0.78] as const;
 
 // Asphalt, shoulders, grass and paint, all in the shader; uScroll slides it under the standing truck.
 const groundUniforms = { uScroll: { value: 0 } };
-const groundBase = new MeshStandardMaterial({ roughness: 0.92 });
-groundBase.customProgramCacheKey = () => "br101-ground";
-groundBase.onBeforeCompile = (shader) => {
+const groundMaterial = new MeshStandardMaterial({ roughness: 0.92 });
+groundMaterial.customProgramCacheKey = () => "br101-ground";
+groundMaterial.onBeforeCompile = (shader) => {
   Object.assign(shader.uniforms, groundUniforms);
   shader.vertexShader = shader.vertexShader
     .replace("#include <common>", "#include <common>\nvarying vec2 vRoad;")
@@ -91,32 +87,15 @@ groundBase.onBeforeCompile = (shader) => {
       diffuseColor.rgb = col;`,
     );
 };
-const groundMaterial = withSkyFog(groundBase);
 
-const steel = withSkyFog(
-  new MeshStandardMaterial({
-    color: "#a9adb3",
-    roughness: 0.45,
-    metalness: 0.7,
-  }),
-);
-const poleLamp = withSkyFog(
-  new MeshStandardMaterial({
-    color: "#2b2b2b",
-    emissive: "#ffb46b",
-    emissiveIntensity: 0,
-    roughness: 0.4,
-  }),
-);
-const foliage = withSkyFog(new MeshStandardMaterial({ roughness: 0.85 }));
+const steel = new MeshStandardMaterial({ color: "#a9adb3", roughness: 0.45, metalness: 0.7 });
+// The poles are lit: this stage is the night drive.
+const poleLamp = new MeshStandardMaterial({ color: "#2b2b2b", emissive: "#ffb46b", emissiveIntensity: 4, roughness: 0.4 });
+const foliage = new MeshStandardMaterial({ roughness: 0.85 });
 // DNIT direction-sign green with a white border; the text is white.
-const signGreen = withSkyFog(
-  new MeshStandardMaterial({ color: "#006b3f", roughness: 0.6 }),
-);
-const signWhite = withSkyFog(
-  new MeshStandardMaterial({ color: "#f2f2f2", roughness: 0.6 }),
-);
-const signText = withSkyFog(new MeshBasicMaterial({ color: "#ffffff" }));
+const signGreen = new MeshStandardMaterial({ color: "#006b3f", roughness: 0.6 });
+const signWhite = new MeshStandardMaterial({ color: "#f2f2f2", roughness: 0.6 });
+const signText = new MeshBasicMaterial({ color: "#ffffff" });
 
 // Guard rails: the median's and each outer edge's; the beams are continuous, only the posts scroll.
 const RAIL_Z = [
@@ -234,7 +213,6 @@ const props = buildProps();
 const pools = createLampPools(12, props[1].spots.length * 2);
 pools.frustumCulled = false;
 const dummy = new Object3D();
-const light = sampleLight(0);
 
 // The sign: on the truck's verge, ahead, turned toward the travelling camera so it reads.
 const SIGN = {
@@ -245,7 +223,7 @@ const SIGN = {
   y: 5.4,
 };
 
-// BR-101 at dusk: the APG truck stands in its lane while the road, posts, poles and trees loop past.
+// BR-101 at night: the APG truck stands in its lane while the road, posts, poles and trees loop past.
 export function Highway({ reducedMotion }: { reducedMotion: boolean }) {
   const group = useRef<Group>(null);
   const sign = useRef<Group>(null);
@@ -255,14 +233,10 @@ export function Highway({ reducedMotion }: { reducedMotion: boolean }) {
   useFrame(({ clock }) => {
     const p = journeyProgress.value;
     if (!near && p > 0.3) setNear(true);
-    const shown = p > SHOWN[0] && p < SHOWN[1];
-    group.current!.visible = shown;
-    if (!shown) return;
-    const { scroll } = truckPoseAt(p, clock.elapsedTime, reducedMotion);
+    // Only while its stage is on screen (StageDirector hides the rest).
+    if (!inView(group.current!)) return;
+    const scroll = reducedMotion ? 0 : CRUISE * clock.elapsedTime;
     groundUniforms.uScroll.value = scroll % 1200;
-    const { lamps } = sampleLight(p, light);
-    poleLamp.emissiveIntensity = lamps * 4;
-    pools.visible = lamps > 0;
 
     for (const { mesh, spots } of props) {
       spots.forEach((s, i) => {
@@ -292,7 +266,7 @@ export function Highway({ reducedMotion }: { reducedMotion: boolean }) {
   });
 
   return (
-    <group ref={group} visible={false}>
+    <group ref={group}>
       <mesh
         material={groundMaterial}
         rotation-x={-Math.PI / 2}

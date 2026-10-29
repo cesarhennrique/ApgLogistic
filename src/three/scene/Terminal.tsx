@@ -1,17 +1,14 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import {
   CylinderGeometry,
-  type Group,
   InstancedMesh,
   MeshStandardMaterial,
   Object3D,
   Vector3,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { sampleLight } from "../lightKeys";
 import { beam, block } from "../models/craneGeometry";
 import { TERMINAL_BLOCKS } from "../models/stackLayout";
 import {
@@ -27,11 +24,8 @@ import {
   YARD,
   zs,
 } from "../models/terminalLayout";
-import { journeyProgress } from "../progress";
 import { createConcreteMaterial } from "./concrete";
 import { ContainerStacks } from "./ContainerStacks";
-import { lostInFog, withSkyFog } from "./skyShared";
-import { createLampPools, yardUniforms } from "./yardLight";
 
 const v = (x: number, y: number, z: number) => new Vector3(x, y, z);
 
@@ -42,16 +36,14 @@ const floorMaterial = createConcreteMaterial({
     ...laneZ.map((z) => ({ from: [YARD.x0 + 2, z] as [number, number], to: [YARD.x1 - 2, z] as [number, number] })),
   ],
 });
-const cladding = withSkyFog(new MeshStandardMaterial({ color: "#b9bcc2", roughness: 0.7, metalness: 0.2 }));
-const roofing = withSkyFog(new MeshStandardMaterial({ color: "#7f838a", roughness: 0.8 }));
-const doorPaint = withSkyFog(new MeshStandardMaterial({ color: "#4a5160", roughness: 0.6, metalness: 0.3 }));
-const mastPaint = withSkyFog(new MeshStandardMaterial({ color: "#8a8e95", roughness: 0.6, metalness: 0.4 }));
-// Lamp crowns: dark by day, sodium-warm emissive at night (Prompt 14's bloom picks them up).
-const lampPaint = withSkyFog(
-  new MeshStandardMaterial({ color: "#2b2b2b", emissive: "#ffb46b", emissiveIntensity: 0, roughness: 0.4 }),
-);
-const stackerYellow = withSkyFog(new MeshStandardMaterial({ color: "#cf9f36", roughness: 0.55, metalness: 0.2 }));
-const stackerDark = withSkyFog(new MeshStandardMaterial({ color: "#26292f", roughness: 0.7, metalness: 0.2 }));
+const cladding = new MeshStandardMaterial({ color: "#b9bcc2", roughness: 0.7, metalness: 0.2 });
+const roofing = new MeshStandardMaterial({ color: "#7f838a", roughness: 0.8 });
+const doorPaint = new MeshStandardMaterial({ color: "#4a5160", roughness: 0.6, metalness: 0.3 });
+const mastPaint = new MeshStandardMaterial({ color: "#8a8e95", roughness: 0.6, metalness: 0.4 });
+// Lamp crowns (unlit: the terminal is seen by day).
+const lampPaint = new MeshStandardMaterial({ color: "#2b2b2b", roughness: 0.4 });
+const stackerYellow = new MeshStandardMaterial({ color: "#cf9f36", roughness: 0.55, metalness: 0.2 });
+const stackerDark = new MeshStandardMaterial({ color: "#26292f", roughness: 0.7, metalness: 0.2 });
 
 const hall = mergeGeometries([
   block(v(-HALL.length / 2, 0, -HALL.depth / 2), v(HALL.length / 2, HALL.height, HALL.depth / 2)),
@@ -107,21 +99,7 @@ function instancedAt(geometry: InstancedMesh["geometry"], material: MeshStandard
   return mesh;
 }
 
-const pools = createLampPools(17, MASTS.length);
-MASTS.forEach(([x, z], i) => {
-  const o = new Object3D();
-  o.position.set(x, 0.05, z);
-  o.updateMatrix();
-  pools.setMatrixAt(i, o.matrix);
-});
-pools.computeBoundingSphere();
-
-const light = sampleLight(0);
-// Everything the terminal draws fits in this sphere.
-const BOUNDS = { center: v((YARD.x0 + YARD.x1) / 2, 10, (YARD.z0 + YARD.z1) / 2), radius: 90 };
-
 export function Terminal() {
-  const group = useRef<Group>(null);
   const meshes = useMemo(() => {
     const doorSpots = [-1, 1].flatMap((s) =>
       Array.from({ length: DOCKS_PER_FACE }, (_, i) => {
@@ -142,16 +120,8 @@ export function Terminal() {
     ];
   }, []);
 
-  useFrame(({ camera }) => {
-    group.current!.visible = !lostInFog(camera.position, BOUNDS.center, BOUNDS.radius);
-    const { lamps } = sampleLight(journeyProgress.value, light);
-    pools.visible = lamps > 0;
-    yardUniforms.uLamps.value = lamps;
-    lampPaint.emissiveIntensity = lamps * 4;
-  });
-
   return (
-    <group ref={group}>
+    <group>
       <mesh
         material={floorMaterial}
         rotation-x={-Math.PI / 2}
@@ -168,7 +138,6 @@ export function Terminal() {
       {meshes.map((m) => (
         <primitive key={m.uuid} object={m} />
       ))}
-      <primitive object={pools} />
 
       {STACKERS.map(({ at: [x, z], heading }, i) => (
         <group key={i} position={[x, 0, z]} rotation-y={heading}>

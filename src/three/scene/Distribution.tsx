@@ -7,6 +7,7 @@ import {
   type BufferGeometry,
   Color,
   ExtrudeGeometry,
+  FileLoader,
   Float32BufferAttribute,
   type Group,
   InstancedMesh,
@@ -31,7 +32,7 @@ import {
   vanStateAt,
 } from "../models/distributionLayout";
 import { journeyProgress } from "../progress";
-import { lostInFog, withSkyFog } from "./skyShared";
+import { inView } from "../stages/inView";
 
 const highlight = new Set(site.home.coverage.highlight);
 const [suapeX, suapeY] = toSvg(GALPAO_DOOR);
@@ -65,18 +66,18 @@ function toGround(geometry: BufferGeometry) {
 // PE and BA: sand slabs, two tones so the border reads, glowing faintly so the map reads at night like a lit
 // diorama. The other states: dark and flat.
 const stateMaterial = (hex: string) =>
-  withSkyFog(new MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: 0.45, roughness: 0.7 }));
+  new MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: 0.45, roughness: 0.7 });
 const STATE_MATERIALS: Record<string, MeshStandardMaterial> = { PE: stateMaterial("#f3efe7"), BA: stateMaterial("#cfc6b4") };
-const contextMaterial = withSkyFog(new MeshStandardMaterial({ color: "#1c2550", roughness: 0.9 }));
-const cladding = withSkyFog(new MeshStandardMaterial({ color: "#b9bcc2", roughness: 0.7, metalness: 0.2 }));
-const doorway = withSkyFog(
-  new MeshStandardMaterial({ color: "#1a1a1f", emissive: "#ffd9a0", emissiveIntensity: 0.6, roughness: 0.9 }),
-);
-const vanPaint = withSkyFog(new MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.1 }));
+const contextMaterial = new MeshStandardMaterial({ color: "#1c2550", roughness: 0.9 });
+const cladding = new MeshStandardMaterial({ color: "#b9bcc2", roughness: 0.7, metalness: 0.2 });
+const doorway = new MeshStandardMaterial({ color: "#1a1a1f", emissive: "#ffd9a0", emissiveIntensity: 0.6, roughness: 0.9 });
+const vanPaint = new MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.1 });
 
 function Map() {
-  const { paths } = useLoader(SVGLoader, "/images/map/nordeste.svg");
+  // The same raw text the hero map loads: useLoader caches by URL, so both must ask with the same loader.
+  const svg = useLoader(FileLoader, "/images/map/nordeste.svg") as string;
   const [states, context] = useMemo(() => {
+    const { paths } = new SVGLoader().parse(svg);
     const lit: { id: string; geometry: BufferGeometry }[] = [];
     const flat: BufferGeometry[] = [];
     for (const path of paths) {
@@ -87,7 +88,7 @@ function Map() {
       } else flat.push(toGround(new ShapeGeometry(shapes)).translate(0, 0.05, 0));
     }
     return [lit, mergeGeometries(flat)!];
-  }, [paths]);
+  }, [svg]);
   return (
     <>
       {states.map(({ id, geometry }) => (
@@ -128,7 +129,6 @@ const galpao = mergeGeometries([
   block(new Vector3(0, 0, -GALPAO.depth / 2), new Vector3(GALPAO.width, GALPAO.height, GALPAO.depth / 2)),
   block(new Vector3(-0.4, GALPAO.height, -GALPAO.depth / 2 - 0.4), new Vector3(GALPAO.width + 0.4, GALPAO.height + 0.6, GALPAO.depth / 2 + 0.4)),
 ])!;
-const BOUNDS = { center: new Vector3(MAP_ORIGIN.x - 70, 5, MAP_ORIGIN.z + 60), radius: 120 };
 
 // Chapter 5: out of the warehouse, the vans fan out across Pernambuco and Bahia.
 export function Distribution() {
@@ -136,12 +136,11 @@ export function Distribution() {
   // The map (an SVG fetch, then triangulating PE and BA) is built only once the journey nears it, not on load.
   const [near, setNear] = useState(false);
 
-  useFrame(({ camera }) => {
+  useFrame(() => {
     const p = journeyProgress.value;
     if (!near && p > 0.6) setNear(true);
-    const g = group.current!;
-    g.visible = p > 0.7 && !lostInFog(camera.position, BOUNDS.center, BOUNDS.radius);
-    if (!g.visible) return;
+    // Only while its stage is on screen.
+    if (!inView(group.current!)) return;
     const u = localProgress(p, "distribution");
     for (let i = 0; i < VAN_DESTINATIONS.length; i++) {
       vanStateAt(i, u, state);
@@ -155,7 +154,7 @@ export function Distribution() {
   });
 
   return (
-    <group ref={group} visible={false}>
+    <group ref={group}>
       {near && (
         <Suspense fallback={null}>
           <Map />

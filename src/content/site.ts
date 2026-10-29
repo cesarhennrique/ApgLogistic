@@ -221,7 +221,11 @@ export const site = {
     { id: "distribution", text: "500 entregas fracionadas por dia" },
   ] satisfies ChapterText[],
   // Text painted inside the 3D journey (spec §3, chapter 3).
-  journeyScene: { highwaySign: "BR-101 · SUAPE" },
+  journeyScene: {
+    highwaySign: "BR-101 · SUAPE",
+    // Small labels on the hero's map.
+    mapLabels: { suape: "SUAPE · PE", salvador: "SALVADOR · BA" },
+  },
 
   // confirmar com cliente
   mission:

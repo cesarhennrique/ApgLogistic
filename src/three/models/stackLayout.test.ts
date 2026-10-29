@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { CRANE_POSITION, SHIP_PICK_POINT, TRUCK_LOAD_POINT } from "../anchors";
-import { SCENE_POSITIONS } from "../camera-path";
 import { CONTAINER } from "./containerGeometry";
 import { APG_NAVY, buildStacks, CARRIER_COLORS, STACKS, type StackedContainer } from "./stackLayout";
 
@@ -56,7 +55,8 @@ describe("STACKS", () => {
       expect(here.length).toBeGreaterThan(20);
       expect(here.some((c) => c.apg)).toBe(true);
     }
-    const [tx, , tz] = SCENE_POSITIONS.terminal;
+    // The terminal stage is laid out around its own origin.
+    const [tx, tz] = [0, 0];
     for (const c of STACKS.filter((s) => s.area === "terminal")) {
       expect(Math.abs(c.position[0] - tx)).toBeLessThan(60);
       expect(Math.abs(c.position[2] - tz)).toBeLessThan(60);

@@ -2,24 +2,15 @@
 
 import { Canvas } from "@react-three/fiber";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { ACESFilmicToneMapping, SRGBColorSpace } from "three";
 import { NAVIGATE_EVENT } from "@/components/layout/PageCurtain";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { CameraRig } from "./CameraRig";
-import { sampleCamera } from "./camera-path";
 import { readDebugParams } from "./debug";
-import { Placeholders } from "./Placeholders";
 import { journeyProgress } from "./progress";
-import { Crane } from "./scene/Crane";
-import { Distribution } from "./scene/Distribution";
-import { Highway } from "./scene/Highway";
-import { Lighting } from "./scene/Lighting";
-import { Ocean } from "./scene/Ocean";
-import { RouteLine } from "./scene/RouteLine";
-import { Ship } from "./scene/Ship";
-import { Sky } from "./scene/Sky";
-import { Terminal } from "./scene/Terminal";
-import { Truck } from "./scene/Truck";
+import { sampleStageCamera } from "./stages/camera";
+import { Stages } from "./stages/Stages";
+import { Effects } from "./studio/Effects";
+import { Studio } from "./studio/Studio";
 
 const DebugOrbit = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugOrbit })));
 const DebugSlider = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugSlider })));
@@ -58,28 +49,16 @@ export default function JourneyCanvas() {
           dpr={[1, 2]}
           shadows="percentage"
           frameloop={onScreen && !leaving ? "always" : "never"}
-          camera={{ fov: 40, near: 0.1, far: 400, position: sampleCamera(journeyProgress.value).position }}
-          onCreated={({ gl }) => {
-            // Exposure follows the journey (Lighting, from sampleLight).
-            gl.toneMapping = ACESFilmicToneMapping;
-            gl.outputColorSpace = SRGBColorSpace;
-            setReady(true);
-          }}
+          // Tone mapping happens in the post stack (Effects), so the renderer's is off; SMAA replaces MSAA.
+          flat
+          gl={{ antialias: false }}
+          // Stages sit 1 km apart and the shots reach ~200 m: a deep but bounded frustum.
+          camera={{ fov: 35, near: 0.5, far: 2500, position: sampleStageCamera(journeyProgress.value).position }}
+          onCreated={() => setReady(true)}
         >
-          <Lighting />
-          <Sky />
-          <Suspense fallback={null}>
-            <Ocean reducedMotion={reducedMotion} />
-          </Suspense>
-          <Placeholders />
-          {/* Before Crane: its box rides the ship until lifted, so the ship's pose must be fresh. */}
-          <Ship reducedMotion={reducedMotion} />
-          <Crane reducedMotion={reducedMotion} />
-          <Truck reducedMotion={reducedMotion} />
-          <Highway reducedMotion={reducedMotion} />
-          <Distribution />
-          <RouteLine />
-          <Terminal />
+          <Studio />
+          <Stages reducedMotion={reducedMotion} />
+          <Effects />
           {debug ? (
             <Suspense fallback={null}>
               <DebugOrbit />

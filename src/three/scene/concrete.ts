@@ -1,6 +1,4 @@
 import { MeshStandardMaterial } from "three";
-import { withSkyFog } from "./skyShared";
-import { yardUniforms } from "./yardLight";
 
 
 type Rect = { x: number; z: number; hx: number; hz: number };
@@ -36,7 +34,6 @@ export function createConcreteMaterial(m: ConcreteMarkings = {}) {
   const key = `concrete|${paint}`;
   material.customProgramCacheKey = () => key;
   material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, yardUniforms);
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying vec2 vConcrete;")
       .replace("#include <project_vertex>", "#include <project_vertex>\nvConcrete = (modelMatrix * vec4(transformed, 1.0)).xz;");
@@ -45,7 +42,6 @@ export function createConcreteMaterial(m: ConcreteMarkings = {}) {
         "#include <common>",
         /* glsl */ `#include <common>
         varying vec2 vConcrete;
-        uniform float uLamps;
         float cHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         float cNoise(vec2 p) {
           vec2 i = floor(p); vec2 u = fract(p); u = u * u * (3.0 - 2.0 * u);
@@ -75,13 +71,11 @@ export function createConcreteMaterial(m: ConcreteMarkings = {}) {
         // Slab joints every 6 m.
         vec2 g = abs(fract(p / 6.0 + 0.5) - 0.5) * 6.0;
         diffuseColor.rgb *= mix(0.72, 1.0, smoothstep(0.0, 0.05, min(g.x, g.y)));
-        // At night the slab sinks to ~#2e2f36, darker than the boxes, so the sodium pools carry the yard.
-        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.075, 0.08, 0.12), uLamps);
         vec4 paint = vec4(0.0);
         ${paint}
-        // Paint scuffed by the same wear, dimmed with the slab at night.
-        diffuseColor.rgb = mix(diffuseColor.rgb, paint.rgb * mix(1.0, 0.5, uLamps), paint.a * (0.65 + 0.35 * wear));`,
+        // Paint scuffed by the same wear.
+        diffuseColor.rgb = mix(diffuseColor.rgb, paint.rgb, paint.a * (0.65 + 0.35 * wear));`,
       );
   };
-  return withSkyFog(material);
+  return material;
 }
