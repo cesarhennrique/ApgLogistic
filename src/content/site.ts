@@ -225,6 +225,18 @@ export const site = {
     highwaySign: "BR-101 · SUAPE",
     // Small labels on the hero's map.
     mapLabels: { suape: "SUAPE · PE", salvador: "SALVADOR · BA" },
+    // Shown when the pointer is over Suape on the hero's map.
+    suapeHover: "Terminal CONE · Cabo de Santo Agostinho",
+  },
+
+  // The first-visit loader (spec §5, "Loading e abertura do hero"): status line per band of progress.
+  intro: {
+    status: [
+      { until: 40, text: "Atracando em Suape…" },
+      { until: 80, text: "Içando container…" },
+      { until: 100, text: "Liberando carreta…" },
+    ],
+    coordinate: "SUAPE · PE · 08°23′S 34°57′W",
   },
 
   // confirmar com cliente
@@ -241,6 +253,11 @@ export const site = {
       code: "Quem somos",
       subtitle:
         "Do navio de cabotagem em Suape à entrega fracionada: frota própria, terminal próprio e atendimento 24 h.",
+      // Secondary link: scrolls to chapter 1.
+      seeOperation: "Ver a operação",
+      scrollHint: "Role para descobrir",
+      clock: "SUAPE",
+      ticker: ["1.900 TEUs/mês", "500 entregas/dia", "desde 1996", "24h"],
     },
     services: { code: "Serviços", title: "Do porto ao destino final", more: "Ver serviço" },
     stats: { code: "Números", title: "A operação em números" },

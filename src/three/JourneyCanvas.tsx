@@ -1,11 +1,13 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
+import { introBridge, subscribeCovered } from "@/components/intro/bridge";
 import { NAVIGATE_EVENT } from "@/components/layout/PageCurtain";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { CameraRig } from "./CameraRig";
 import { readDebugParams } from "./debug";
+import { LoadProbe } from "./LoadProbe";
 import { journeyProgress } from "./progress";
 import { sampleStageCamera } from "./stages/camera";
 import { Stages } from "./stages/Stages";
@@ -23,6 +25,11 @@ export default function JourneyCanvas() {
   const [ready, setReady] = useState(false);
   const [onScreen, setOnScreen] = useState(true);
   const [leaving, setLeaving] = useState(false);
+  const covered = useSyncExternalStore(
+    subscribeCovered,
+    () => introBridge.covered,
+    () => false,
+  );
 
   // Stop rendering once #journey leaves the viewport.
   useEffect(() => {
@@ -48,7 +55,8 @@ export default function JourneyCanvas() {
         <Canvas
           dpr={[1, 2]}
           shadows="percentage"
-          frameloop={onScreen && !leaving ? "always" : "never"}
+          // Under the first-visit loader, only the frames asked for (the hero map's first one).
+          frameloop={onScreen && !leaving ? (covered ? "demand" : "always") : "never"}
           // Tone mapping happens in the post stack (Effects), so the renderer's is off; SMAA replaces MSAA.
           flat
           gl={{ antialias: false }}
@@ -56,6 +64,7 @@ export default function JourneyCanvas() {
           camera={{ fov: 35, near: 0.5, far: 2500, position: sampleStageCamera(journeyProgress.value).position }}
           onCreated={() => setReady(true)}
         >
+          <LoadProbe />
           <Studio />
           <Stages reducedMotion={reducedMotion} />
           <Effects />

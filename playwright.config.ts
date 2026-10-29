@@ -12,9 +12,23 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
+      testIgnore: /\.timing\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
-    { name: "mobile", use: { ...devices["iPhone 13"] } },
+    { name: "mobile", testIgnore: /\.timing\.spec\.ts/, use: { ...devices["iPhone 13"] } },
+    // Timing-sensitive tests, once the suite above is done, so no other page loads the CPU meanwhile.
+    {
+      name: "timing-desktop",
+      testMatch: /\.timing\.spec\.ts/,
+      dependencies: ["desktop", "mobile"],
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: "timing-mobile",
+      testMatch: /\.timing\.spec\.ts/,
+      dependencies: ["desktop", "mobile"],
+      use: { ...devices["iPhone 13"] },
+    },
   ],
   webServer: {
     command: "npm run dev",

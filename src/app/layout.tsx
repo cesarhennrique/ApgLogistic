@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { SEEN_KEY } from "@/components/intro/bridge";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { PageCurtain } from "@/components/layout/PageCurtain";
@@ -38,6 +39,8 @@ export const metadata: Metadata = {
   openGraph: { siteName: site.name, locale: "pt_BR", type: "website" },
 };
 
+const INTRO_SCRIPT = `var d=document.documentElement;d.classList.add('js');try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!/[?&](p|debug)(=|&|$)/.test(location.search))d.classList.add(sessionStorage.getItem('${SEEN_KEY}')?'intro-short':'intro-full')}catch(e){}`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: the inline script below adds the `js` class before React hydrates
@@ -47,8 +50,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        {/* runs before first paint so `.js [data-reveal-immediate]` can hide above-the-fold reveals */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+        {/* Runs before first paint: `.js [data-reveal-immediate]` hides above-the-fold reveals, and the intro mode
+            (globals.css) picks the loader on the first visit of the session, the short entrance after it. No intro
+            with reduced motion or with the journey's ?p / ?debug. */}
+        <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col">
         <SmoothScroll />

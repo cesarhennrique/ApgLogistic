@@ -1,3 +1,4 @@
+import { Loader } from "@/components/intro/Loader";
 import { Hero } from "./Hero";
 import { JourneyStage } from "./JourneyStage";
 import { JourneyTrack } from "./JourneyTrack";
@@ -6,6 +7,8 @@ import { JourneyTrack } from "./JourneyTrack";
 export function Journey() {
   return (
     <div id="journey" className="relative">
+      {/* Outside the hero's isolated stacking context, so it can cover the header. */}
+      <Loader />
       <JourneyStage />
       <Hero />
       <JourneyTrack />

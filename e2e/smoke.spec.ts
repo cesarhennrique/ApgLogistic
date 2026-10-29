@@ -36,7 +36,7 @@ test("home has no horizontal overflow", async ({ page }) => {
 
 test("the Ç of CONFIANÇA stays inside its line mask", async ({ page }) => {
   await page.goto("/");
-  const h1 = page.locator("h1[data-reveal-immediate]");
+  const h1 = page.locator('h1[data-intro="title"]');
   // Polled: the line is still settling while the reveal (and the re-split on font load) runs.
   // Without the mask padding the glyph box never fits, so this times out. 15 s: the hero's 3D (the ship and
   // the port) loads the CPU in software GL while the reveal runs.

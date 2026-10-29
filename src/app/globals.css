@@ -84,6 +84,44 @@
   }
 }
 
+/* Hero intro (spec §5). html.intro-full / intro-short are set before first paint by layout.tsx's inline script.
+   First visit: the loader covers the page, the hero paints beneath it untouched (LCP). Later visits: the hero's
+   intro elements wait hidden for the short timeline, failsafe after 3 s. Reduced motion: neither, a 200 ms fade. */
+.intro-full [data-loader]:not([data-done]) {
+  display: flex;
+  /* Failsafe on the compositor: the curtain lifts at the loader's maximum (LOADER.maxMs) even if the main thread
+     is stuck. From the current value, so it carries on when the GSAP exit has already started. */
+  animation: loader-failsafe 0.45s ease-out 3.8s forwards;
+}
+
+@keyframes loader-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.intro-short:has([data-intro-root]) [data-intro]:not([data-intro-ready]) {
+  opacity: 0;
+  animation: reveal-failsafe 0s 3s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-loader] {
+    display: none !important;
+  }
+
+  [data-intro-root] {
+    animation: intro-fade 0.2s ease-out both;
+  }
+}
+
+@keyframes intro-fade {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes reveal-failsafe {
   to {
     opacity: 1;

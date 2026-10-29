@@ -8,11 +8,11 @@ export type StageCameras = { start: CameraKey; mid: CameraKey; end: CameraKey };
 // stage's subject: Suape on the hero map, the crane's base, the truck, the terminal's center, Suape on the PE/BA
 // map). shortcut: first-pass framing; Prompts 13b–13d direct each shot.
 export const STAGE_CAMERAS: Record<ChapterId, StageCameras> = {
-  // The Northeast map tilted ~35° (camera ~55° up, from the south, north up), shifted so it fills the right half;
-  // Suape and the routes from the sea inside the right edge. Then the dive toward Suape.
+  // The Northeast map, seen ~35° above its plane from the south (north up), aimed at its middle. At runtime the
+  // start is refitted to the viewport beside (or above) the copy (CameraRig, heroFrame). Then the dive to Suape.
   hero: {
-    start: { position: [-55, 125, 93], target: [-55, 0, 5], fov: 35 },
-    mid: { position: [-30, 60, 50], target: [-12, 0, 3], fov: 37 },
+    start: { position: [-30, 86, 129.4], target: [-30, 0, 6.5], fov: 35 },
+    mid: { position: [-12, 38, 56], target: [-6, 0, 3], fov: 37 },
     end: { position: [-4, 22, 18], target: [0, 0, 0], fov: 40 },
   },
   // Studio, three-quarter: the crane against sand, the ship's bay and the spreader seating on the APG box.
