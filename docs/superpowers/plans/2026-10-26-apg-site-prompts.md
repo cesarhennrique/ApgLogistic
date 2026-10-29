@@ -1031,21 +1031,21 @@ sobre fundo sand-50, com objetos isolados e impecáveis.
    - glass, rubber, chrome para a carreta;
    - concreto claro para o cais.
    Todos procedurais (0 bytes de textura).
-3. Detalhe que vende realismo: placas de identificação nos containers
+4. Detalhe que vende realismo: placas de identificação nos containers
    (código "APGU 199601 6" em mono nas portas do container APG, via
    texto do drei ou textura de canvas), cabos do spreader com leve
    catenária, luzes de aviso no spreader.
-4. LoadStage: a câmera gira até o perfil da carreta. O container cruza
+5. LoadStage: a câmera gira até o perfil da carreta. O container cruza
    e assenta, com um pequeno "assentamento" (desce 3 cm, sobe 1 cm, em
    180 ms) quando os twist locks travam. O logo APG fica legível na
    porta da cabine nesse quadro final.
-5. Câmeras: lentes longas (fov 18–28) como fotografia de produto, com
+6. Câmeras: lentes longas (fov 18–28) como fotografia de produto, com
    leve dolly enquanto o capítulo avança. O objeto principal ocupa o
    terço direito e o texto fica à esquerda.
-6. Sombras: AccumulativeShadows enquanto o palco está parado; quando o
+7. Sombras: AccumulativeShadows enquanto o palco está parado; quando o
    portêiner ou o container se movem, troque para ContactShadows para não
    haver rastro.
-7. Screenshots em p = 0.08, 0.15, 0.25, 0.35 e 0.4 (desktop e mobile).
+8. Screenshots em p = 0.08, 0.15, 0.25, 0.35 e 0.4 (desktop e mobile).
 
 Pronto quando: lint, typecheck, test e e2e passam e os 5 screenshots
 parecem foto de estúdio (fundo limpo, sombra suave, sem horizonte).
