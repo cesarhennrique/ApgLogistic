@@ -999,6 +999,65 @@ LCP < 2,5 s.
 Commit: "feat: loading e abertura do hero"
 ````
 
+## Prompt 13f — Carreta APG em detalhe (procedural)
+
+> Roda **antes do 13b**. A carreta é o "produto" da APG no site e aparece em close nos capítulos 2, 3 e 4. A decisão é mantê-la procedural, então ela ganha um prompt só dela.
+
+````text
+Leia o CLAUDE.md e o spec, seção 3. Use as skills
+frontend-design:frontend-design e animation-performance.
+
+Objetivo: a carreta APG procedural tem que aguentar close de estúdio
+(fotografia de produto), de perfil, 3/4 e de cima. Hoje a cabine lê como
+uma caixa e o para-brisa é um buraco preto. Escala 1 unidade = 1 m.
+
+1. Página de bancada /dev/truck (só em development): a carreta sozinha
+   no Studio (fundo sand-50, ContactShadows, mesmo pós-processamento da
+   jornada), com OrbitControls, botões de câmera (perfil, 3/4 frente,
+   3/4 trás, de cima) e um toggle dia/noite (faróis). Toda a iteração
+   deste prompt acontece nela.
+2. Cabine cara-chata genérica (sem marca), proporções reais: largura
+   2,50, altura 3,95 com defletor de teto, profundidade 2,30.
+   - Volumes com cantos arredondados (RoundedBoxGeometry do three-stdlib
+     ou ExtrudeGeometry com bevel), nunca caixa reta.
+   - Frente: para-brisa inteiriço levemente curvo e inclinado (~5°),
+     colunas A, grade superior com lâminas horizontais, para-choque com
+     faróis integrados e neblinas, 3 degraus por lado, retrovisores com
+     braço, para-sol externo.
+   - Lateral: porta com maçaneta e janela, painel defletor lateral,
+     tanque de combustível cilíndrico (Lathe) com cintas, tanques de ar,
+     para-lamas com aba.
+   - Interior visível pelo vidro: bancos, volante e painel em silhueta
+     escura (nunca preto chapado).
+3. Rodas 22.5" (Lathe): pneu com sulcos na banda, aro com 10 porcas e
+   cubo central, para a rotação ser visível. Instanciadas.
+4. Chassi e carreta 40' esqueleto: longarinas, quinta roda, pescoço
+   (gooseneck), pés de apoio, 3 eixos, para-choque traseiro, lanternas
+   e luzes laterais âmbar, para-barro com aba, twist locks nos cantos.
+5. Pintura APG: cabine branca #EDEBE6 com faixa navy #1A2350 e a seta
+   vermelha #E31E24 do logo correndo larga na lateral; logo APG (Decal)
+   na porta; placa padrão Mercosul fictícia "APG1A96". Container APG
+   navy com faixa vermelha e o código "APGU 199601 6" nas portas.
+6. Materiais (src/three/materials/): tinta com clearcoat e variação de
+   rugosidade, cromado nos tanques e detalhes, borracha fosca, vidro com
+   reflexo do RoomEnvironment e fresnel, plástico preto texturizado na
+   grade e para-choque.
+7. Faróis: lentes emissive com bloom à noite, luz de posição âmbar,
+   lanternas traseiras vermelhas.
+8. Orçamento: até 40 mil triângulos para cavalo + carreta + container
+   (mostre na bancada).
+9. Testes: unit com as dimensões (cabine 2,50 x 3,95 x 2,30; carreta com
+   comprimento útil ≥ 12,19); e2e com screenshots da bancada nos 4
+   ângulos, dia e noite, em e2e/__screenshots__/truck/.
+10. A carreta da jornada (LoadStage, HighwayStage, TerminalStage) passa a
+   usar este modelo.
+
+Pronto quando: lint, typecheck, test e e2e passam e os 8 screenshots da
+bancada parecem um caminhão de verdade fotografado em estúdio, não um
+brinquedo.
+Commit: "feat: carreta APG em detalhe"
+````
+
 ## Prompt 13b — Estúdio do portêiner e da carreta (capítulos 1 e 2)
 
 ````text
