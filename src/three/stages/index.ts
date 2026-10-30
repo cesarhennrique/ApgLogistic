@@ -9,7 +9,7 @@ import { LoadStage, keys as loadKeys } from "./LoadStage";
 import { TerminalStage, keys as terminalKeys } from "./TerminalStage";
 import { STAGE_ORIGINS } from "./timeline";
 
-export type StageProps = { reducedMotion: boolean; active: boolean };
+export type StageProps = { reducedMotion: boolean };
 
 // Every chapter's stage: its scene, its camera keys (start, middle, end, in its own frame) and its origin.
 export const STAGES: Record<ChapterId, { Stage: ComponentType<StageProps>; keys: StageCameras; origin: [number, number, number] }> = {

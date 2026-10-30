@@ -126,14 +126,13 @@ export function buildShipGeometry() {
     block(v(-6, top + 2.8, house.z0 + 0.6), v(6, top + 3.1, house.z0 + 5.4)),
   ])!;
   const funnel = block(v(-2.3, deckY, 60), v(2.3, top + 4.5, 64.5));
-  const funnelTop = block(v(-2.35, top + 3.3, 59.95), v(2.35, top + 4.55, 64.55));
   const mast = mergeGeometries([
     beam(v(0, top + 3.1, house.z0 + 3), v(0, top + 10, house.z0 + 3), 0.3),
     beam(v(-3, top + 8.5, house.z0 + 3), v(3, top + 8.5, house.z0 + 3), 0.18),
     // Foremast at the forecastle.
     beam(v(0, deckAt(0.93), zAt(0.93)), v(0, deckAt(0.93) + 7, zAt(0.93)), 0.35),
   ])!;
-  // Window bands per deck: the forward face and both sides; emissive at night.
+  // Window bands per deck: the forward face and both sides.
   const windows = mergeGeometries(
     Array.from({ length: house.decks }, (_, d) => {
       const y0 = deckY + d * house.deckHeight + 1.1;
@@ -150,5 +149,5 @@ export function buildShipGeometry() {
       .concat(block(v(-11.4, top + 1.1, house.z0 + 0.55), v(11.4, top + 2.2, house.z0 + 0.6))),
   )!;
 
-  return { hull: buildHull(), deck: buildDeck(), hatches, superstructure, funnel, funnelTop, mast, windows };
+  return { hull: buildHull(), deck: buildDeck(), hatches, superstructure, funnel, mast, windows };
 }

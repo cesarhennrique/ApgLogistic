@@ -1,5 +1,4 @@
 import { type BufferGeometry, CylinderGeometry, ExtrudeGeometry, Shape, ShapeGeometry, Vector3 } from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { TRAILER_BED_HEIGHT } from "../anchors";
 import { CONTAINER } from "./containerGeometry";
@@ -39,6 +38,9 @@ export const CAB = { z0: 7.55, z1: 9.75, y0: G + 1.25, y1: G + 3.95, halfWidth: 
 
 const v = (x: number, y: number, z: number) => new Vector3(x, y, z);
 
+// Segments of a round: 15° apart, under the drawing's 20° crease angle, so only its rims are drawn.
+const ROUND = 24;
+
 // The logo's red arrow, running forward along the navy band on a cab side (just proud of the band).
 function arrow(side: 1 | -1) {
   const y = (h: number) => G + h;
@@ -74,11 +76,8 @@ function arch(x: number, z: number, width: number) {
 }
 
 export function buildTruckGeometry() {
-  const cab = new RoundedBoxGeometry(2 * CAB.halfWidth, CAB.y1 - CAB.y0, CAB.z1 - CAB.z0, 3, 0.3).translate(
-    0,
-    (CAB.y0 + CAB.y1) / 2,
-    (CAB.z0 + CAB.z1) / 2,
-  );
+  // A plain box: rounded edges would draw as bundles of parallel lines.
+  const cab = block(v(-CAB.halfWidth, CAB.y0, CAB.z0), v(CAB.halfWidth, CAB.y1, CAB.z1));
   const sides = [-1, 1] as const;
 
   const paint = mergeGeometries([
@@ -108,7 +107,7 @@ export function buildTruckGeometry() {
     ]),
   ])!;
   const metal = mergeGeometries(
-    sides.map((s) => new CylinderGeometry(0.32, 0.32, 1.3, 14).rotateX(Math.PI / 2).translate(s * 0.95, G + 0.72, 6.9)),
+    sides.map((s) => new CylinderGeometry(0.32, 0.32, 1.3, ROUND).rotateX(Math.PI / 2).translate(s * 0.95, G + 0.72, 6.9)),
   )!; // fuel tanks
   const glass = mergeGeometries([
     block(v(-1.08, G + 2.45, 9.75), v(1.08, G + 3.52, 9.79)),
@@ -133,8 +132,8 @@ export function buildTruckGeometry() {
     ...TWIST_LOCKS.map((t) => block(v(t.x - 0.08, -0.06, t.z - 0.08), v(t.x + 0.08, 0, t.z + 0.08))),
   ])!;
 
-  const tire = new CylinderGeometry(TIRE_RADIUS, TIRE_RADIUS, 0.3, 18).rotateZ(Math.PI / 2);
-  const rim = new CylinderGeometry(0.29, 0.29, 0.31, 12).rotateZ(Math.PI / 2);
+  const tire = new CylinderGeometry(TIRE_RADIUS, TIRE_RADIUS, 0.3, ROUND).rotateZ(Math.PI / 2);
+  const rim = new CylinderGeometry(0.29, 0.29, 0.31, ROUND).rotateZ(Math.PI / 2);
 
   return { cab, deflector: deflector(), paint, navy, red, dark, metal, glass, headlights, amber, trailer, tire, rim } satisfies Record<
     string,

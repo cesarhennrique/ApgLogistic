@@ -6,13 +6,11 @@ import {
   BoxGeometry,
   type BufferGeometry,
   Color,
-  ExtrudeGeometry,
   FileLoader,
   Float32BufferAttribute,
   type Group,
   InstancedMesh,
   Matrix4,
-  MeshStandardMaterial,
   Object3D,
   ShapeGeometry,
   Vector3,
@@ -32,13 +30,15 @@ import {
   vanStateAt,
 } from "../models/distributionLayout";
 import { journeyProgress } from "../progress";
+import { BlueprintMesh } from "../blueprint/BlueprintMesh";
+import { fillMaterial } from "../blueprint/ink";
 import { inView } from "../stages/inView";
 
 const highlight = new Set(site.home.coverage.highlight);
 const [suapeX, suapeY] = toSvg(GALPAO_DOOR);
 
 // SVG units → meters on the ground (distributionLayout's toMap): x east, SVG y (south) → +Z, extrusion up.
-// That is a reflection, so the triangles' winding is flipped back afterwards (faces stay outward).
+// That is a reflection, so the triangles' winding is flipped back afterwards (faces stay up).
 const svgToWorld = new Matrix4().set(
   MAP_SCALE, 0, 0, MAP_ORIGIN.x - suapeX * MAP_SCALE,
   0, 0, 1, 0,
@@ -63,38 +63,28 @@ function toGround(geometry: BufferGeometry) {
   return g;
 }
 
-// PE and BA: sand slabs, two tones so the border reads, glowing faintly so the map reads at night like a lit
-// diorama. The other states: dark and flat.
-const stateMaterial = (hex: string) =>
-  new MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: 0.45, roughness: 0.7 });
-const STATE_MATERIALS: Record<string, MeshStandardMaterial> = { PE: stateMaterial("#f3efe7"), BA: stateMaterial("#cfc6b4") };
-const contextMaterial = new MeshStandardMaterial({ color: "#1c2550", roughness: 0.9 });
-const cladding = new MeshStandardMaterial({ color: "#b9bcc2", roughness: 0.7, metalness: 0.2 });
-const doorway = new MeshStandardMaterial({ color: "#1a1a1f", emissive: "#ffd9a0", emissiveIntensity: 0.6, roughness: 0.9 });
-const vanPaint = new MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.1 });
 
 function Map() {
   // The same raw text the hero map loads: useLoader caches by URL, so both must ask with the same loader.
   const svg = useLoader(FileLoader, "/images/map/nordeste.svg") as string;
   const [states, context] = useMemo(() => {
     const { paths } = new SVGLoader().parse(svg);
-    const lit: { id: string; geometry: BufferGeometry }[] = [];
+    // Flat shapes: their only creases are the borders (an extruded coastline would draw a tick per vertex).
+    const lit: BufferGeometry[] = [];
     const flat: BufferGeometry[] = [];
     for (const path of paths) {
       const id = (path.userData?.node as Element | undefined)?.id ?? "";
-      const shapes = SVGLoader.createShapes(path);
-      if (highlight.has(id)) {
-        lit.push({ id, geometry: toGround(new ExtrudeGeometry(shapes, { depth: MAP_TOP, bevelEnabled: false })) });
-      } else flat.push(toGround(new ShapeGeometry(shapes)).translate(0, 0.05, 0));
+      const shape = toGround(new ShapeGeometry(path.toShapes()));
+      if (highlight.has(id)) lit.push(shape.translate(0, MAP_TOP, 0));
+      else flat.push(shape.translate(0, 0.05, 0));
     }
-    return [lit, mergeGeometries(flat)!];
+    return [mergeGeometries(lit)!, mergeGeometries(flat)!];
   }, [svg]);
+  // PE and BA in the main stroke, the other states in the secondary one.
   return (
     <>
-      {states.map(({ id, geometry }) => (
-        <mesh key={id} geometry={geometry} material={STATE_MATERIALS[id]} castShadow receiveShadow />
-      ))}
-      <mesh geometry={context} material={contextMaterial} receiveShadow />
+      <BlueprintMesh geometry={states} />
+      <BlueprintMesh geometry={context} weight="secondary" />
     </>
   );
 }
@@ -117,14 +107,15 @@ function vanGeometry() {
   ])!.scale(0.45, 0.45, 0.45);
 }
 
-const vans = new InstancedMesh(vanGeometry(), vanPaint, VAN_DESTINATIONS.length);
-vans.castShadow = true;
+// Small and moving: fill only, in the theme's tone.
+const vans = new InstancedMesh(vanGeometry(), fillMaterial(), VAN_DESTINATIONS.length);
 vans.frustumCulled = false;
 const dummy = new Object3D();
 const state = vanStateAt(0, 0);
 
 // The distribution warehouse at Suape: its door opens onto the map.
 const GALPAO = { width: 28, depth: 22, height: 11 };
+const doorway = new BoxGeometry(0.05, 7, 9).translate(-0.02, 3.6, 0);
 const galpao = mergeGeometries([
   block(new Vector3(0, 0, -GALPAO.depth / 2), new Vector3(GALPAO.width, GALPAO.height, GALPAO.depth / 2)),
   block(new Vector3(-0.4, GALPAO.height, -GALPAO.depth / 2 - 0.4), new Vector3(GALPAO.width + 0.4, GALPAO.height + 0.6, GALPAO.depth / 2 + 0.4)),
@@ -161,11 +152,9 @@ export function Distribution() {
         </Suspense>
       )}
       <group position={[GALPAO_DOOR.x + 1, 0, GALPAO_DOOR.z]}>
-        <mesh geometry={galpao} material={cladding} castShadow receiveShadow />
-        {/* The open door, lit from inside, facing the map (west). */}
-        <mesh material={doorway} position={[-0.02, 3.6, 0]}>
-          <boxGeometry args={[0.05, 7, 9]} />
-        </mesh>
+        <BlueprintMesh geometry={galpao} />
+        {/* The open door, facing the map (west). */}
+        <BlueprintMesh geometry={doorway} weight="secondary" />
       </group>
       <primitive object={vans} />
     </group>

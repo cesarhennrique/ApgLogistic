@@ -12,8 +12,10 @@ async function scrollToProgress(page: Page, p: number) {
 
 // Not "networkidle": the 3D text (troika: the hero map's labels, the highway sign) runs a worker whose blob: script
 // Playwright counts as a request that never finishes. Load, then give the scene's textures, map and font a moment.
+// The canvas itself mounts only after the load event and an idle moment (JourneyStage).
 async function settle(page: Page) {
   await page.waitForLoadState("load");
+  await page.locator("#journey canvas").waitFor({ state: "attached", timeout: 15_000 });
   await page.waitForTimeout(2500);
 }
 
@@ -50,7 +52,7 @@ test("the header stays see-through over the journey and turns solid after it", a
 test.describe("journey frames", () => {
   test.describe.configure({ mode: "default" });
 
-  for (const p of [0, 0.03, 0.1, 0.3, 0.5, 0.7, 0.9, 1]) {
+  for (const p of [0, 0.02, 0.05, 0.15, 0.3, 0.5, 0.7, 0.9]) {
     test(`/?p=${p} journey frame`, async ({ page }, testInfo) => {
       const errors: string[] = [];
       page.on("console", (msg) => msg.type() === "error" && errors.push(msg.text()));

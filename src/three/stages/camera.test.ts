@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
+import { HIGHWAY } from "../models/highwayLayout";
 import { STAGE_CAMERAS } from "./cameras";
 import { sampleStageCamera } from "./camera";
 import { STAGE_IDS, STAGE_ORIGINS, STAGE_SPANS } from "./timeline";
@@ -30,7 +31,8 @@ describe("sampleStageCamera", () => {
   });
 
   it("never stops at a boundary: the speed is not zero, and it is the same on both sides", () => {
-    const h = 1e-5;
+    // One-sided differences: their gap is ~acceleration × h, so h stays tiny.
+    const h = 1e-7;
     for (const id of STAGE_IDS) {
       for (const t of STAGE_SPANS[id]) {
         if (t <= 0 || t >= 1) continue;
@@ -52,6 +54,19 @@ describe("sampleStageCamera", () => {
         expect(p.distanceTo(last), `${id} at ${t.toFixed(3)}`).toBeLessThan(8);
         last = p.clone();
       }
+    }
+  });
+
+  // Chapter 3 is shot from the road's edge at cab height: the camera must never dip under the road or the guard
+  // rail (a cubic overshoot did, pulled by the climb to the terminal's plan view).
+  it("stays above the road and clear of the guard rail through the highway chapter", () => {
+    const [a, b] = STAGE_SPANS.highway;
+    const origin = new Vector3(...STAGE_ORIGINS.highway);
+    // The rail's top; a metre above it keeps the road and the rails (both below) twice the near plane (0.5 m) away.
+    const railTop = HIGHWAY.roadY + 0.95;
+    for (let t = a; t <= b; t += 0.0005) {
+      const p = sampleStageCamera(t).position.clone().sub(origin);
+      expect(p.y, `t=${t.toFixed(4)}`).toBeGreaterThan(railTop + 1);
     }
   });
 

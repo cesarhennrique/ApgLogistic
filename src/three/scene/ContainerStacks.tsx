@@ -1,61 +1,59 @@
 "use client";
 
 import { useMemo } from "react";
-import { Color, InstancedMesh, MeshStandardMaterial, Object3D } from "three";
-import { type ContainerType, getContainerGeometry, getStripeGeometry } from "../models/containerGeometry";
-import { APG_NAVY, STACKS, type StackedContainer } from "../models/stackLayout";
-// White base: each instance's color comes from the layout (carrier palette or APG navy).
-export const containerMaterial = new MeshStandardMaterial({ roughness: 0.72, metalness: 0.15 });
-// The APG box the crane moves and the truck carries.
-export const apgBoxMaterial = new MeshStandardMaterial({ color: APG_NAVY, roughness: 0.72, metalness: 0.15 });
-export const stripeMaterial = new MeshStandardMaterial({ color: "#e31e24", roughness: 0.6 });
+import { Matrix4, Object3D } from "three";
+import { BlueprintMesh, type Reveal } from "../blueprint/BlueprintMesh";
+import { APG_TONE, RED_TONE } from "../blueprint/ink";
+import { type ContainerType, getContainerBox, getStripeBand } from "../models/containerGeometry";
+import { STACKS, type StackedContainer } from "../models/stackLayout";
 
 const TYPES: ContainerType[] = ["20", "40"];
 
-function instanced(list: StackedContainer[], type: ContainerType, stripe: boolean) {
-  const items = list.filter((c) => c.type === type && (!stripe || c.apg));
-  if (items.length === 0) return null;
-  const mesh = new InstancedMesh(
-    stripe ? getStripeGeometry(type) : getContainerGeometry(type),
-    stripe ? stripeMaterial : containerMaterial,
-    items.length,
-  );
-  const dummy = new Object3D();
-  const color = new Color();
-  items.forEach((c, i) => {
-    dummy.position.set(...c.position);
-    dummy.rotation.y = c.rotated ? Math.PI / 2 : 0;
-    dummy.updateMatrix();
-    mesh.setMatrixAt(i, dummy.matrix);
-    if (!stripe) mesh.setColorAt(i, color.set(c.color));
+function matricesOf(list: StackedContainer[]) {
+  const o = new Object3D();
+  return list.map((c) => {
+    o.position.set(...c.position);
+    o.rotation.y = c.rotated ? Math.PI / 2 : 0;
+    o.updateMatrix();
+    return new Matrix4().copy(o.matrix);
   });
-  // Bounds of all instances, so a whole area is culled at once when it's off screen.
-  mesh.computeBoundingSphere();
-  // A block casts as a whole: the ship's far bays don't (see stackLayout).
-  mesh.castShadow = !stripe && items[0].shadow;
-  mesh.receiveShadow = true;
-  return mesh;
 }
 
-// Every stack in the given areas: per block, one draw per container type and one per type for the APG
-// stripes. Per block, not per area: a whole yard's bounds would drag it into far-off frusta and shadow passes.
-export function ContainerStacks({ areas }: { areas: StackedContainer["area"][] }) {
+// The APG box on its own: navy with the red band, solid, the one object not drawn in line.
+export function ApgBox({ reveal }: { reveal?: Reveal }) {
+  return (
+    <>
+      <BlueprintMesh geometry={getContainerBox("40")} tone={APG_TONE} reveal={reveal} />
+      <BlueprintMesh geometry={getStripeBand("40")} tone={RED_TONE} reveal={reveal} />
+    </>
+  );
+}
+
+// Every stack in the given areas, per container type: the carriers' boxes in line work and theme fill, the APG ones
+// solid (navy and red).
+export function ContainerStacks({ areas, reveal }: { areas: StackedContainer["area"][]; reveal?: Reveal }) {
   const key = areas.join(",");
-  const meshes = useMemo(() => {
+  const sets = useMemo(() => {
     const list = STACKS.filter((c) => key.split(",").includes(c.area));
-    const blocks = [...new Set(list.map((c) => c.block))];
-    return blocks
-      .flatMap((b) => {
-        const inBlock = list.filter((c) => c.block === b);
-        return TYPES.flatMap((t) => [instanced(inBlock, t, false), instanced(inBlock, t, true)]);
-      })
-      .filter((m) => m !== null);
+    return TYPES.map((type) => ({
+      type,
+      plain: matricesOf(list.filter((c) => c.type === type && !c.apg)),
+      apg: matricesOf(list.filter((c) => c.type === type && c.apg)),
+    }));
   }, [key]);
 
   return (
     <>
-      {meshes.map((m) => (
-        <primitive key={m.uuid} object={m} />
+      {sets.map(({ type, plain, apg }) => (
+        <group key={type}>
+          {plain.length > 0 && <BlueprintMesh geometry={getContainerBox(type)} matrices={plain} reveal={reveal} />}
+          {apg.length > 0 && (
+            <>
+              <BlueprintMesh geometry={getContainerBox(type)} matrices={apg} tone={APG_TONE} reveal={reveal} />
+              <BlueprintMesh geometry={getStripeBand(type)} matrices={apg} tone={RED_TONE} reveal={reveal} />
+            </>
+          )}
+        </group>
       ))}
     </>
   );

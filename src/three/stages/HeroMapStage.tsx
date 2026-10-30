@@ -142,6 +142,10 @@ const coreMaterial = new MeshBasicMaterial({ color: RED, transparent: true });
 const PARALLAX = MathUtils.degToRad(2);
 // The labels fade out as the dive begins.
 const DIVE_FADE = [0.002, 0.012] as const;
+// The map itself fades before the camera gets close (its dots would fill the screen as huge squares), then the
+// routes and Suape; the crane stage builds from 0.03.
+const MAP_FADE = [0.01, 0.03] as const;
+const ROUTE_FADE = [0.02, 0.04] as const;
 // Hover radius around Suape, in px.
 const HOVER_PX = 28;
 
@@ -250,21 +254,30 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
     const p = journeyProgress.value;
     dotMaterial.size = DOT / Math.tan(MathUtils.degToRad((camera as PerspectiveCamera).fov) / 2);
 
+    const mapFade = 1 - MathUtils.smoothstep(p, ...MAP_FADE);
+    const routeFade = 1 - MathUtils.smoothstep(p, ...ROUTE_FADE);
+    outlineMaterial.opacity = 0.35 * mapFade;
+    dotMaterial.opacity = mapFade;
+    outlineMaterial.visible = dotMaterial.visible = mapFade > 0;
+
     // The entrance.
     if (outline.geometry) outline.geometry.setDrawRange(0, Math.round(state.outline * outline.segments) * 2);
     dotUniforms.uReveal.value = state.dots * REVEAL_MAX;
     state.routes.forEach((f, i) => {
       const base = bases.current[i];
-      if (base) base.material.dashOffset = ROUTE_LENGTHS[i] * (1 - f);
+      if (base) {
+        base.material.dashOffset = ROUTE_LENGTHS[i] * (1 - f);
+        base.material.opacity = 0.55 * routeFade;
+      }
       const glow = glows.current[i];
-      if (glow) glow.visible = f >= 1;
+      if (glow) glow.visible = f >= 1 && routeFade > 0.5;
     });
     if (!state.arrived) pulseFrom.current = null;
     else if (pulseFrom.current === null) pulseFrom.current = clock.elapsedTime;
     const since = pulseFrom.current === null ? -1 : clock.elapsedTime - pulseFrom.current;
     const coreIn = since < 0 ? 0 : easeOut(clamp01(since / 0.25));
     core.current!.scale.setScalar(0.6 + 0.4 * coreIn);
-    coreMaterial.opacity = coreIn;
+    coreMaterial.opacity = coreIn * routeFade;
 
     const dive = 1 - MathUtils.smoothstep(p, ...DIVE_FADE);
     const place = (el: HTMLElement, at: Vector3, dx: number, shift: string) => {
@@ -313,7 +326,7 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
     });
     const phase = since < 0 ? 0 : (since % PULSE) / PULSE;
     ring.current!.scale.setScalar(1 + 4 * phase);
-    ringMaterial.opacity = since < 0 ? 0 : 1 - phase;
+    ringMaterial.opacity = since < 0 ? 0 : (1 - phase) * routeFade;
   });
 
   return (

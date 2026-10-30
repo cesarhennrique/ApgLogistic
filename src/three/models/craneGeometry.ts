@@ -73,16 +73,14 @@ export function buildCraneGeometry() {
   }
   s.push(beam(v(-4, apexY, -3.4), v(-4, apexY, 3.4), 0.9));
 
-  // Sand details: machinery house on the backreach, and the boom-tip head.
+  // Machinery house on the backreach, and the boom-tip head.
   const house = [
     block(v(18, boomY + 1.2, -4.2), v(32, boomY + 6.4, 4.2)),
     block(v(18.4, boomY + 6.4, -3.8), v(31.6, boomY + 6.9, 3.8)),
     block(v(boomFrom, boomY - 1.4, -boomZ - 0.7), v(boomFrom + 2.5, boomY + 1.6, boomZ + 0.7)),
   ];
-  // Red obstruction lights on top of the A-frame.
-  const lights = [-1, 1].map((sz) => block(v(-4.4, apexY + 0.45, sz * 3.4 - 0.4), v(-3.6, apexY + 1.25, sz * 3.4 + 0.4)));
 
-  return { structure: mergeGeometries(s)!, house: mergeGeometries(house)!, lights: mergeGeometries(lights)! };
+  return { structure: mergeGeometries(s)!, house: mergeGeometries(house)! };
 }
 
 export function buildTrolleyGeometry() {

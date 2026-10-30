@@ -15,7 +15,6 @@ export type StackedContainer = {
   apg: boolean;
   // In the block's camera-facing front slot (row toward the chapter's camera, first bay).
   front: boolean;
-  shadow: boolean;
 };
 
 // Eight matte carrier tones, distinct enough to read at dusk (no logos): rust, ocean blue, petrol, ochre,
@@ -38,8 +37,6 @@ type Block = {
   // The row the chapter's camera sees first: its first bay is topped with an APG box.
   frontRow: "first" | "last";
   minTier?: number;
-  // Casts shadows (default yes).
-  shadow?: boolean;
   // Slots left empty (by row, bay, tier): the crane's working slot on the ship.
   skip?: (row: number, bay: number, tier: number) => boolean;
 };
@@ -52,9 +49,8 @@ const tx = 0;
 const tz = 0;
 
 const BLOCKS: Block[] = [
-  // The ship's deck: 7 bays of 7 rows, 3–4 high, one block per bay so each culls on its own; only the two
-  // bays by the crane cast shadows (the rest would double their triangles for shadows nobody sees). The
-  // aft-most bay's quay-side column stops below the box the crane picks (its fourth tier).
+  // The ship's deck: 7 bays of 7 rows, 3–4 high. The aft-most bay's quay-side column stops below the box the
+  // crane picks (its fourth tier).
   ...Array.from({ length: 7 }, (_, k) => ({
     area: "ship" as const,
     x: SHIP_PICK_POINT.x - 6 * ROW_PITCH,
@@ -67,7 +63,6 @@ const BLOCKS: Block[] = [
     apgShare: 0.12,
     // The crane shot looks from the sea side.
     frontRow: "first" as const,
-    shadow: k < 2,
     skip: k === 0 ? (row: number, _bay: number, tier: number) => row === 6 && tier >= 3 : undefined,
   })),
   // Port stacks on the quay, inland of the crane's land legs and past it, so the crane shots look at it clear.
@@ -127,7 +122,7 @@ export function buildStacks(): StackedContainer[] {
             while (avoid.has(CARRIER_COLORS[i])) i = (i + 1) % CARRIER_COLORS.length;
             const color: string = apg ? APG_NAVY : CARRIER_COLORS[i];
             const y = b.base + tier * H;
-            out.push({ type, area: b.area, block, position: [x, y, sz], rotated: false, tier, color, apg, front, shadow: b.shadow ?? true });
+            out.push({ type, area: b.area, block, position: [x, y, sz], rotated: false, tier, color, apg, front });
             below = color;
           }
         });

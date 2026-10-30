@@ -5,14 +5,14 @@ import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react
 import { introBridge, subscribeCovered } from "@/components/intro/bridge";
 import { NAVIGATE_EVENT } from "@/components/layout/PageCurtain";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { Backdrop } from "./blueprint/Backdrop";
+import { Effects } from "./blueprint/Effects";
 import { CameraRig } from "./CameraRig";
 import { readDebugParams } from "./debug";
 import { LoadProbe } from "./LoadProbe";
 import { journeyProgress } from "./progress";
 import { sampleStageCamera } from "./stages/camera";
 import { Stages } from "./stages/Stages";
-import { Effects } from "./studio/Effects";
-import { Studio } from "./studio/Studio";
 
 const DebugOrbit = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugOrbit })));
 const DebugSlider = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugSlider })));
@@ -54,10 +54,9 @@ export default function JourneyCanvas() {
       >
         <Canvas
           dpr={[1, 2]}
-          shadows="percentage"
           // Under the first-visit loader, only the frames asked for (the hero map's first one).
           frameloop={onScreen && !leaving ? (covered ? "demand" : "always") : "never"}
-          // Tone mapping happens in the post stack (Effects), so the renderer's is off; SMAA replaces MSAA.
+          // Unlit drawing in exact brand colors: no tone mapping anywhere; SMAA (Effects) replaces MSAA.
           flat
           gl={{ antialias: false }}
           // Stages sit 1 km apart and the shots reach ~200 m: a deep but bounded frustum.
@@ -65,7 +64,7 @@ export default function JourneyCanvas() {
           onCreated={() => setReady(true)}
         >
           <LoadProbe />
-          <Studio />
+          <Backdrop />
           <Stages reducedMotion={reducedMotion} />
           <Effects />
           {debug ? (

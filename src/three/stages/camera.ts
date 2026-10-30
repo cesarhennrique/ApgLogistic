@@ -30,10 +30,13 @@ const CHANNELS: Channel[] = [
   (k) => k.fov,
 ];
 
-// Tangent of each channel at each frame (Catmull-Rom on uneven times; one-sided at the ends).
-const TANGENTS = FRAMES.map((_, i) => {
-  const prev = FRAMES[Math.max(i - 1, 0)];
-  const next = FRAMES[Math.min(i + 1, FRAMES.length - 1)];
+// Tangent of each channel at each frame, from that stage's own keys only: Catmull-Rom at the middle key,
+// one-sided at the start and end. A neighbour in the next stage lives in another frame and can be far off (the
+// road at cab height, then the terminal's plan view 150 m up): letting it into the tangent overshot the keys,
+// and the camera dove under the road in chapter 3. The transitions use these tangents at both ends.
+const TANGENTS = FRAMES.map((frame, i) => {
+  const prev = FRAMES[i - 1]?.stage === frame.stage ? FRAMES[i - 1] : frame;
+  const next = FRAMES[i + 1]?.stage === frame.stage ? FRAMES[i + 1] : frame;
   return CHANNELS.map((c) => (c(next.key) - c(prev.key)) / (next.t - prev.t));
 });
 

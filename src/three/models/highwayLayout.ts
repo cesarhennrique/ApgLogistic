@@ -3,7 +3,7 @@ const x = 0;
 const z = 0;
 
 // BR-101 at the 'highway' scene: a divided road running east–west (X), median at z. The APG truck drives +X
-// in the right-hand carriageway (+Z side), outer lane. The strip is long enough that its ends sit in the fog;
+// in the right-hand carriageway (+Z side), outer lane. The strip is long enough that its ends stay out of shot;
 // everything on it scrolls in a loop under the standing truck.
 export const HIGHWAY = {
   x,
@@ -15,7 +15,6 @@ export const HIGHWAY = {
   median: 1.5,
   shoulder: 2.4,
   truckLaneZ: z + 1.5 + 3.6 * 1.5,
-  verge: 26,
 };
 
 const from = HIGHWAY.x - HIGHWAY.length / 2;

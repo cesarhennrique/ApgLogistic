@@ -2,42 +2,29 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
-import {
-  BufferAttribute,
-  BufferGeometry,
-  type Group,
-  LineBasicMaterial,
-  type Mesh,
-  MeshStandardMaterial,
-} from "three";
-import { CRANE_POSITION, QUAY_EDGE_X, QUAY_TOP, SHIP_PICK_POINT, TRUCK_LOAD_POINT } from "../anchors";
+import { BoxGeometry, BufferAttribute, BufferGeometry, type Group, LineBasicMaterial } from "three";
+import { CRANE_POSITION, QUAY_EDGE_X, QUAY_TOP, SHIP_PICK_POINT } from "../anchors";
+import { BlueprintMesh, type Reveal, readReveal } from "../blueprint/BlueprintMesh";
+import { ink } from "../blueprint/ink";
 import { craneState, LIFT_DONE } from "../craneMotion";
-import { CONTAINER, getContainerGeometry, getStripeGeometry } from "../models/containerGeometry";
+import { CONTAINER } from "../models/containerGeometry";
 import { buildCraneGeometry, buildSpreaderGeometry, buildTrolleyGeometry, CRANE } from "../models/craneGeometry";
 import { journeyProgress } from "../progress";
-import { createConcreteMaterial } from "./concrete";
-import { apgBoxMaterial, ContainerStacks, stripeMaterial } from "./ContainerStacks";
+import { ApgBox, ContainerStacks } from "./ContainerStacks";
 
 const crane = buildCraneGeometry();
 const trolley = buildTrolleyGeometry();
 const spreader = buildSpreaderGeometry(CONTAINER["40"].length);
 
-// Light grey steel; the studio's rim light draws its silhouette.
-const steel = new MeshStandardMaterial({ color: "#c9ccd1", roughness: 0.55, metalness: 0.35 });
-// Sand details (machinery house, boom head) and the A-frame's red obstruction lights.
-const house = new MeshStandardMaterial({ color: "#d8c8a6", roughness: 0.65, metalness: 0.1 });
-const navLights = new MeshStandardMaterial({ color: "#3a0d0a", emissive: "#ff2a1a", emissiveIntensity: 4, roughness: 0.4 });
-const dark = new MeshStandardMaterial({ color: "#30353f", roughness: 0.5, metalness: 0.3 });
-const spreaderPaint = new MeshStandardMaterial({ color: "#c99a3a", roughness: 0.5, metalness: 0.3 });
-const ropeMaterial = new LineBasicMaterial({ color: "#1c1f26" });
-
-// Quay: from the edge inland, painted with the edge safety line and the crane's truck lane.
+// The quay: a slab from the edge inland, its top at QUAY_TOP.
 const QUAY = { x0: QUAY_EDGE_X, x1: QUAY_EDGE_X + 66, z0: CRANE_POSITION.z - 64, z1: CRANE_POSITION.z + 30 };
-const laneX = [TRUCK_LOAD_POINT.x - 3, TRUCK_LOAD_POINT.x + 3];
-const quayMaterial = createConcreteMaterial({
-  solids: [{ from: [QUAY_EDGE_X + 1.5, QUAY.z0], to: [QUAY_EDGE_X + 1.5, QUAY.z1] }],
-  dashes: laneX.map((x) => ({ from: [x, QUAY.z0] as [number, number], to: [x, QUAY.z1] as [number, number] })),
-});
+const quay = new BoxGeometry(QUAY.x1 - QUAY.x0, QUAY_TOP + 4, QUAY.z1 - QUAY.z0).translate(
+  (QUAY.x0 + QUAY.x1) / 2,
+  (QUAY_TOP - 4) / 2,
+  (QUAY.z0 + QUAY.z1) / 2,
+);
+// The hoist ropes: hairlines in the stroke's secondary ink.
+const ropeMaterial = new LineBasicMaterial({ transparent: true });
 
 // Four hoist ropes, trolley to headblock: rewritten every frame so they stretch with the hoist.
 const ROPES = [
@@ -53,9 +40,9 @@ ropes.setAttribute("position", new BufferAttribute(new Float32Array(ROPES.length
 const CLACK = 0.12;
 
 const state = craneState(0);
-export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
-  const trolleyRef = useRef<Mesh>(null);
-  const spreaderRef = useRef<Mesh>(null);
+export function Crane({ reducedMotion, reveal }: { reducedMotion: boolean; reveal?: Reveal }) {
+  const trolleyRef = useRef<Group>(null);
+  const spreaderRef = useRef<Group>(null);
   const boxRef = useRef<Group>(null);
   // null until the first frame, so loading straight into a locked state (?p=0.15) doesn't clack.
   const wasLocked = useRef<boolean | null>(null);
@@ -83,34 +70,27 @@ export function Crane({ reducedMotion }: { reducedMotion: boolean }) {
       pos.setXYZ(i * 2 + 1, trolleyX + dx * 0.8, spreaderY + 0.9, CRANE_POSITION.z + dz * 0.45);
     });
     pos.needsUpdate = true;
+    ropeMaterial.color.copy(ink.stroke.value);
+    ropeMaterial.opacity = ink.secondary.value * Math.min(readReveal(reveal) / 0.6, 1);
   });
 
   return (
     <group>
-      <mesh
-        material={quayMaterial}
-        position={[(QUAY.x0 + QUAY.x1) / 2, (QUAY_TOP - 4) / 2, (QUAY.z0 + QUAY.z1) / 2]}
-        receiveShadow
-      >
-        <boxGeometry args={[QUAY.x1 - QUAY.x0, QUAY_TOP + 4, QUAY.z1 - QUAY.z0]} />
-      </mesh>
-
+      <BlueprintMesh geometry={quay} reveal={reveal} />
       <group position={CRANE_POSITION}>
-        <mesh geometry={crane.structure} material={steel} castShadow receiveShadow />
-        <mesh geometry={crane.house} material={house} castShadow receiveShadow />
-        <mesh geometry={crane.lights} material={navLights} />
-        <mesh ref={trolleyRef} geometry={trolley} material={dark} position-y={CRANE.trolleyY} castShadow />
+        <BlueprintMesh geometry={crane.structure} reveal={reveal} />
+        <BlueprintMesh geometry={crane.house} reveal={reveal} />
+        <BlueprintMesh ref={trolleyRef} geometry={trolley} position-y={CRANE.trolleyY} reveal={reveal} />
       </group>
-      <mesh ref={spreaderRef} geometry={spreader} material={spreaderPaint} castShadow />
+      <BlueprintMesh ref={spreaderRef} geometry={spreader} reveal={reveal} />
       <lineSegments geometry={ropes} material={ropeMaterial} frustumCulled={false} />
 
       {/* The APG box the crane moves: from the ship's bay to the trailer. */}
       <group ref={boxRef} position={SHIP_PICK_POINT}>
-        <mesh geometry={getContainerGeometry("40")} material={apgBoxMaterial} castShadow receiveShadow />
-        <mesh geometry={getStripeGeometry("40")} material={stripeMaterial} />
+        <ApgBox reveal={reveal} />
       </group>
 
-      <ContainerStacks areas={["port"]} />
+      <ContainerStacks areas={["port"]} reveal={reveal} />
     </group>
   );
 }

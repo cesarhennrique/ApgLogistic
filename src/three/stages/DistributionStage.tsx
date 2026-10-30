@@ -1,5 +1,6 @@
 "use client";
 
+import { Grid } from "../blueprint/Grid";
 import { MAP_ORIGIN } from "../models/distributionLayout";
 import { Distribution } from "../scene/Distribution";
 import { STAGE_CAMERAS } from "./cameras";
@@ -10,8 +11,11 @@ export const keys = STAGE_CAMERAS.distribution;
 // Shifted so Suape sits on the stage's origin.
 export function DistributionStage() {
   return (
-    <group position={[-MAP_ORIGIN.x, 0, -MAP_ORIGIN.z]}>
-      <Distribution />
-    </group>
+    <>
+      <group position={[-MAP_ORIGIN.x, 0, -MAP_ORIGIN.z]}>
+        <Distribution />
+      </group>
+      <Grid y={-0.1} />
+    </>
   );
 }

@@ -10,8 +10,7 @@ import { STAGES } from "./index";
 import { STAGE_IDS, activeStages } from "./timeline";
 
 // Renders only the current stage and, in a transition, the next one. Visibility is flipped on the groups every
-// frame; React re-renders only when the set changes (a handful of times per scroll), to mount each stage's
-// contact shadows only while it is on screen. Only the stages on screen are created at first; the rest wait
+// frame; React re-renders only when the set changes (a handful of times per scroll). Only the stages on screen are created at first; the rest wait
 // until the hero map has rendered and the main thread is idle, so the first stage's assets load alone.
 export function Stages({ reducedMotion }: { reducedMotion: boolean }) {
   const groups = useRef<Partial<Record<ChapterId, Group | null>>>({});
@@ -51,7 +50,7 @@ export function Stages({ reducedMotion }: { reducedMotion: boolean }) {
               groups.current[id] = g;
             }}
           >
-            <Stage reducedMotion={reducedMotion} active={on} />
+            <Stage reducedMotion={reducedMotion} />
           </group>
         );
       })}
