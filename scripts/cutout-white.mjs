@@ -1,9 +1,11 @@
 // Removes the pure-white studio background of an AI cut-out by flood-filling from the image border.
-// Usage: node scripts/cutout-white.mjs <in> <out.webp> [threshold=236]
+// Usage: node scripts/cutout-white.mjs <in> <out.webp> [threshold=236] [--global]
+// --global also clears white enclosed by the subject (lattices like the crane); default only clears white reachable from the border.
 import sharp from "sharp";
 
-const [, , input, output, thr = "236"] = process.argv;
+const [, , input, output, thr = "236", mode] = process.argv;
 const T = Number(thr);
+const global = mode === "--global";
 const { data, info } = await sharp(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 const { width: W, height: H } = info;
 const isBg = (i) => {
@@ -14,7 +16,8 @@ const bg = new Uint8Array(W * H);
 const stack = [];
 for (let x = 0; x < W; x++) stack.push(x, (H - 1) * W + x);
 for (let y = 0; y < H; y++) stack.push(y * W, y * W + W - 1);
-while (stack.length) {
+if (global) for (let i = 0; i < W * H; i++) if (isBg(i)) bg[i] = 1;
+while (!global && stack.length) {
   const i = stack.pop();
   if (bg[i] || !isBg(i)) continue;
   bg[i] = 1;
