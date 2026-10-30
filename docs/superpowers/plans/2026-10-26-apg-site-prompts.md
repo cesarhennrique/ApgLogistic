@@ -1078,6 +1078,20 @@ Leia o CLAUDE.md e o spec, seção 3 (linhas 1 e 2 da tabela e "Estilo:
 planta técnica"). Use as skills animate e frontend-design:frontend-design.
 Use BlueprintMesh, Dimension e Grid do Prompt 13f.
 
+0. Bugs vistos nos screenshots do Prompt 13f (corrija antes):
+   - p=0.7 sai em branco: o TerminalStage não aparece (só o texto).
+     Descubra a causa (visibilidade do palco, reveal travado em 0,
+     câmera fora do enquadramento) e adicione um teste e2e que falha se
+     o canvas estiver vazio em p=0.7 (amostra de pixels: pelo menos 2%
+     com cor de traço).
+   - Traço duplicado: no casco do navio e em partes do portêiner aparecem
+     linhas dobradas, com cara de rascunho à mão. São arestas de malhas
+     sobrepostas ou coplanares desenhadas duas vezes. Una as geometrias
+     de cada objeto (mergeGeometries + mergeVertices) antes do
+     EdgesGeometry e descarte arestas duplicadas; o traço tem que ser
+     único e preciso.
+   - Os vídeos de revisão (e2e/__videos__/) agora ficam fora do git
+     (.gitignore); continue gravando, mas não os commite.
 1. CraneStage, em elevação lateral (câmera quase ortogonal, fov 15–20,
    de lado), fundo sand:
    - o portêiner e um corte do navio (proa + 2 baias de pilhas, com o
@@ -1117,7 +1131,9 @@ BlueprintMesh, Dimension e Grid do Prompt 13f.
    - a carreta em perfil, em traço claro, rodando no lugar; rodas com
      raios e porcas desenhados (a rotação tem que ser visível);
    - pista em linhas (bordas contínuas, faixa central tracejada), postes
-     e guard rail em traço passando em parallax (3 velocidades);
+     e guard rail em traço passando em parallax (3 velocidades); nenhum
+     poste passa na frente da carreta (no 13f um poste navy cortava a
+     cabine): postes só atrás da carreta ou abaixo da linha da pista;
    - feixe dos faróis como dois triângulos de traço tracejado;
    - a linha vermelha corre sob as rodas, de ponta a ponta;
    - velocímetro mono discreto no canto do palco: "BR-101 · 80 KM/H".
