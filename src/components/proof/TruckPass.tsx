@@ -6,8 +6,10 @@ import { useReducedMotion } from "@/components/motion/useReducedMotion";
 
 // Source image: 1672x941, photoreal truck on #FEFEFE. Wheel hubs measured on the source.
 const IMG = { src: "/images/journey/carreta-lado.webp", w: 1672, h: 941 };
-const WHEELS = [172, 577, 1215, 1356, 1497].map((x) => ({ x, y: 634 }));
-const RIM_R = 38; // rim radius in source px: only the rim rotates, the tread reads the same at any angle
+const WHEELS = [172, 578, 1216, 1357, 1498].map((x) => ({ x, y: 639 }));
+// Rotating disc radius in source px: the cut falls on the plain sidewall (rim lip ends ~40, tyre ~61),
+// so the seam is invisible; cutting on the rim lip showed a broken ring.
+const RIM_R = 54;
 const ROAD_Y = 700; // tyre contact line in source px
 
 export function TruckPass() {
