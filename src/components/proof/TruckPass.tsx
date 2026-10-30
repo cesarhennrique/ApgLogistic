@@ -35,15 +35,16 @@ export function TruckPass() {
           const inOut = p < 0.35 ? gsap.parseEase("power2.out")(p / 0.35) - 1 : p > 0.65 ? gsap.parseEase("power2.in")((p - 0.65) / 0.35) : 0;
           const vw = window.innerWidth;
           const truckW = truck.current!.offsetWidth;
-          const x = inOut * (vw / 2 + truckW / 2 + 40);
+          // The cab faces left, so forward is right-to-left: enter from the right, leave to the left.
+          const x = -inOut * (vw / 2 + truckW / 2 + 40);
           truck.current!.style.transform = `translate3d(${x}px,0,0)`;
           // Wheels and lanes keep rolling even while parked: the truck is "cruising".
           const travel = p * vw * 3;
           const tyreR = ((ROAD_Y - WHEELS[0].y) / IMG.w) * truckW;
-          const deg = (travel / tyreR) * (180 / Math.PI);
+          const deg = -(travel / tyreR) * (180 / Math.PI);
           rims.forEach((r) => (r.style.transform = `rotate(${deg}deg)`));
-          lanes.current!.style.backgroundPositionX = `${-travel}px`;
-          trail.current!.style.transform = `scaleX(${gsap.utils.clamp(0, 1, (x + vw / 2) / vw)})`;
+          lanes.current!.style.backgroundPositionX = `${travel}px`;
+          trail.current!.style.transform = `scaleX(${gsap.utils.clamp(0, 1, (vw / 2 - x) / vw)})`;
           const showCopy = gsap.utils.clamp(0, 1, (p - 0.3) / 0.08) * gsap.utils.clamp(0, 1, (0.72 - p) / 0.08);
           copy.current!.style.opacity = String(showCopy);
           copy.current!.style.transform = `translate3d(0,${(1 - showCopy) * 16}px,0)`;
@@ -87,7 +88,7 @@ export function TruckPass() {
           <div
             ref={trail}
             aria-hidden
-            className="absolute left-0 h-[3px] w-full origin-left bg-red-500"
+            className="absolute left-0 h-[3px] w-full origin-right bg-red-500"
             style={{ top: `calc(${(ROAD_Y / IMG.h) * 100}% + 1px)`, transform: "scaleX(0)" }}
           />
           <div
