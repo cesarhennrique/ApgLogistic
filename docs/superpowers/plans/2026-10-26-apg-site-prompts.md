@@ -1071,124 +1071,197 @@ limpo (traço contínuo, sem ruído de triângulos).
 Commit: "feat: motor de desenho técnico e correções de câmera"
 ````
 
-## Prompt 13b — Capítulos 1 e 2 em planta técnica
+## Prompts 13b, 13c e 13d — (substituídos)
+
+> Substituídos pelos Prompts J1 a J4 (jornada por imagens). Não rode.
+
+> **Revisão 2026-10-30 — jornada por imagens fotorrealistas.** Os Prompts J1 a J4 abaixo substituem os Prompts 13b, 13c e 13d (planta técnica), que não devem ser rodados. Leia a seção 3 do spec e a seção "Cenas da jornada". A referência de execução é `/dev/prova` (`src/components/proof/TruckPass.tsx`), aprovada pelo usuário.
+
+## Prompt J1 — Fundação das cenas e cena 1 (Chegada)
 
 ````text
-Leia o CLAUDE.md e o spec, seção 3 (linhas 1 e 2 da tabela e "Estilo:
-planta técnica"). Use as skills animate e frontend-design:frontend-design.
-Use BlueprintMesh, Dimension e Grid do Prompt 13f.
+Leia o CLAUDE.md, o spec (seção 3 revisada em 2026-10-30 e "Cenas da
+jornada") e src/components/proof/TruckPass.tsx (a prova aprovada: é o
+padrão de qualidade e de técnica). Use as skills animate,
+animation-performance e superpowers:test-driven-development.
 
-0. Bugs vistos nos screenshots do Prompt 13f (corrija antes):
-   - p=0.7 sai em branco: o TerminalStage não aparece (só o texto).
-     Descubra a causa (visibilidade do palco, reveal travado em 0,
-     câmera fora do enquadramento) e adicione um teste e2e que falha se
-     o canvas estiver vazio em p=0.7 (amostra de pixels: pelo menos 2%
-     com cor de traço).
-   - Traço duplicado: no casco do navio e em partes do portêiner aparecem
-     linhas dobradas, com cara de rascunho à mão. São arestas de malhas
-     sobrepostas ou coplanares desenhadas duas vezes. Una as geometrias
-     de cada objeto (mergeGeometries + mergeVertices) antes do
-     EdgesGeometry e descarte arestas duplicadas; o traço tem que ser
-     único e preciso.
-   - Os vídeos de revisão (e2e/__videos__/) agora ficam fora do git
-     (.gitignore); continue gravando, mas não os commite.
-1. CraneStage, em elevação lateral (câmera quase ortogonal, fov 15–20,
-   de lado), fundo sand:
-   - o portêiner e um corte do navio (proa + 2 baias de pilhas, com o
-     casco cortado por uma linha de corte tracejada, como em desenho de
-     engenharia) se constroem em sequência: cais, navio, portêiner;
-   - cotas: "45 m" (altura da viga), "55 m" (lança), "30 m" (vão das
-     pernas);
-   - o spreader desce e trava no container APG (o único sólido), com uma
-     pequena marca de encaixe (dois colchetes red-500 que fecham).
-2. LoadStage, elevação:
-   - o container sobe, cruza e assenta na carreta APG em traço; ao
-     assentar, os twist locks marcam com 4 pontos red-500;
-   - cota "12,19 m · 40'" no container e "APGU 199601 6" em mono na
-     porta;
-   - o logo APG aparece sólido na porta da cabine (Decal ou plano com a
-     textura do logo branco sobre navy).
-3. Detalhes de desenho técnico que vendem a linguagem: hachura leve no
-   corte do casco, eixo de simetria tracejado no portêiner, numeração de
-   baia ("BAY 01", "BAY 03") em mono pequeno.
-4. Ritmo: cada palco tem "constrói → age → descansa" dentro da faixa; o
-   texto do capítulo entra só depois que a construção termina.
-5. Screenshots em p = 0.05, 0.1, 0.15, 0.2, 0.3 e 0.38.
+Mudança de direção: a jornada deixa de ser 3D. Cada cena é uma seção com
+palco sticky e fotos fotorrealistas recortadas, movidas pelo scroll.
+O 3D fica só no hero (mapa) e, no J4, na distribuição.
 
-Pronto quando: lint, typecheck, test e e2e passam e os 6 screenshots
-parecem pranchas de engenharia animadas, com o container APG como único
-objeto sólido.
-Commit: "feat: capítulos 1 e 2 em planta técnica"
+1. Remover o 3D dos capítulos 1 a 5: apague CraneStage, LoadStage,
+   HighwayStage, TerminalStage, PortSet, src/three/blueprint/,
+   src/three/models/ e src/three/scene/ que só eles usam, o CameraRig de
+   palcos, stageBackground e os testes correspondentes. Mantenha o
+   HeroMapStage e o DistributionStage (este volta no J4). O canvas da
+   jornada passa a existir só dentro do hero.
+2. Pipeline de imagens: scripts/build-journey-images.mjs (sharp) lê
+   assets-src/ai/ e public/images/journey/ (recortes já prontos) e gera
+   em public/images/journey/ cada imagem em WebP e AVIF nas larguras 800,
+   1200 e original, com nomes <nome>-<largura>.<ext>. npm script
+   "images". Componente src/components/journey/SceneImage.tsx: <picture>
+   com srcset/sizes, width/height explícitos (sem CLS), decoding="async".
+   As carretas lado/vazia usam a mesma caixa de pixels (são alinhadas a
+   1 px).
+3. src/components/journey/Scene.tsx: base reutilizável. Props: id,
+   heightVh (altura de scroll), background, children. Cria a seção, o
+   palco sticky de 100svh e um ScrollTrigger (scrub) que entrega
+   progress 0–1 por callback (onProgress) sem re-render do React. Expõe
+   o helper segment(p, start, end, ease) para "entra → segura → sai".
+   Teste unitário do segment.
+4. src/components/journey/OceanArrival.tsx (cena 1, 260vh):
+   - fundo: public/images/journey/oceano-cima (tela cheia, object-fit
+     cover), com deriva lenta (background-position ou translate) e
+     escala 1.08 → 1 ao longo da cena;
+   - navio (navio-cima, recortado) entra por baixo e sobe até o terço
+     superior, com um leve balanço (rotate ±0.6°); a altura do navio é
+     ~80vh no desktop e ~70vh no mobile;
+   - espuma: canvas 2D atrás do navio com partículas brancas suaves
+     (blur), mais densas na proa (onda de proa em V) e formando o rastro
+     na popa, que se alonga com a velocidade (derivada do progresso);
+     sem parecer "neve": partículas pequenas, opacidade baixa, somem
+     devagar;
+   - linha vermelha tracejada (SVG) à frente da proa até o topo, com o
+     rótulo mono "SUAPE · PE" no fim;
+   - texto: ContainerCode "APGU 1996-02 · CHEGADA" + "1.900 TEUs por
+     mês" com Counter, à esquerda, entrando quando o navio estabiliza;
+   - reduced motion: navio parado no centro, sem espuma animada.
+5. Transição hero → cena 1: no fim do hero, o mapa mergulha em Suape e
+   faz fade para o azul do oceano; a cena 1 começa já com o oceano na
+   tela (sem faixa branca entre as duas).
+6. Monte a Home: Hero → OceanArrival → (placeholders das cenas 2 a 6
+   com altura e fundo certos, só um texto) → Services. Remova o
+   indicador lateral de capítulos antigo se ele depender dos palcos.
+7. Header: logo e menu brancos sobre o hero e o oceano; navy sobre as
+   cenas claras. Use um atributo data-header-theme em cada cena e um
+   IntersectionObserver no header.
+8. Testes: e2e verifica que a cena 1 renderiza o navio e o oceano, que
+   não há erros de console e que o canvas 3D não existe fora do hero;
+   screenshots em e2e/__screenshots__/journey/ de 5 pontos da cena 1
+   (desktop e mobile). Grave o vídeo do scroll (fora do git).
+
+Pronto quando: lint, typecheck, test e e2e passam e a cena 1 parece um
+plano de drone real do navio chegando a Suape.
+Commit: "feat: cenas da jornada por imagens e cena 1 (chegada)"
 ````
 
-## Prompt 13c — Capítulos 3 a 5 em planta técnica
+## Prompt J2 — Cenas 2 e 3 (Portêiner e Carga)
 
 ````text
-Leia o CLAUDE.md e o spec, seção 3 (linhas 3 a 5 da tabela). Use
-BlueprintMesh, Dimension e Grid do Prompt 13f.
+Leia o CLAUDE.md, o spec (seção 3) e src/components/journey/Scene.tsx.
+Use as skills animate e animation-performance.
 
-1. HighwayStage (tema dark, elevação lateral):
-   - a carreta em perfil, em traço claro, rodando no lugar; rodas com
-     raios e porcas desenhados (a rotação tem que ser visível);
-   - pista em linhas (bordas contínuas, faixa central tracejada), postes
-     e guard rail em traço passando em parallax (3 velocidades); nenhum
-     poste passa na frente da carreta (no 13f um poste navy cortava a
-     cabine): postes só atrás da carreta ou abaixo da linha da pista;
-   - feixe dos faróis como dois triângulos de traço tracejado;
-   - a linha vermelha corre sob as rodas, de ponta a ponta;
-   - velocímetro mono discreto no canto do palco: "BR-101 · 80 KM/H".
-2. TerminalStage (tema light, planta baixa, câmera de cima, ortográfica):
-   - pátio, pilhas (retângulos em traço com o número de pilhas em mono),
-     galpão com as 46 docas numeradas, portaria e vias com setas de
-     sentido;
-   - a carreta, vista de cima em traço, entra pela portaria seguindo a
-     linha vermelha e encosta numa doca;
-   - cotas de planta entram uma a uma: "35.000 m²" (pátio), "4.000
-     TEUs" (pilhas), "46 docas" (galpão).
-3. DistributionStage (light → dark): zoom out contínuo da planta do
-   terminal até o mapa de PE e BA na linguagem do hero (contornos e
-   pontos). A linha vermelha ramifica em 24 rotas; cada destino acende
-   um ponto red-500 com anel. No fim o fundo vai para navy e o mapa
-   desaparece em fade, encaixando na seção Serviços.
-4. A RouteLine é uma só peça narrativa (rotas do hero → sob a carreta →
-   guia no terminal → ramificação): mesma cor, espessura e brilho.
-5. Screenshots em p = 0.45, 0.52, 0.6, 0.68, 0.76, 0.85, 0.95 e 1, e
-   vídeo do scroll completo.
+Imagens: porteiner-lado (recortado), carreta-lado-vazia, carreta-lado
+(com logo). As duas carretas estão alinhadas a 1 px.
 
-Pronto quando: lint, typecheck, test e e2e passam e a jornada de 0 a 1
-lê como uma única prancha técnica animada, alternando navy e sand.
-Commit: "feat: capítulos 3 a 5 em planta técnica"
+1. Prepare as camadas do portêiner com sharp (script em scripts/):
+   - porteiner-base: o portêiner sem o spreader e sem os cabos abaixo do
+     carrinho (área do spreader e dos cabos apagada para transparente;
+     confira que nenhuma parte da estrutura foi cortada);
+   - porteiner-spreader: só o spreader amarelo, recortado da imagem
+     original com transparência;
+   - container-apg-lado: o container recortado da própria carreta-lado
+     (retângulo do container, fundo transparente), para ter exatamente a
+     mesma aparência da carreta carregada.
+   Meça e registre em src/components/journey/craneAnchors.ts as
+   coordenadas (em px da imagem de origem) do ponto de içamento do
+   carrinho, do topo do spreader e da largura do spreader.
+2. CraneLift.tsx (cena 2, fundo #FEFEFE, 240vh):
+   - o portêiner inteiro à direita, ocupando ~85svh de altura;
+   - o spreader com o container APG (escalado para a largura do
+     spreader) sobe de baixo do quadro até o carrinho e trava, com um
+     pequeno "assentamento" (2 px para baixo e volta, 180 ms
+     equivalentes de scroll);
+   - 4 cabos em SVG do carrinho até o spreader, que encurtam junto;
+   - sombra de contato suave no chão sob as pernas;
+   - texto à esquerda: ContainerCode + "O braço rodoviário da
+     cabotagem no Brasil".
+3. Load.tsx (cena 3, fundo #FEFEFE, 220vh), close:
+   - carreta-lado-vazia parada, ocupando ~90vw;
+   - o container (container-apg-lado, mesma escala da carreta) desce do
+     alto com 4 cabos SVG saindo pelo topo do quadro, e alinha
+     exatamente sobre o chassi;
+   - no encaixe: 4 pontos red-500 aparecem nas travas (twist locks) e a
+     imagem troca para a carreta-lado (crossfade de 120 ms equivalentes),
+     sem salto de pixel;
+   - os cabos sobem e somem.
+4. A cena 3 termina com a carreta carregada no mesmo enquadramento em
+   que a cena 4 (Estrada) começa, para a passagem ser contínua.
+5. Screenshots de 5 pontos de cada cena (desktop e mobile) e vídeo.
+
+Pronto quando: lint, typecheck, test e e2e passam e o encaixe do
+container na carreta é perfeito (sem salto na troca de imagem).
+Commit: "feat: cenas 2 e 3 (portêiner e carga)"
 ````
 
-## Prompt 13d — Direção, textos e mobile
+## Prompt J3 — Cenas 4 e 5 (Estrada e Terminal)
 
 ````text
-Leia o CLAUDE.md e o spec, seção 3. Use as skills animate e
-emil-design-eng.
+Leia o CLAUDE.md, o spec (seção 3), src/components/proof/TruckPass.tsx e
+src/components/journey/Scene.tsx. Use as skills animate e
+frontend-design:frontend-design.
 
-1. Textos dos capítulos: entram com RevealText no início da faixa e
-   saem com fade e translateY no fim. O número de cada capítulo usa
-   Counter, com ContainerCode acima. Cor do texto acompanha o fundo
-   (sand-50 sobre navy, navy-900 sobre sand), trocando junto com
-   stageBackground. Contraste AA medido em cada screenshot.
-2. Composição: o texto nunca cobre o objeto principal do palco. Defina,
-   por palco, o lado do texto e a área segura do objeto; teste e2e que
-   compara o bounding box do texto com a projeção do objeto principal na
-   tela (sem sobreposição em 1440x900 e 375x812).
-3. Indicador de progresso lateral: 6 marcas (uma por capítulo), a ativa
-   em red-500, clicáveis (lenis.scrollTo), com aria-label.
-4. "Role para descobrir" no hero, que some ao começar o scroll.
-5. Mobile (< 768px): trilha de 600vh para 450vh; texto embaixo e objeto
-   em cima; fov e chaves de câmera próprias por palco para o objeto caber
-   inteiro (o portêiner não pode ser cortado).
-6. Header: transparente sobre a jornada, com a cor do logo e do menu
-   acompanhando o fundo (branco sobre navy, navy sobre sand).
-7. Grave um vídeo de tela do scroll completo em desktop e em mobile
-   (Playwright video) em e2e/__videos__/ para revisão.
+1. Road.tsx (cena 4): promova a prova TruckPass para a jornada usando
+   Scene, com a imagem carreta-lado (com logo) e as mesmas coordenadas
+   de rodas (a carreta com logo está alinhada a 1 px com a original).
+   Ela começa parada no enquadramento final da cena 3 e sai para a
+   esquerda. Mantenha rodas girando, faixas, linha vermelha e o
+   velocímetro mono. Apague src/app/dev/prova e
+   src/components/proof/ depois de migrar.
+2. Terminal.tsx (cena 5, fundo sand-50, 260vh):
+   - planta baixa do terminal CONE em SVG desenhado à mão no código,
+     traço navy-900 a 60% (fino), sem preenchimento: perímetro do
+     pátio, blocos de pilhas (retângulos com o número de TEUs em mono
+     pequeno), galpão com as 46 docas numeradas, portaria e vias com
+     setas de sentido; o traço se desenha (stroke-dashoffset) na entrada
+     da cena;
+   - a carreta vista de cima (carreta-cima, recortada) entra pela
+     portaria e segue um caminho (SVG path) até uma doca, girando para
+     acompanhar a tangente do caminho (getPointAtLength); a linha
+     vermelha é o próprio caminho, revelado atrás dela;
+   - cotas de planta (linhas de cota + texto mono) entram uma a uma:
+     "35.000 m²", "4.000 TEUs", "46 docas";
+   - a carreta tem tamanho coerente com a planta (largura de uma via).
+3. Screenshots de 5 pontos de cada cena (desktop e mobile) e vídeo.
+
+Pronto quando: lint, typecheck, test e e2e passam, a carreta da cena 4
+continua exatamente de onde a cena 3 parou, e a planta do terminal lê
+como desenho técnico limpo com a foto da carreta por cima.
+Commit: "feat: cenas 4 e 5 (estrada e terminal)"
+````
+
+## Prompt J4 — Cena 6, transições, indicador e mobile
+
+````text
+Leia o CLAUDE.md e o spec (seção 3). Use as skills animate,
+emil-design-eng e mobile-native.
+
+1. Distribution.tsx (cena 6, fundo navy-900): reaproveite o
+   DistributionStage (mapa 3D do hero) num canvas próprio desta cena.
+   Começa com zoom no ponto do terminal CONE e se afasta até PE e BA; a
+   linha vermelha ramifica em 24 rotas com destinos que acendem. Texto
+   "500 entregas fracionadas por dia". No fim, fade para a seção
+   Serviços. O canvas para de renderizar fora da tela.
+2. Transições entre cenas sem cortes secos: cada cena termina num
+   estado que conversa com o começo da próxima (oceano → branco: o
+   navio sai pelo topo e um wipe branco sobe; estrada → terminal: a
+   carreta sai pela esquerda e a planta sand entra; terminal →
+   distribuição: zoom out e escurecimento).
+3. Indicador lateral: 7 marcas (hero + 6 cenas), a ativa em red-500,
+   clicáveis (lenis.scrollTo), aria-label por cena.
+4. Mobile (< 768px): alturas de scroll menores (×0.75); textos embaixo
+   e imagens em cima; navio e portêiner verticais aproveitam a tela; a
+   carreta lateral ocupa 100vw com margem mínima; nada de texto sobre
+   imagem sem contraste AA.
+5. Reduced motion: cada cena mostra o estado final estático, com o
+   texto, sem scrub.
+6. Orçamento: meça o total de imagens baixadas na jornada (desktop e
+   mobile) e garanta ≤ 2 MB e ≤ 1 MB; pré-carregue a próxima cena.
+7. Screenshots finais e vídeo do scroll completo, desktop e mobile.
 
 Pronto quando: lint, typecheck, test e e2e passam e o vídeo mostra a
-jornada inteira sem texto sobre objeto e sem paradas bruscas.
-Commit: "feat: direção, textos e mobile da jornada"
+jornada inteira contínua, do mapa ao Serviços, sem cortes secos.
+Commit: "feat: distribuição, transições e mobile da jornada"
 ````
 
 ## Prompt 14 — Miniaturas 3D dos serviços e heros internos

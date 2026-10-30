@@ -46,28 +46,25 @@ Endereços:
 - **Filial:** Rua Bico Doce, S/N, Palestina – Gl Sala 01, Salvador – BA, CEP 41308-066.
 - **Telefone:** (81) 3202-1800.
 
-## 3. Jornada 3D da Home
+## 3. Jornada da Home (revisão 2026-10-30 — imagens fotorrealistas)
 
-> **Revisão 2026-10-28:** a versão anterior (mundo 3D contínuo com céu, mar e névoa) foi substituída. Motivo: em tempo real, simular o mundo inteiro lia como "desenho animado". A análise da referência (`docs/reference-analysis.md`) mostrou que o impacto vem de **objetos impecáveis isolados** e **vistas de cima**, não de cenário.
+> Histórico: a jornada foi um mundo 3D contínuo (descartado: "desenho animado"), depois palcos de estúdio PBR e depois "planta técnica" em traço (descartados pelo mesmo motivo). A análise da referência (`docs/reference-analysis.md`) mostrou que o impacto vem de **fotos fotorrealistas recortadas, movidas pelo scroll**. A prova em `/dev/prova` (carreta atravessando a tela) foi aprovada pelo usuário.
 
-A jornada é uma sequência de **palcos** (stages), um por capítulo, num único canvas. Não há céu, horizonte nem névoa. Cada palco tem fundo de cor sólida da marca, luz de estúdio e uma câmera própria. A troca de palco acontece por movimento de câmera e por transição da cor de fundo, sincronizados ao scroll.
+A jornada é uma sequência de **cenas** fixadas (sticky), cada uma com o seu próprio progresso de scroll. As imagens vêm de `assets-src/ai/` (geradas por IA, fundo branco recortado por `scripts/cutout-white.mjs`). O 3D em código fica só nos mapas (hero e distribuição).
 
-| # | Faixa | Fundo | Palco | Texto |
+| # | Cena | Fundo | O que acontece | Texto |
 |---|---|---|---|---|
-| 0 | Hero | navy-900 | **Mapa do litoral do Nordeste** em 3D inclinado (malha IBGE em linhas finas e pontos). Rotas de cabotagem chegam do mar em arcos luminosos e convergem em Suape, que pulsa. Câmera orbita devagar, guiada por tempo | Logo APG, "Transportando confiança desde 1996", CTA |
-| → | 0–0.05 | navy → sand-50 | A câmera mergulha em Suape e o fundo clareia | — |
-| 1 | 0–0.2 | sand-50 | **Planta técnica, elevação lateral:** portêiner e um corte do navio (proa e pilhas) se "constroem" em traço navy; cotas mostram 45 m de altura e 55 m de lança. O spreader desce e trava no container APG, o único objeto sólido (navy com faixa vermelha) | "1.900 TEUs por mês" (contador) |
-| 2 | 0.2–0.4 | sand-50 | **Planta técnica, elevação:** o container cruza o quadro e assenta na carreta APG desenhada em traço; cota "12,19 m · 40'" no container; o logo APG em sólido na porta | "O braço rodoviário da cabotagem no Brasil" |
-| 3 | 0.4–0.6 | navy-900 | **Elevação em traço claro sobre navy:** carreta em perfil rodando (rodas com raios girando), linhas da pista e postes passando em parallax, feixe dos faróis em traço. A linha vermelha corre sob as rodas | "Frota 100% própria e rastreada · 24h" |
-| 4 | 0.6–0.8 | sand-50 | **Planta baixa:** terminal CONE visto de cima em traço (pátio, pilhas, galpão com as 46 docas numeradas). A carreta segue a linha vermelha e encosta numa doca. Números aparecem como cotas de planta, em mono | "35.000 m² · 4.000 TEUs estáticos · 46 docas" |
-| 5 | 0.8–1 | sand-50 → navy-900 | **Vista de cima, zoom out:** o terminal vira um ponto no mapa de PE e BA. A linha vermelha ramifica em 24 rotas com vans até os dois estados | "500 entregas fracionadas por dia" |
-| — | Saída | navy-900 | O mapa escurece e dá lugar à seção Serviços | — |
+| 0 | Hero | navy-900 | Mapa do Nordeste com as rotas vermelhas chegando em Suape (inalterado, com o loading do Prompt 13e). No fim, a câmera mergulha em Suape e o mar do mapa vira o oceano da cena 1 | "Transportando confiança desde 1996" |
+| 1 | Chegada | oceano (foto de cima, tela cheia) | O navio, visto de cima, sobe pela tela com espuma na proa e rastro atrás; uma linha vermelha tracejada à frente aponta para "SUAPE" | "1.900 TEUs por mês" (contador) |
+| 2 | Portêiner | branco #FEFEFE | O portêiner inteiro. O spreader com o container APG sobe de baixo (porão do navio, fora do quadro) e trava no carrinho; os cabos encurtam | "O braço rodoviário da cabotagem no Brasil" |
+| 3 | Carga | branco | Close: o container desce do alto (cabos saindo do quadro) e encaixa na carreta vazia; no encaixe, 4 pontos red-500 nas travas e a imagem troca para a carreta carregada | — |
+| 4 | Estrada | branco | A carreta com o logo sai rodando para a esquerda (rodas girando, faixas, linha vermelha, velocímetro) — a prova `/dev/prova` promovida | "Frota 100% própria e rastreada · 24h" |
+| 5 | Terminal | sand-50 | Planta do terminal CONE em traço fino (SVG). A carreta vista de cima segue a linha vermelha e encosta numa doca; números entram como cotas | "35.000 m² · 4.000 TEUs estáticos · 46 docas" |
+| 6 | Distribuição | navy-900 | Zoom out até o mapa do hero; a linha vermelha ramifica em 24 rotas por PE e BA. Depois, a seção Serviços | "500 entregas fracionadas por dia" |
 
-- **Assinatura visual:** a seta vermelha do logo é a linha do trajeto. Ela aparece no hero (rotas), corre sob a carreta (capítulo 3) e guia a carreta e as vans nos capítulos 4 e 5.
-- **Estilo: "planta técnica" (revisão 2026-10-30).** A mesma linguagem do hero em toda a jornada: desenho técnico 3D animado. Objetos com preenchimento chapado (sem PBR) e arestas em traço fino; cotas e anotações em mono; grade técnica de fundo muito sutil. Os objetos se "constroem" quando o palco entra (arestas se desenham, depois o preenchimento aparece). Só o container APG e a linha vermelha são sólidos e coloridos; todo o resto é traço e tom. Motivo: em tempo real, objetos procedurais semirrealistas liam como brinquedo; como desenho técnico, a simplicidade vira estilo.
-- **Cores por fundo:** sobre navy, traço sand-50 (60–80%) e preenchimento navy um tom acima; sobre sand, traço navy-900 e preenchimento sand mais claro. Acento único: red-500.
-- **Ritmo de cor:** navy (hero) → sand (capítulos 1–2) → navy (3) → sand (4–5) → navy (Serviços).
-- **Opcional (momentos-chave):** os capítulos 1 e 2 podem ser renderizados offline com path tracing (`three-gpu-pathtracer`) a partir da mesma cena e tocados como sequência de frames no tier alto. Fica para depois do marco 2, se o tempo real não bastar.
+- **Assinatura:** a linha vermelha da seta do logo atravessa todas as cenas: rotas do hero → rumo do navio → rastro da carreta → caminho no terminal → ramificação final.
+- **Imagens:** fotorrealistas, isoladas, mesma luz de estúdio; nunca mostram marca de terceiros. Escala: cada cena mostra cada imagem no tamanho em que ela é nítida (por isso portêiner e carga são cenas separadas).
+- **Movimento:** só `transform` e `opacity`; tudo atrelado ao progresso da cena (scrub), com easing por trecho (entra → segura enquanto o texto é lido → sai).
 
 ## 4. Estrutura do site
 
@@ -188,15 +185,12 @@ O loading e a entrada do hero são **uma coreografia só**: as setas do logo que
 - Vercel para hospedagem e funções serverless (somente os formulários).
 - Resend para envio de e-mail.
 
-### Cena 3D
+### Cenas da jornada
 
-- **Fonte única de verdade:** um único `progress` (0–1) vindo do ScrollTrigger, guardado em `ref`. A cena lê esse valor dentro de `useFrame`, sem re-render do React por frame.
-- **Palcos (`stages`):** cada capítulo é um grupo isolado (`HeroMapStage`, `CraneStage`, `LoadStage`, `HighwayStage`, `TerminalStage`, `DistributionStage`) com câmera própria. Só os palcos ativos (o atual e o vizinho numa transição) são renderizados. A câmera interpola entre as chaves do palco atual e do próximo.
-- **Fundo:** cor sólida interpolada por progresso (`stageBackground(t)`), sem céu nem névoa.
-- **Render de planta técnica:** materiais sem luz (preenchimento chapado com no máximo 2 tons por face, por orientação da normal) e arestas com `EdgesGeometry` (ângulo ≥ 20°) desenhadas como `LineSegments2` de espessura constante em pixels, com revelação por progresso. Cotas são componentes reutilizáveis (linha de cota + texto mono). Sem sombras, sem AO, sem environment.
-- **Pós-processamento:** só SMAA, bloom leve no vermelho e granulação fina.
-- **Geometria:** procedural, reaproveitando os modelos já feitos (containers instanciados, portêiner, navio, carreta, mapa IBGE extrudado, `RouteLine`).
-- **Orçamento:** até 1,5 MB de assets 3D e até 200 mil triângulos por palco.
+- **Estrutura:** cada cena é uma seção com altura de scroll própria e um palco `sticky` de 100svh; o progresso (0–1) vem de um ScrollTrigger por cena e é lido em `onUpdate`, escrevendo estilos direto no DOM (sem re-render do React por frame).
+- **Imagens:** geradas em WebP e AVIF em 3 larguras (800, 1200, original) por script a partir de `assets-src/ai/`; a cena seguinte é pré-carregada quando a anterior começa.
+- **3D (Three.js):** só o mapa do hero e o mapa da distribuição. O canvas existe apenas nessas duas cenas e para de renderizar fora da tela.
+- **Orçamento:** até 2 MB de imagens na jornada inteira no desktop e 1 MB no mobile.
 
 ### Níveis de qualidade
 
