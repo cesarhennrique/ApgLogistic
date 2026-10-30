@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, useLoader } from "@react-three/fiber";
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo, useRef } from "react";
 import {
   BoxGeometry,
   type BufferGeometry,
@@ -11,6 +11,7 @@ import {
   type Group,
   InstancedMesh,
   Matrix4,
+  MeshBasicMaterial,
   Object3D,
   ShapeGeometry,
   Vector3,
@@ -18,8 +19,6 @@ import {
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { site } from "@/content/site";
-import { localProgress } from "../chapters";
-import { block } from "../models/craneGeometry";
 import {
   GALPAO_DOOR,
   MAP_ORIGIN,
@@ -29,10 +28,15 @@ import {
   VAN_DESTINATIONS,
   vanStateAt,
 } from "../models/distributionLayout";
-import { journeyProgress } from "../progress";
-import { BlueprintMesh } from "../blueprint/BlueprintMesh";
-import { fillMaterial } from "../blueprint/ink";
 import { inView } from "../stages/inView";
+
+// shortcut: plain materials; the J4 distribution scene restyles the map in the hero's language.
+const landMaterial = new MeshBasicMaterial({ color: "#f3efe7" });
+const contextMaterial = new MeshBasicMaterial({ color: "#121c47" });
+
+function block(min: Vector3, max: Vector3): BufferGeometry {
+  return new BoxGeometry(max.x - min.x, max.y - min.y, max.z - min.z).translate((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2);
+}
 
 const highlight = new Set(site.home.coverage.highlight);
 const [suapeX, suapeY] = toSvg(GALPAO_DOOR);
@@ -83,8 +87,8 @@ function Map() {
   // PE and BA in the main stroke, the other states in the secondary one.
   return (
     <>
-      <BlueprintMesh geometry={states} />
-      <BlueprintMesh geometry={context} weight="secondary" />
+      <mesh geometry={states} material={landMaterial} />
+      <mesh geometry={context} material={contextMaterial} />
     </>
   );
 }
@@ -108,7 +112,7 @@ function vanGeometry() {
 }
 
 // Small and moving: fill only, in the theme's tone.
-const vans = new InstancedMesh(vanGeometry(), fillMaterial(), VAN_DESTINATIONS.length);
+const vans = new InstancedMesh(vanGeometry(), new MeshBasicMaterial({ vertexColors: true }), VAN_DESTINATIONS.length);
 vans.frustumCulled = false;
 const dummy = new Object3D();
 const state = vanStateAt(0, 0);
@@ -121,18 +125,15 @@ const galpao = mergeGeometries([
   block(new Vector3(-0.4, GALPAO.height, -GALPAO.depth / 2 - 0.4), new Vector3(GALPAO.width + 0.4, GALPAO.height + 0.6, GALPAO.depth / 2 + 0.4)),
 ])!;
 
-// Chapter 5: out of the warehouse, the vans fan out across Pernambuco and Bahia.
-export function Distribution() {
+// The distribution: out of the warehouse, the vans fan out across Pernambuco and Bahia as `progress` (0–1) runs.
+// shortcut: unmounted until the J4 distribution scene wires it to its own canvas and scroll.
+export function Distribution({ progress }: { progress: { value: number } }) {
   const group = useRef<Group>(null);
-  // The map (an SVG fetch, then triangulating PE and BA) is built only once the journey nears it, not on load.
-  const [near, setNear] = useState(false);
 
   useFrame(() => {
-    const p = journeyProgress.value;
-    if (!near && p > 0.6) setNear(true);
     // Only while its stage is on screen.
     if (!inView(group.current!)) return;
-    const u = localProgress(p, "distribution");
+    const u = progress.value;
     for (let i = 0; i < VAN_DESTINATIONS.length; i++) {
       vanStateAt(i, u, state);
       dummy.position.set(state.x, MAP_TOP, state.z);
@@ -146,15 +147,13 @@ export function Distribution() {
 
   return (
     <group ref={group}>
-      {near && (
-        <Suspense fallback={null}>
-          <Map />
-        </Suspense>
-      )}
+      <Suspense fallback={null}>
+        <Map />
+      </Suspense>
       <group position={[GALPAO_DOOR.x + 1, 0, GALPAO_DOOR.z]}>
-        <BlueprintMesh geometry={galpao} />
+        <mesh geometry={galpao} material={landMaterial} />
         {/* The open door, facing the map (west). */}
-        <BlueprintMesh geometry={doorway} weight="secondary" />
+        <mesh geometry={doorway} material={contextMaterial} />
       </group>
       <primitive object={vans} />
     </group>

@@ -1,2 +1,2 @@
-// Single source of truth for the journey (0–1). Written by scroll/debug, read inside useFrame.
-export const journeyProgress = { value: 0 };
+// The hero's dive onto Suape (0–1), from the hero's scroll (or ?p / the debug slider). Read inside useFrame.
+export const heroDive = { value: 0 };

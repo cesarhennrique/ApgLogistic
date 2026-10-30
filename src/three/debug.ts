@@ -1,6 +1,6 @@
 import { MathUtils } from "three";
 
-// ?p=0.35 freezes the journey; ?debug turns on OrbitControls and a progress slider.
+// ?p=0.35 freezes the hero's dive; ?debug turns on OrbitControls and a progress slider.
 export function readDebugParams(search: string): { frozen: number | null; debug: boolean } {
   const params = new URLSearchParams(search);
   const raw = params.get("p");

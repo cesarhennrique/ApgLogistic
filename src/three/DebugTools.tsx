@@ -3,13 +3,13 @@
 import { OrbitControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useState } from "react";
-import { sampleStageCamera } from "./stages/camera";
+import { sampleHeroCamera } from "./stages/heroCamera";
 import { debugStats } from "./debugStats";
-import { journeyProgress } from "./progress";
+import { heroDive } from "./progress";
 
 // Loaded only with ?debug, so production pays nothing when it is off.
 export function DebugOrbit() {
-  return <OrbitControls makeDefault target={sampleStageCamera(journeyProgress.value).target} />;
+  return <OrbitControls makeDefault target={sampleHeroCamera(heroDive.value).target} />;
 }
 
 // Inside the canvas: copies renderer.info for the panel. The post passes reset it per render, so it accumulates
@@ -25,10 +25,10 @@ export function DebugProbe() {
 }
 
 export function DebugSlider() {
-  const [stats, setStats] = useState({ ...debugStats, progress: journeyProgress.value });
+  const [stats, setStats] = useState({ ...debugStats, progress: heroDive.value });
   // Debug only: a 4 Hz readout, not a per-frame render.
   useEffect(() => {
-    const id = setInterval(() => setStats({ ...debugStats, progress: journeyProgress.value }), 250);
+    const id = setInterval(() => setStats({ ...debugStats, progress: heroDive.value }), 250);
     return () => clearInterval(id);
   }, []);
 
@@ -39,9 +39,9 @@ export function DebugSlider() {
         min={0}
         max={1}
         step={0.001}
-        defaultValue={journeyProgress.value}
+        defaultValue={heroDive.value}
         aria-label="Journey progress (debug)"
-        onChange={(e) => (journeyProgress.value = e.currentTarget.valueAsNumber)}
+        onChange={(e) => (heroDive.value = e.currentTarget.valueAsNumber)}
         className="w-full accent-red-500"
       />
       <dl data-testid="debug-stats" className="grid grid-cols-2 gap-x-3">

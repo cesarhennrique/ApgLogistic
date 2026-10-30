@@ -23,8 +23,10 @@ export type Address = {
   zip: string;
 };
 
-export type ChapterText = {
-  id: "hero" | "crane" | "load" | "highway" | "terminal" | "distribution";
+// A journey scene after the hero (spec §3): its ContainerCode label and its line.
+export type JourneyScene = {
+  id: "chegada" | "porteiner" | "carga" | "estrada" | "terminal" | "distribuicao";
+  code: string;
   text: string;
 };
 
@@ -212,18 +214,21 @@ export const site = {
     // confirmar com cliente: demais marcos (anos e eventos) não estão no spec
   ],
 
+  // Scenes 1–6 of the journey (spec §3); the hero is scene 0. Scene 1's line is its counter: 1.900 + text.
   journey: [
-    { id: "hero", text: "Transportando confiança desde 1996" },
-    { id: "crane", text: "1.900 TEUs por mês" },
-    { id: "load", text: "O braço rodoviário da cabotagem no Brasil" },
-    { id: "highway", text: "Frota 100% própria e rastreada · 24h" },
-    { id: "terminal", text: "35.000 m² · 4.000 TEUs estáticos · 46 docas" },
-    { id: "distribution", text: "500 entregas fracionadas por dia" },
-  ] satisfies ChapterText[],
-  // Text painted inside the 3D journey (spec §3, chapter 3).
+    { id: "chegada", code: "Chegada", text: "TEUs por mês" },
+    { id: "porteiner", code: "Portêiner", text: "O braço rodoviário da cabotagem no Brasil" },
+    // No line of its own (spec §3): the image carries it.
+    { id: "carga", code: "Carga", text: "" },
+    { id: "estrada", code: "Frota", text: "Frota 100% própria e rastreada · 24h" },
+    { id: "terminal", code: "Terminal", text: "35.000 m² · 4.000 TEUs estáticos · 46 docas" },
+    { id: "distribuicao", code: "Distribuição", text: "500 entregas fracionadas por dia" },
+  ] satisfies JourneyScene[],
   journeyScene: {
-    highwaySign: "BR-101 · SUAPE",
-    // Small labels on the hero's map.
+    // Scene 1: the TEUs a month it counts up to (as in stats), and its images' alt text.
+    arrivalTeus: 1900,
+    shipAlt: "Navio porta-contêineres visto de cima, chegando a Suape",
+    // Small labels on the hero's map; Suape's also ends scene 1's red heading line.
     mapLabels: { suape: "SUAPE · PE", salvador: "SALVADOR · BA" },
     // Shown when the pointer is over Suape on the hero's map.
     suapeHover: "Terminal CONE · Cabo de Santo Agostinho",

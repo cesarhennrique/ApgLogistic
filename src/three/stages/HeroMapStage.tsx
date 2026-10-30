@@ -22,10 +22,7 @@ import {
 import { MAP_INTRO_MS, introBridge } from "@/components/intro/bridge";
 import { site } from "@/content/site";
 import { HERO_ROUTES, SALVADOR_HERO, buildDots, parseStates, toHero } from "../models/heroMapLayout";
-import { journeyProgress } from "../progress";
-import { STAGE_CAMERAS } from "./cameras";
-
-export const keys = STAGE_CAMERAS.hero;
+import { heroDive } from "../progress";
 
 const SAND = "#f3efe7";
 // Red-500, pushed past 1 so the bloom picks up the travelling glow (and only that).
@@ -141,11 +138,11 @@ const coreMaterial = new MeshBasicMaterial({ color: RED, transparent: true });
 // Pointer parallax: up to ±2° of tilt, damped. Only with a fine pointer and without reduced motion.
 const PARALLAX = MathUtils.degToRad(2);
 // The labels fade out as the dive begins.
-const DIVE_FADE = [0.002, 0.012] as const;
+const DIVE_FADE = [0.05, 0.3] as const;
 // The map itself fades before the camera gets close (its dots would fill the screen as huge squares), then the
-// routes and Suape; the crane stage builds from 0.03.
-const MAP_FADE = [0.01, 0.03] as const;
-const ROUTE_FADE = [0.02, 0.04] as const;
+// routes and Suape, while the ocean of scene 1 fades in over the hero (Hero, from 0.7).
+const MAP_FADE = [0.4, 0.85] as const;
+const ROUTE_FADE = [0.6, 0.95] as const;
 // Hover radius around Suape, in px.
 const HOVER_PX = 28;
 
@@ -251,7 +248,7 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
   }, [getState]);
 
   useFrame(({ camera, clock, size }, delta) => {
-    const p = journeyProgress.value;
+    const p = heroDive.value;
     dotMaterial.size = DOT / Math.tan(MathUtils.degToRad((camera as PerspectiveCamera).fov) / 2);
 
     const mapFade = 1 - MathUtils.smoothstep(p, ...MAP_FADE);

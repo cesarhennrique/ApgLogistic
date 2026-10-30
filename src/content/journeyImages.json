@@ -1,0 +1,62 @@
+{
+  "carreta-cima": {
+    "width": 941,
+    "height": 1672,
+    "widths": [
+      800,
+      941
+    ]
+  },
+  "carreta-lado": {
+    "width": 1672,
+    "height": 941,
+    "widths": [
+      800,
+      1200,
+      1672
+    ]
+  },
+  "carreta-lado-vazia": {
+    "width": 1672,
+    "height": 941,
+    "widths": [
+      800,
+      1200,
+      1672
+    ]
+  },
+  "container-apg": {
+    "width": 1672,
+    "height": 941,
+    "widths": [
+      800,
+      1200,
+      1672
+    ]
+  },
+  "navio-cima": {
+    "width": 941,
+    "height": 1672,
+    "widths": [
+      800,
+      941
+    ]
+  },
+  "oceano-cima": {
+    "width": 1672,
+    "height": 941,
+    "widths": [
+      800,
+      1200,
+      1672
+    ]
+  },
+  "porteiner-lado": {
+    "width": 1122,
+    "height": 1402,
+    "widths": [
+      800,
+      1122
+    ]
+  }
+}

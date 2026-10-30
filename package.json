@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "images": "node scripts/build-journey-images.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

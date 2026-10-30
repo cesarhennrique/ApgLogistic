@@ -3,34 +3,24 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import { MathUtils, type PerspectiveCamera, Vector3 } from "three";
-import { journeyProgress } from "./progress";
-import { STAGE_CAMERAS } from "./stages/cameras";
-import { sampleStageCamera } from "./stages/camera";
+import { heroDive } from "./progress";
+import { HERO_KEYS, sampleHeroCamera } from "./stages/heroCamera";
 import { fitHeroFrame, type Rect } from "./stages/heroFrame";
 
-// The hero's slow orbit: ±6° about the map's vertical axis, a 20 s cycle, fading out as the dive begins.
+// The hero's slow orbit: ±6° about the map's vertical axis, a 20 s cycle, fading out over the first third of the
+// dive.
 const ORBIT = MathUtils.degToRad(6);
 const ORBIT_PERIOD = 20;
-const ORBIT_FADE = 0.03;
+const ORBIT_FADE = 0.3;
 const Y = new Vector3(0, 1, 0);
 
-// The keys are framed for 16:10. Narrower screens keep that horizontal view (up to 75° vertical) instead of
-// cropping the sides, where Suape and the routes sit.
-const FRAME_ASPECT = 1.6;
-const MAX_FOV = 75;
-const fitFov = (fov: number, aspect: number) =>
-  aspect >= FRAME_ASPECT
-    ? fov
-    : Math.min(MAX_FOV, MathUtils.radToDeg(2 * Math.atan((Math.tan(MathUtils.degToRad(fov) / 2) * FRAME_ASPECT) / aspect)));
-
-// The hero's opening shot is refitted to the viewport (heroFrame): the map in the screen left free by the copy
+// The opening shot is refitted to the viewport (heroFrame): the map in the screen left free by the copy
 // (#hero-copy) and the bars, beside it on landscape screens and above it on portrait ones. The refit fades out
-// over the hero's span, into the dive.
-const HERO_START = STAGE_CAMERAS.hero.start;
+// over the dive.
+const HERO_START = HERO_KEYS.start;
 const START_POSITION = new Vector3(...HERO_START.position);
 const START_TARGET = new Vector3(...HERO_START.target);
 const DIRECTION = START_POSITION.clone().sub(START_TARGET).normalize();
-const HERO_FIT_END = 0.03;
 const fit = { position: new Vector3(), target: new Vector3(), offsetX: 0, offsetY: 0, ready: false };
 
 function freeRegion(width: number, height: number): Rect {
@@ -46,11 +36,11 @@ function freeRegion(width: number, height: number): Rect {
   return { left: margin, right: width - margin, top: header + 8, bottom: top - 24 };
 }
 
-const pose = sampleStageCamera(0);
+const pose = sampleHeroCamera(0);
 const offset = new Vector3();
 
-// Follows the stage cameras (sampleStageCamera): no damping of its own, Lenis already smooths the scroll and the
-// path is continuous in position and speed.
+// Follows the dive (sampleHeroCamera): no damping of its own, Lenis already smooths the scroll and the path is
+// continuous in position and speed.
 export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
   const width = useThree((s) => s.size.width);
   const height = useThree((s) => s.size.height);
@@ -74,9 +64,9 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
   }, [width, height]);
 
   useFrame(({ camera, clock }) => {
-    const p = journeyProgress.value;
-    sampleStageCamera(p, pose);
-    const hero = fit.ready ? 1 - MathUtils.smoothstep(p, 0, HERO_FIT_END) : 0;
+    const p = heroDive.value;
+    sampleHeroCamera(p, pose);
+    const hero = fit.ready ? 1 - MathUtils.smoothstep(p, 0, 1) : 0;
     if (hero > 0) {
       pose.position.addScaledVector(fit.position, hero);
       pose.target.addScaledVector(fit.target, hero);
@@ -90,8 +80,7 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
     camera.position.copy(pose.position);
     camera.lookAt(pose.target);
     const perspective = camera as PerspectiveCamera;
-    // The fitted hero shot keeps its own fov; the widening for narrow screens takes over with the dive.
-    const fov = MathUtils.lerp(fitFov(pose.fov, perspective.aspect), pose.fov, hero);
+    const fov = pose.fov;
     if (hero > 0) {
       perspective.fov = fov;
       perspective.setViewOffset(width, height, fit.offsetX * hero, fit.offsetY * hero, width, height);

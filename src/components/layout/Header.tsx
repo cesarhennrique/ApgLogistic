@@ -3,11 +3,8 @@
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { gsap } from "@/components/motion/gsap";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";
-import { journeyProgress } from "@/three/progress";
-import { stageBackground } from "@/three/stages/background";
 import { MenuOverlay } from "./MenuOverlay";
 import { TransitionLink } from "./TransitionLink";
 
@@ -42,21 +39,38 @@ export function Header() {
   const overJourney = journey.path === pathname && journey.visible;
   const solid = scrolled && !overJourney;
 
-  // Logo and menu follow the stage under them: white on navy, navy on sand. Written straight to the DOM, and
-  // only when the tone flips (stageBackground, the same color as the 3D background).
+  // Logo and menu follow the scene under them: white on the dark ones (data-header-theme="dark"), navy on the
+  // light ones. Watched in a 1 px band at the header's middle; where scenes overlap (one sliding in over the
+  // previous), the later one is on top. Written straight to the DOM.
   useEffect(() => {
     const header = headerRef.current!;
-    if (!overJourney) {
-      header.dataset.tone = "light";
-      return;
-    }
-    const tick = () => {
-      const tone = stageBackground(journeyProgress.value).r > 0.5 ? "dark" : "light";
-      if (header.dataset.tone !== tone) header.dataset.tone = tone;
+    header.dataset.tone = "light";
+    if (!overJourney) return;
+    const scenes = [...document.querySelectorAll<HTMLElement>("[data-header-theme]")];
+    const under = new Set<HTMLElement>();
+    let io: IntersectionObserver;
+    const watch = () => {
+      io?.disconnect();
+      const band = Math.round(header.offsetHeight / 2);
+      io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) under.add(e.target as HTMLElement);
+            else under.delete(e.target as HTMLElement);
+          }
+          const top = scenes.findLast((el) => under.has(el));
+          if (top) header.dataset.tone = top.dataset.headerTheme === "light" ? "dark" : "light";
+        },
+        { rootMargin: `-${band}px 0px -${window.innerHeight - band - 1}px 0px` },
+      );
+      for (const el of scenes) io.observe(el);
     };
-    tick();
-    gsap.ticker.add(tick);
-    return () => gsap.ticker.remove(tick);
+    watch();
+    window.addEventListener("resize", watch);
+    return () => {
+      window.removeEventListener("resize", watch);
+      io.disconnect();
+    };
   }, [overJourney]);
 
   const close = useCallback(() => {

@@ -23,8 +23,10 @@ test("home shows the 3 services and counts up to 1.900", async ({ page }) => {
   }
   const stats = page.getByRole("heading", { level: 2, name: "A operação em números" });
   await stats.scrollIntoViewIfNeeded();
-  // exact match hits the animated (visible) span, not the sr-only "1.900 TEUs"
-  await expect(page.getByText("1.900", { exact: true })).toBeVisible();
+  // exact match hits the animated (visible) span, not the sr-only "1.900 TEUs"; inside Stats, as scene 1 counts to
+  // 1.900 too.
+  const section = stats.locator("xpath=ancestor::section[1]");
+  await expect(section.getByText("1.900", { exact: true })).toBeVisible();
 });
 
 test("home has no horizontal overflow", async ({ page }) => {

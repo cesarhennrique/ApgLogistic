@@ -1,9 +1,9 @@
 import { test } from "@playwright/test";
 
-// Small: the file is committed for review.
-test.use({ video: { mode: "on", size: { width: 640, height: 400 } } });
+test.use({ video: "on" });
 
-// For review, not an assertion: the whole journey scrolled top to bottom, as e2e/__videos__/journey-<project>.webm.
+// For review, not an assertion: the whole journey scrolled top to bottom, as e2e/__videos__/journey-<project>.webm
+// (git-ignored).
 // The intro is marked as seen, so the loader doesn't take the first seconds.
 test("records the full scroll", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
@@ -12,8 +12,8 @@ test("records the full scroll", async ({ page }, testInfo) => {
   await page.waitForLoadState("load");
   await page.waitForTimeout(3_000);
   const end = await page.evaluate(() => {
-    const track = document.getElementById("journey-track")!;
-    return track.getBoundingClientRect().top + window.scrollY + track.offsetHeight;
+    const journey = document.getElementById("journey")!;
+    return journey.getBoundingClientRect().top + window.scrollY + journey.offsetHeight;
   });
   // ~16 s top to bottom, in small steps (Lenis smooths between them).
   const steps = 160;
