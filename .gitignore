@@ -52,3 +52,6 @@ next-env.d.ts
 
 # vídeos de referência (uso interno, não publicar)
 /assets-src/reference/
+
+# vídeos de revisão do Playwright (grandes, não versionar)
+/e2e/__videos__/
