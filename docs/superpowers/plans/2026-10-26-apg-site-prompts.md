@@ -999,157 +999,149 @@ LCP < 2,5 s.
 Commit: "feat: loading e abertura do hero"
 ````
 
-## Prompt 13f — Carreta APG em detalhe (procedural)
+> **Revisão 2026-10-30 — caminho A, "planta técnica":** a jornada inteira passa para a linguagem gráfica do hero (desenho técnico 3D animado). Os Prompts 13f, 13b e 13c abaixo substituem as versões de estúdio/PBR. Leia a seção 3 do spec ("Estilo: planta técnica") e a seção 6 ("Render de planta técnica").
 
-> Roda **antes do 13b**. A carreta é o "produto" da APG no site e aparece em close nos capítulos 2, 3 e 4. A decisão é mantê-la procedural, então ela ganha um prompt só dela.
+## Prompt 13f — Motor de desenho técnico e correções de câmera
 
 ````text
-Leia o CLAUDE.md e o spec, seção 3. Use as skills
-frontend-design:frontend-design e animation-performance.
+Leia o CLAUDE.md e o spec: seção 3 (tabela da jornada e "Estilo:
+planta técnica") e seção 6 ("Render de planta técnica"). Use as skills
+animation-performance, frontend-design:frontend-design e
+superpowers:test-driven-development.
 
-Objetivo: a carreta APG procedural tem que aguentar close de estúdio
-(fotografia de produto), de perfil, 3/4 e de cima. Hoje a cabine lê como
-uma caixa e o para-brisa é um buraco preto. Escala 1 unidade = 1 m.
+Mudança de direção: nada de PBR, estúdio, sombras ou AO. A jornada
+inteira vira desenho técnico 3D animado, na mesma linguagem do mapa do
+hero (que é a parte mais forte do site hoje).
 
-1. Página de bancada /dev/truck (só em development): a carreta sozinha
-   no Studio (fundo sand-50, ContactShadows, mesmo pós-processamento da
-   jornada), com OrbitControls, botões de câmera (perfil, 3/4 frente,
-   3/4 trás, de cima) e um toggle dia/noite (faróis). Toda a iteração
-   deste prompt acontece nela.
-2. Cabine cara-chata genérica (sem marca), proporções reais: largura
-   2,50, altura 3,95 com defletor de teto, profundidade 2,30.
-   - Volumes com cantos arredondados (RoundedBoxGeometry do three-stdlib
-     ou ExtrudeGeometry com bevel), nunca caixa reta.
-   - Frente: para-brisa inteiriço levemente curvo e inclinado (~5°),
-     colunas A, grade superior com lâminas horizontais, para-choque com
-     faróis integrados e neblinas, 3 degraus por lado, retrovisores com
-     braço, para-sol externo.
-   - Lateral: porta com maçaneta e janela, painel defletor lateral,
-     tanque de combustível cilíndrico (Lathe) com cintas, tanques de ar,
-     para-lamas com aba.
-   - Interior visível pelo vidro: bancos, volante e painel em silhueta
-     escura (nunca preto chapado).
-3. Rodas 22.5" (Lathe): pneu com sulcos na banda, aro com 10 porcas e
-   cubo central, para a rotação ser visível. Instanciadas.
-4. Chassi e carreta 40' esqueleto: longarinas, quinta roda, pescoço
-   (gooseneck), pés de apoio, 3 eixos, para-choque traseiro, lanternas
-   e luzes laterais âmbar, para-barro com aba, twist locks nos cantos.
-5. Pintura APG: cabine branca #EDEBE6 com faixa navy #1A2350 e a seta
-   vermelha #E31E24 do logo correndo larga na lateral; logo APG (Decal)
-   na porta; placa padrão Mercosul fictícia "APG1A96". Container APG
-   navy com faixa vermelha e o código "APGU 199601 6" nas portas.
-6. Materiais (src/three/materials/): tinta com clearcoat e variação de
-   rugosidade, cromado nos tanques e detalhes, borracha fosca, vidro com
-   reflexo do RoomEnvironment e fresnel, plástico preto texturizado na
-   grade e para-choque.
-7. Faróis: lentes emissive com bloom à noite, luz de posição âmbar,
-   lanternas traseiras vermelhas.
-8. Orçamento: até 40 mil triângulos para cavalo + carreta + container
-   (mostre na bancada).
-9. Testes: unit com as dimensões (cabine 2,50 x 3,95 x 2,30; carreta com
-   comprimento útil ≥ 12,19); e2e com screenshots da bancada nos 4
-   ângulos, dia e noite, em e2e/__screenshots__/truck/.
-10. A carreta da jornada (LoadStage, HighwayStage, TerminalStage) passa a
-   usar este modelo.
+1. Remover o estúdio: apague RoomEnvironment, ContactShadows,
+   AccumulativeShadows, N8AO, luzes direcionais e os materiais PBR dos
+   palcos 1 a 5. Mantenha só SMAA, Bloom (só no red-500) e Noise (grão
+   fino). Remova os testes correspondentes.
+2. src/three/blueprint/theme.ts: dois temas, pela cor de fundo do palco
+   (stageBackground):
+   - dark (navy-900): traço sand-50 a 75%, traço secundário 35%,
+     preenchimento navy um tom acima (#121C47), acento red-500;
+   - light (sand-50): traço navy-900 a 85%, secundário 35%,
+     preenchimento #FBF9F5, acento red-500.
+   A troca de tema acompanha a transição de fundo (interpolação, sem
+   salto). Teste de continuidade.
+3. src/three/blueprint/BlueprintMesh.tsx: recebe uma geometry e
+   desenha:
+   - preenchimento sem luz (MeshBasicMaterial ou shader) com 2 tons por
+     orientação da normal (faces de cima um pouco mais claras), para ler
+     volume sem sombra;
+   - arestas: EdgesGeometry (threshold 20°) em LineSegments2
+     (LineMaterial, espessura constante em px: 1.25 principal, 0.75
+     secundária), sem z-fighting com o preenchimento (polygonOffset);
+   - prop `reveal` (0–1): as arestas se desenham (dashOffset por
+     comprimento acumulado) e o preenchimento entra depois (opacity de
+     0.6 a 1 do reveal). Teste unitário do cálculo de comprimento
+     acumulado.
+4. src/three/blueprint/Dimension.tsx: cota técnica reutilizável (linha
+   de cota com traços de extremidade, linhas de chamada e texto mono
+   centralizado, sempre legível em tamanho de tela, via Html do drei ou
+   Text com sizeAttenuation compensada). Props: from, to, label, offset,
+   reveal. Entra com draw-on.
+5. src/three/blueprint/Grid.tsx: grade técnica de fundo muito sutil (5%
+   do traço), linhas a cada 10 m e reforço a cada 50 m, que desliza
+   levemente com a câmera.
+6. Aplique o BlueprintMesh a todos os modelos existentes (containers,
+   portêiner, navio, carreta, terminal, estrada). Containers comuns:
+   só traço + preenchimento de tema. O container APG é o único objeto
+   sólido: navy #1A2350 com faixa red-500, sem traço claro.
+   Simplifique a geometria onde o traço ficar "sujo" (diagonais de
+   triângulos aparecendo, bevels gerando ruído): o traço tem que ler como
+   desenho de engenharia limpo.
+7. Correções de bugs vistos no vídeo do usuário:
+   - Mergulho do hero: os pontos do mapa viravam quadrados gigantes e a
+     tela ficava "toda branca". Os pontos e os contornos do mapa fazem
+     fade out antes de a câmera chegar perto (0.01 a 0.03), e o CraneStage
+     começa a se construir (reveal) a partir de 0.03.
+   - Câmera da estrada: em parte do capítulo 3 ela passava por baixo da
+     pista e do guard rail. Revise as chaves: a câmera fica sempre acima
+     da pista e nenhum objeto cruza o near plane (teste numérico que
+     verifica a altura da câmera em todo o capítulo).
+   - Remova árvores, arbustos e grama da estrada.
+8. Screenshots em p = 0, 0.02, 0.05, 0.15, 0.3, 0.5, 0.7, 0.9 (desktop
+   e mobile) e um vídeo do scroll completo em e2e/__videos__/.
 
-Pronto quando: lint, typecheck, test e e2e passam e os 8 screenshots da
-bancada parecem um caminhão de verdade fotografado em estúdio, não um
-brinquedo.
-Commit: "feat: carreta APG em detalhe"
+Pronto quando: lint, typecheck, test e e2e passam, não sobra material
+PBR nem sombra nos palcos, e os screenshots leem como desenho técnico
+limpo (traço contínuo, sem ruído de triângulos).
+Commit: "feat: motor de desenho técnico e correções de câmera"
 ````
 
-## Prompt 13b — Estúdio do portêiner e da carreta (capítulos 1 e 2)
+## Prompt 13b — Capítulos 1 e 2 em planta técnica
 
 ````text
-Leia o CLAUDE.md e o spec, seção 3. Use as skills
-frontend-design:frontend-design e animation-performance.
+Leia o CLAUDE.md e o spec, seção 3 (linhas 1 e 2 da tabela e "Estilo:
+planta técnica"). Use as skills animate e frontend-design:frontend-design.
+Use BlueprintMesh, Dimension e Grid do Prompt 13f.
 
-Objetivo: os capítulos 1 e 2 têm que parecer foto de produto premium,
-sobre fundo sand-50, com objetos isolados e impecáveis.
+1. CraneStage, em elevação lateral (câmera quase ortogonal, fov 15–20,
+   de lado), fundo sand:
+   - o portêiner e um corte do navio (proa + 2 baias de pilhas, com o
+     casco cortado por uma linha de corte tracejada, como em desenho de
+     engenharia) se constroem em sequência: cais, navio, portêiner;
+   - cotas: "45 m" (altura da viga), "55 m" (lança), "30 m" (vão das
+     pernas);
+   - o spreader desce e trava no container APG (o único sólido), com uma
+     pequena marca de encaixe (dois colchetes red-500 que fecham).
+2. LoadStage, elevação:
+   - o container sobe, cruza e assenta na carreta APG em traço; ao
+     assentar, os twist locks marcam com 4 pontos red-500;
+   - cota "12,19 m · 40'" no container e "APGU 199601 6" em mono na
+     porta;
+   - o logo APG aparece sólido na porta da cabine (Decal ou plano com a
+     textura do logo branco sobre navy).
+3. Detalhes de desenho técnico que vendem a linguagem: hachura leve no
+   corte do casco, eixo de simetria tracejado no portêiner, numeração de
+   baia ("BAY 01", "BAY 03") em mono pequeno.
+4. Ritmo: cada palco tem "constrói → age → descansa" dentro da faixa; o
+   texto do capítulo entra só depois que a construção termina.
+5. Screenshots em p = 0.05, 0.1, 0.15, 0.2, 0.3 e 0.38.
 
-1. Composição do CraneStage: portêiner inteiro, um recorte do navio
-   (proa + as 2 baias de pilhas perto do portêiner, sem o resto do casco)
-   e um plano de cais mínimo (laje de concreto claro com borda e
-   cabeços de amarração). Nada além disso no quadro. O plano do chão se
-   funde ao fundo sand (sem linha de horizonte: chão com a mesma cor do
-   fundo e sombra de contato).
-2. Contraste (o p=0.1 do Prompt 13 ficou lavado: portêiner branco sobre
-   sand, sem separação): portêiner em cinza-grafite #4A4F5A com detalhes
-   sand-50 e faixas de advertência amarelo/preto no spreader; luz
-   principal mais forte e mais dura (sombras visíveis no cais), fundo
-   sand-50 e chão um tom mais escuro (#E6E0D4) que se funde ao fundo por
-   degradê radial; exposição ajustada para os containers terem cor
-   saturada. Meta: o objeto principal tem contraste de luminância de
-   pelo menos 3:1 contra o fundo.
-3. Materiais premium (src/three/materials/):
-   - paintedMetal(color): MeshPhysical, roughness 0.45–0.6 com
-     variação por ruído, clearcoat 0.15, desgaste sutil nas arestas
-     (ruído + curvatura aproximada por normal);
-   - containerPaint: igual, com sujeira leve na base e marcas de
-     escorrimento verticais sutis;
-   - glass, rubber, chrome para a carreta;
-   - concreto claro para o cais.
-   Todos procedurais (0 bytes de textura).
-4. Detalhe que vende realismo: placas de identificação nos containers
-   (código "APGU 199601 6" em mono nas portas do container APG, via
-   texto do drei ou textura de canvas), cabos do spreader com leve
-   catenária, luzes de aviso no spreader.
-5. LoadStage: a câmera gira até o perfil da carreta. O container cruza
-   e assenta, com um pequeno "assentamento" (desce 3 cm, sobe 1 cm, em
-   180 ms) quando os twist locks travam. O logo APG fica legível na
-   porta da cabine nesse quadro final.
-6. Câmeras: lentes longas (fov 18–28) como fotografia de produto, com
-   leve dolly enquanto o capítulo avança. O objeto principal ocupa o
-   terço direito e o texto fica à esquerda.
-7. Sombras: AccumulativeShadows enquanto o palco está parado; quando o
-   portêiner ou o container se movem, troque para ContactShadows para não
-   haver rastro.
-8. Screenshots em p = 0.08, 0.15, 0.25, 0.35 e 0.4 (desktop e mobile).
-
-Pronto quando: lint, typecheck, test e e2e passam e os 5 screenshots
-parecem foto de estúdio (fundo limpo, sombra suave, sem horizonte).
-Commit: "feat: estúdio do portêiner e da carreta"
+Pronto quando: lint, typecheck, test e e2e passam e os 6 screenshots
+parecem pranchas de engenharia animadas, com o container APG como único
+objeto sólido.
+Commit: "feat: capítulos 1 e 2 em planta técnica"
 ````
 
-## Prompt 13c — Estrada, terminal de cima e distribuição (capítulos 3 a 5)
+## Prompt 13c — Capítulos 3 a 5 em planta técnica
 
 ````text
-Leia o CLAUDE.md e o spec, seção 3. Reaproveite Highway, Distribution,
-RouteLine e o mapa do Prompt 12 dentro dos novos palcos.
+Leia o CLAUDE.md e o spec, seção 3 (linhas 3 a 5 da tabela). Use
+BlueprintMesh, Dimension e Grid do Prompt 13f.
 
-1. HighwayStage (fundo navy-900): a carreta em perfil, em close, rodando
-   no lugar. Rodas giram (dê aos aros furos, porcas e cubo para a
-   rotação ser visível; hoje o aro é liso); faixas da pista, postes e guard rail passam em
-   parallax (3 camadas em velocidades diferentes); faróis e luz de
-   posição acesos com bloom. A linha vermelha corre sob as rodas, de
-   ponta a ponta do quadro. Sem céu: acima da pista, só o navy. Remova
-   árvores, arbustos e grama (no p=0.5 do Prompt 13 eles deixaram a cena
-   com cara de brinquedo): o palco tem só pista escura, faixas, guard
-   rail e postes, como um estúdio noturno.
-2. TerminalStage (fundo sand-50, vista de cima ortográfica ou fov 12 de
-   bem alto): planta estilizada do terminal CONE.
-   - Pátio com pilhas coloridas (vistas de cima, com sombra de contato),
-     galpão com as 46 docas numeradas, portaria e vias.
-   - A carreta, vista de cima, entra pela portaria seguindo a linha
-     vermelha e encosta numa doca no fim do capítulo.
-   - Anotações de planta em mono (linhas de cota finas navy a 40%):
-     "35.000 m²" no pátio, "4.000 TEUs" nas pilhas, "46 docas" no
-     galpão. As anotações entram uma a uma com o progresso.
-3. DistributionStage: zoom out contínuo a partir do terminal até o mapa
-   de PE e BA (mesma malha do hero, agora em vista de cima sobre sand).
-   A linha vermelha ramifica em 24 rotas com vans (vistas de cima)
-   seguindo cada uma; os destinos acendem em pontos red-500. No fim, o
-   fundo escurece para navy e o mapa some, encaixando na seção Serviços.
-4. A RouteLine é uma só peça narrativa: ela nasce nas rotas do hero,
-   aparece sob a carreta no capítulo 3, guia a carreta no 4 e ramifica no
-   5. Cada palco desenha o seu trecho; a cor, a espessura e o brilho são
-   idênticos.
-5. Orçamento por palco: até 200 mil triângulos (mostre no ?debug).
-6. Screenshots em p = 0.45, 0.55, 0.65, 0.75, 0.85, 0.95 e 1.
+1. HighwayStage (tema dark, elevação lateral):
+   - a carreta em perfil, em traço claro, rodando no lugar; rodas com
+     raios e porcas desenhados (a rotação tem que ser visível);
+   - pista em linhas (bordas contínuas, faixa central tracejada), postes
+     e guard rail em traço passando em parallax (3 velocidades);
+   - feixe dos faróis como dois triângulos de traço tracejado;
+   - a linha vermelha corre sob as rodas, de ponta a ponta;
+   - velocímetro mono discreto no canto do palco: "BR-101 · 80 KM/H".
+2. TerminalStage (tema light, planta baixa, câmera de cima, ortográfica):
+   - pátio, pilhas (retângulos em traço com o número de pilhas em mono),
+     galpão com as 46 docas numeradas, portaria e vias com setas de
+     sentido;
+   - a carreta, vista de cima em traço, entra pela portaria seguindo a
+     linha vermelha e encosta numa doca;
+   - cotas de planta entram uma a uma: "35.000 m²" (pátio), "4.000
+     TEUs" (pilhas), "46 docas" (galpão).
+3. DistributionStage (light → dark): zoom out contínuo da planta do
+   terminal até o mapa de PE e BA na linguagem do hero (contornos e
+   pontos). A linha vermelha ramifica em 24 rotas; cada destino acende
+   um ponto red-500 com anel. No fim o fundo vai para navy e o mapa
+   desaparece em fade, encaixando na seção Serviços.
+4. A RouteLine é uma só peça narrativa (rotas do hero → sob a carreta →
+   guia no terminal → ramificação): mesma cor, espessura e brilho.
+5. Screenshots em p = 0.45, 0.52, 0.6, 0.68, 0.76, 0.85, 0.95 e 1, e
+   vídeo do scroll completo.
 
 Pronto quando: lint, typecheck, test e e2e passam e a jornada de 0 a 1
-roda sem cortes secos, alternando navy e sand.
-Commit: "feat: estrada, terminal de cima e distribuição"
+lê como uma única prancha técnica animada, alternando navy e sand.
+Commit: "feat: capítulos 3 a 5 em planta técnica"
 ````
 
 ## Prompt 13d — Direção, textos e mobile

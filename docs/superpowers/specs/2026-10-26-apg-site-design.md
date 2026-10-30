@@ -56,15 +56,16 @@ A jornada é uma sequência de **palcos** (stages), um por capítulo, num único
 |---|---|---|---|---|
 | 0 | Hero | navy-900 | **Mapa do litoral do Nordeste** em 3D inclinado (malha IBGE em linhas finas e pontos). Rotas de cabotagem chegam do mar em arcos luminosos e convergem em Suape, que pulsa. Câmera orbita devagar, guiada por tempo | Logo APG, "Transportando confiança desde 1996", CTA |
 | → | 0–0.05 | navy → sand-50 | A câmera mergulha em Suape e o fundo clareia | — |
-| 1 | 0–0.2 | sand-50 | **Estúdio:** portêiner isolado e um recorte do navio (proa e pilhas), sobre um plano de cais mínimo. O spreader desce e trava no container APG | "1.900 TEUs por mês" (contador) |
-| 2 | 0.2–0.4 | sand-50 | **Estúdio:** a câmera gira até o perfil. O container cruza e assenta na carreta APG, com o logo legível na porta | "O braço rodoviário da cabotagem no Brasil" |
-| 3 | 0.4–0.6 | navy-900 | **Faixa escura:** carreta em perfil rodando (rodas girando, faixas e postes passando em parallax), faróis acesos. A linha vermelha corre sob as rodas | "Frota 100% própria e rastreada · 24h" |
-| 4 | 0.6–0.8 | sand-50 | **Vista de cima:** planta estilizada do terminal CONE (pátio, pilhas coloridas, galpão com 46 docas). A carreta, vista de cima, segue a linha vermelha e encosta numa doca. Números aparecem como anotações de planta, em mono | "35.000 m² · 4.000 TEUs estáticos · 46 docas" |
+| 1 | 0–0.2 | sand-50 | **Planta técnica, elevação lateral:** portêiner e um corte do navio (proa e pilhas) se "constroem" em traço navy; cotas mostram 45 m de altura e 55 m de lança. O spreader desce e trava no container APG, o único objeto sólido (navy com faixa vermelha) | "1.900 TEUs por mês" (contador) |
+| 2 | 0.2–0.4 | sand-50 | **Planta técnica, elevação:** o container cruza o quadro e assenta na carreta APG desenhada em traço; cota "12,19 m · 40'" no container; o logo APG em sólido na porta | "O braço rodoviário da cabotagem no Brasil" |
+| 3 | 0.4–0.6 | navy-900 | **Elevação em traço claro sobre navy:** carreta em perfil rodando (rodas com raios girando), linhas da pista e postes passando em parallax, feixe dos faróis em traço. A linha vermelha corre sob as rodas | "Frota 100% própria e rastreada · 24h" |
+| 4 | 0.6–0.8 | sand-50 | **Planta baixa:** terminal CONE visto de cima em traço (pátio, pilhas, galpão com as 46 docas numeradas). A carreta segue a linha vermelha e encosta numa doca. Números aparecem como cotas de planta, em mono | "35.000 m² · 4.000 TEUs estáticos · 46 docas" |
 | 5 | 0.8–1 | sand-50 → navy-900 | **Vista de cima, zoom out:** o terminal vira um ponto no mapa de PE e BA. A linha vermelha ramifica em 24 rotas com vans até os dois estados | "500 entregas fracionadas por dia" |
 | — | Saída | navy-900 | O mapa escurece e dá lugar à seção Serviços | — |
 
 - **Assinatura visual:** a seta vermelha do logo é a linha do trajeto. Ela aparece no hero (rotas), corre sob a carreta (capítulo 3) e guia a carreta e as vans nos capítulos 4 e 5.
-- **Estilo:** "estúdio de produto". Os modelos procedurais existentes (containers, portêiner, navio, carreta) recebem materiais PBR de qualidade (pintura metálica, variação de rugosidade, desgaste sutil nas arestas), luz de estúdio, sombra de contato suave e oclusão de ambiente. Nada de cenário: o fundo é sempre cor sólida da paleta.
+- **Estilo: "planta técnica" (revisão 2026-10-30).** A mesma linguagem do hero em toda a jornada: desenho técnico 3D animado. Objetos com preenchimento chapado (sem PBR) e arestas em traço fino; cotas e anotações em mono; grade técnica de fundo muito sutil. Os objetos se "constroem" quando o palco entra (arestas se desenham, depois o preenchimento aparece). Só o container APG e a linha vermelha são sólidos e coloridos; todo o resto é traço e tom. Motivo: em tempo real, objetos procedurais semirrealistas liam como brinquedo; como desenho técnico, a simplicidade vira estilo.
+- **Cores por fundo:** sobre navy, traço sand-50 (60–80%) e preenchimento navy um tom acima; sobre sand, traço navy-900 e preenchimento sand mais claro. Acento único: red-500.
 - **Ritmo de cor:** navy (hero) → sand (capítulos 1–2) → navy (3) → sand (4–5) → navy (Serviços).
 - **Opcional (momentos-chave):** os capítulos 1 e 2 podem ser renderizados offline com path tracing (`three-gpu-pathtracer`) a partir da mesma cena e tocados como sequência de frames no tier alto. Fica para depois do marco 2, se o tempo real não bastar.
 
@@ -192,8 +193,8 @@ O loading e a entrada do hero são **uma coreografia só**: as setas do logo que
 - **Fonte única de verdade:** um único `progress` (0–1) vindo do ScrollTrigger, guardado em `ref`. A cena lê esse valor dentro de `useFrame`, sem re-render do React por frame.
 - **Palcos (`stages`):** cada capítulo é um grupo isolado (`HeroMapStage`, `CraneStage`, `LoadStage`, `HighwayStage`, `TerminalStage`, `DistributionStage`) com câmera própria. Só os palcos ativos (o atual e o vizinho numa transição) são renderizados. A câmera interpola entre as chaves do palco atual e do próximo.
 - **Fundo:** cor sólida interpolada por progresso (`stageBackground(t)`), sem céu nem névoa.
-- **Luz de estúdio:** `RoomEnvironment` do three (0 bytes) para os reflexos PBR, uma luz principal + preenchimento + recorte, sombra de contato suave (`ContactShadows` ou `AccumulativeShadows` do drei) e AO (N8AO).
-- **Pós-processamento:** SMAA, AO, bloom leve só nas luzes, granulação fina e vinheta sutil.
+- **Render de planta técnica:** materiais sem luz (preenchimento chapado com no máximo 2 tons por face, por orientação da normal) e arestas com `EdgesGeometry` (ângulo ≥ 20°) desenhadas como `LineSegments2` de espessura constante em pixels, com revelação por progresso. Cotas são componentes reutilizáveis (linha de cota + texto mono). Sem sombras, sem AO, sem environment.
+- **Pós-processamento:** só SMAA, bloom leve no vermelho e granulação fina.
 - **Geometria:** procedural, reaproveitando os modelos já feitos (containers instanciados, portêiner, navio, carreta, mapa IBGE extrudado, `RouteLine`).
 - **Orçamento:** até 1,5 MB de assets 3D e até 200 mil triângulos por palco.
 
