@@ -86,16 +86,9 @@ export default function DevUiPage() {
       </Section>
 
       <Section index={4} label="Números">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4">
-          {site.stats.map((s) => (
-            <div key={s.label} className="flex flex-col-reverse border-l border-red-500 pl-4">
-              <dt className="mt-2 text-sm text-steel-400">{s.label}</dt>
-              <dd className="text-2xl font-semibold md:text-4xl">
-                <Counter value={s.value} suffix={s.suffix} />
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <p className="border-l border-red-500 pl-4 text-2xl font-semibold md:text-4xl">
+          <Counter value={site.journeyScene.arrivalTeus} suffix=" TEUs" />
+        </p>
       </Section>
 
       <Section index={5} label="Botões">

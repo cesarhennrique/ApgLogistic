@@ -1,4 +1,3 @@
-export type Stat = { value: number; suffix?: string; label: string };
 
 export type Faq = { question: string; answer: string };
 
@@ -186,16 +185,6 @@ export const site = {
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "",
   addresses: { matriz, filial },
 
-  stats: [
-    { value: 1900, suffix: " TEUs", label: "movimentados por mês, em média" },
-    { value: 500, label: "entregas fracionadas por dia" },
-    { value: 35000, suffix: " m²", label: "de pátio" },
-    { value: 46, label: "docas niveladoras eletro-hidráulicas" },
-    { value: 5000, suffix: " m²", label: "de estrutura coberta (cross-docking)" },
-    { value: 4000, suffix: " TEUs", label: "de capacidade estática no terminal" },
-    { value: 24, suffix: "h", label: "de atendimento" },
-  ] satisfies Stat[],
-
   services,
 
   differentials: [
@@ -221,11 +210,11 @@ export const site = {
     // No line of its own (spec §3): the image carries it.
     { id: "carga", code: "Carga", text: "" },
     { id: "estrada", code: "Frota", text: "Frota 100% própria e rastreada · 24h" },
-    { id: "terminal", code: "Terminal", text: "35.000 m² · 4.000 TEUs estáticos · 46 docas" },
+    { id: "terminal", code: "Terminal", text: "35.000 m² · 4.000 TEUs estáticos · 46 docas · 5.000 m² cobertos" },
     { id: "distribuicao", code: "Distribuição", text: "500 entregas fracionadas por dia" },
   ] satisfies JourneyScene[],
   journeyScene: {
-    // Scene 1: the TEUs a month it counts up to (as in stats), and its images' alt text.
+    // Scene 1: the TEUs a month it counts up to, and its photo's alt text.
     arrivalTeus: 1900,
     shipAlt: "Navio porta-contêineres visto de cima, chegando a Suape",
     // Small labels on the hero's map; Suape's also ends scene 1's red heading line.
@@ -265,13 +254,10 @@ export const site = {
       ticker: ["1.900 TEUs/mês", "500 entregas/dia", "desde 1996", "24h"],
     },
     services: { code: "Serviços", title: "Do porto ao destino final", more: "Ver serviço" },
-    stats: { code: "Números", title: "A operação em números" },
     differentials: { code: "Por que a APG", title: "Por que a APG" },
     clients: { code: "Clientes", title: "Clientes" },
+    // Where APG works: the hubs and routes of the hero's and the distribution's maps.
     coverage: {
-      code: "Mapa de atuação",
-      title: "Mapa de atuação",
-      text: "Matriz em Cabo de Santo Agostinho – PE, ao lado do Porto de Suape, e filial em Salvador – BA. Entregas fracionadas em Pernambuco e na Bahia.",
       highlight: ["PE", "BA"],
       hubs: [
         { label: "Suape", lon: -34.96, lat: -8.39 },

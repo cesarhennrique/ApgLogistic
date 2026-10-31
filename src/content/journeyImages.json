@@ -34,21 +34,14 @@
       1672
     ]
   },
-  "navio-cima": {
-    "width": 941,
-    "height": 1672,
-    "widths": [
-      800,
-      941
-    ]
-  },
-  "oceano-cima": {
-    "width": 1672,
-    "height": 941,
+  "navio-mar": {
+    "width": 6688,
+    "height": 3764,
     "widths": [
       800,
       1200,
-      1672
+      1920,
+      6688
     ]
   },
   "porteiner-lado": {

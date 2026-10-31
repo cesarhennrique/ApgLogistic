@@ -1,5 +1,6 @@
-// Journey images (spec §6, "Cenas da jornada"): every source image in WebP and AVIF at 800, 1200 and its own
-// width, as public/images/journey/<name>-<width>.<ext>, plus src/content/journeyImages.json (sizes for <picture>).
+// Journey images (spec §6, "Cenas da jornada"): every source image in WebP and AVIF at 800, 1200, 1920 (when
+// wider) and its own width, as public/images/journey/<name>-<width>.<ext>, plus src/content/journeyImages.json (sizes
+// for <picture>).
 // Sources: assets-src/ai/ (the AI originals) and public/images/journey/ (the cutouts, which win over an original
 // of the same name). Run with `npm run images`.
 import { readdirSync, writeFileSync } from "node:fs";
@@ -8,7 +9,7 @@ import sharp from "sharp";
 
 const SOURCES = ["assets-src/ai", "public/images/journey"];
 const OUT = "public/images/journey";
-const WIDTHS = [800, 1200];
+const WIDTHS = [800, 1200, 1920];
 const GENERATED = /-\d+$/;
 
 const sources = new Map();

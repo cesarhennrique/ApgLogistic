@@ -4,6 +4,7 @@ import { Container, Truck, Warehouse, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { TransitionLink } from "@/components/layout/TransitionLink";
 import { ContainerCode } from "@/components/ui/ContainerCode";
+import { homeCode } from "@/content/homeSections";
 import { site, type Service } from "@/content/site";
 
 const icons: Record<Service["slug"], LucideIcon> = {
@@ -56,7 +57,7 @@ export function Services() {
   return (
     <section data-surface="light" className="bg-sand-50 py-24 text-navy-900 md:py-36">
       <div className="site-container">
-        <ContainerCode index={2} label={site.home.services.code} />
+        <ContainerCode index={homeCode("services")} label={site.home.services.code} />
         <h2 className="font-condensed mt-5 text-5xl leading-[0.9] font-bold uppercase md:text-7xl">
           {site.home.services.title}
         </h2>

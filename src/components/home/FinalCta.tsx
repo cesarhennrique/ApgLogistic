@@ -1,5 +1,6 @@
 import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { ContainerCode } from "@/components/ui/ContainerCode";
+import { homeCode } from "@/content/homeSections";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";
 
@@ -8,7 +9,7 @@ export function FinalCta() {
   return (
     <section data-surface="light" className="bg-sand-50 py-24 text-navy-900 md:py-36">
       <div className="site-container">
-        <ContainerCode index={7} label={code} />
+        <ContainerCode index={homeCode("finalCta")} label={code} />
         <h2 className="font-condensed mt-5 max-w-[12ch] text-6xl leading-[0.88] font-bold uppercase md:text-[clamp(5rem,9vw,9rem)]">
           {title}
         </h2>

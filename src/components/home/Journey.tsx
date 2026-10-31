@@ -14,11 +14,11 @@ export function Journey() {
       <Loader />
       <Hero />
       <OceanArrival />
-      <ScenePlaceholder scene={scene("porteiner")} index={3} heightVh={260} background="#fefefe" headerTheme="light" />
-      <ScenePlaceholder scene={scene("carga")} index={4} heightVh={220} background="#fefefe" headerTheme="light" />
-      <ScenePlaceholder scene={scene("estrada")} index={5} heightVh={300} background="#fefefe" headerTheme="light" />
-      <ScenePlaceholder scene={scene("terminal")} index={6} heightVh={300} background="#f3efe7" headerTheme="light" />
-      <ScenePlaceholder scene={scene("distribuicao")} index={7} heightVh={300} background="#0a1338" headerTheme="dark" />
+      <ScenePlaceholder scene={scene("porteiner")} heightVh={260} background="#fefefe" headerTheme="light" />
+      <ScenePlaceholder scene={scene("carga")} heightVh={220} background="#fefefe" headerTheme="light" />
+      <ScenePlaceholder scene={scene("estrada")} heightVh={300} background="#fefefe" headerTheme="light" />
+      <ScenePlaceholder scene={scene("terminal")} heightVh={300} background="#f3efe7" headerTheme="light" />
+      <ScenePlaceholder scene={scene("distribuicao")} heightVh={300} background="#0a1338" headerTheme="dark" />
     </div>
   );
 }

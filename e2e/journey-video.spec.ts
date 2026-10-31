@@ -2,8 +2,8 @@ import { test } from "@playwright/test";
 
 test.use({ video: "on" });
 
-// For review, not an assertion: the whole journey scrolled top to bottom, as e2e/__videos__/journey-<project>.webm
-// (git-ignored).
+// For review, not an assertion: the hero to the end of scene 1 (the close on the deck), scrolled down, as
+// e2e/__videos__/journey-<project>.webm (git-ignored).
 // The intro is marked as seen, so the loader doesn't take the first seconds.
 test("records the full scroll", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
@@ -12,10 +12,10 @@ test("records the full scroll", async ({ page }, testInfo) => {
   await page.waitForLoadState("load");
   await page.waitForTimeout(3_000);
   const end = await page.evaluate(() => {
-    const journey = document.getElementById("journey")!;
-    return journey.getBoundingClientRect().top + window.scrollY + journey.offsetHeight;
+    const scene = document.getElementById("chegada")!;
+    return scene.getBoundingClientRect().top + window.scrollY + scene.offsetHeight - window.innerHeight;
   });
-  // ~16 s top to bottom, in small steps (Lenis smooths between them).
+  // ~16 s from the top to the close, in small steps (Lenis smooths between them).
   const steps = 160;
   for (let i = 1; i <= steps; i++) {
     await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), (end * i) / steps);

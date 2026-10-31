@@ -17,11 +17,4 @@ describe("site content", () => {
       expect(service.faq, service.slug).toHaveLength(4);
     }
   });
-
-  it("lists the 7 confirmed stats", () => {
-    const values = site.stats.map((s) => s.value);
-    for (const n of [1900, 500, 35000, 46, 5000, 4000, 24]) {
-      expect(values).toContain(n);
-    }
-  });
 });

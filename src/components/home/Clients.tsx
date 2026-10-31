@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ContainerCode } from "@/components/ui/ContainerCode";
+import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
 
 // Hidden until the client sends authorised logos (spec §2).
@@ -19,7 +20,7 @@ export function Clients() {
   return (
     <section className="overflow-hidden bg-navy-900 py-20 md:py-28">
       <div className="site-container">
-        <ContainerCode index={5} label={site.home.clients.code} />
+        <ContainerCode index={homeCode("clients")} label={site.home.clients.code} />
         <h2 className="sr-only">{site.home.clients.title}</h2>
       </div>
       {/* two copies + translateX(-50%) loop seamlessly; reduced motion shows one static, wrapping list */}

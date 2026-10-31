@@ -1,5 +1,6 @@
 import { RevealText } from "@/components/motion/RevealText";
 import { ContainerCode } from "@/components/ui/ContainerCode";
+import { homeCode } from "@/content/homeSections";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";
 import { HeroStage } from "./HeroStage";
@@ -19,7 +20,7 @@ export function Hero() {
           {/* The map keeps out of this box (CameraRig fits it beside or above). */}
           <div id="hero-copy" className="w-fit max-w-full">
             <div data-intro="code">
-              <ContainerCode index={1} label={site.home.hero.code} />
+              <ContainerCode index={homeCode("hero")} label={site.home.hero.code} />
             </div>
             <RevealText
               as="h1"

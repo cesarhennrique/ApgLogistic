@@ -60,30 +60,6 @@
   margin-block: -0.12em;
 }
 
-/* CoverageMap routes draw in (stroke-dashoffset, per spec §4) once the map is in view; static without JS */
-.route-line {
-  stroke-dasharray: 1;
-  transition: stroke-dashoffset 1.2s var(--ease-out);
-}
-
-.js .route-line {
-  stroke-dashoffset: 1;
-}
-
-.js [data-inview] .route-line {
-  stroke-dashoffset: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .route-line {
-    transition: none;
-  }
-
-  .js .route-line {
-    stroke-dashoffset: 0;
-  }
-}
-
 /* Hero intro (spec §5). html.intro-full / intro-short are set before first paint by layout.tsx's inline script.
    First visit: the loader covers the page, the hero paints beneath it untouched (LCP). Later visits: the hero's
    intro elements wait hidden for the short timeline, failsafe after 3 s. Reduced motion: neither, a 200 ms fade. */
