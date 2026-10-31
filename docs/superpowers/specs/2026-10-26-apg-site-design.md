@@ -70,6 +70,11 @@ A jornada é uma sequência de **cenas** fixadas (sticky), cada uma com o seu pr
 - **4 Estrada:** cena longa (≥ 600vh no desktop). A carreta anda devagar e a câmera a acompanha; atrás dela passa um **mural** (silhuetas de Suape, BR-101, marcos de km) e os textos da frota aparecem **como rastro**, revelados à medida que a carreta passa.
 - **5 Terminal:** a planta baixa sai. Entra uma **pista de asfalto vista de cima** (grafite #1B1E27 sobre sand-50, faixa central tracejada), sinuosa, que a carreta de cima percorre; a câmera desce junto, e ao lado da pista aparecem os **capítulos da história da APG** (conteúdo do site original), cada um quando a carreta passa. Termina no terminal CONE com os números.
 
+### Revisão 2026-10-31b (substitui as linhas 4 e 5 da revisão anterior)
+
+- **4+5 viram uma cena só, "Estrada"** (referência: unitedcarriers.com). Fase A: carreta de lado em fundo branco, palavra gigante "FROTA PRÓPRIA" deslizando atrás, faixa navy embaixo com serviços e diferenciais em cartões revelados como rastro. Fase B: a faixa navy vira o asfalto e a câmera sobe (lateral → 30° → 60° → de cima, imagens `carreta-alto-30`/`carreta-alto-60`). Fase C: pista navy-900 em curvas, carreta de cima com rastro red-500, capítulos da história da APG ao lado. Fase D: a pista termina numa doca do terminal CONE com os números como placar.
+- A jornada passa a ter 5 cenas (Chegada, Portêiner, Carga, Estrada, Distribuição); os códigos APGU 1996-NN são recalculados.
+
 - **Assinatura:** a linha vermelha da seta do logo atravessa todas as cenas: rotas do hero → rumo do navio → rastro da carreta → caminho no terminal → ramificação final.
 - **Imagens:** fotorrealistas, isoladas, mesma luz de estúdio; nunca mostram marca de terceiros. Escala: cada cena mostra cada imagem no tamanho em que ela é nítida (por isso portêiner e carga são cenas separadas).
 - **Movimento:** só `transform` e `opacity`; tudo atrelado ao progresso da cena (scrub), com easing por trecho (entra → segura enquanto o texto é lido → sai).

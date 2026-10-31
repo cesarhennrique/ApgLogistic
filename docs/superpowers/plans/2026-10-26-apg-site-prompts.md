@@ -1596,17 +1596,16 @@ animação em todo o percurso.
 Commit: "feat: mapa como destaque do hero e cena 1 animada"
 ````
 
-## Prompt J3b — Portêiner descendo e estrada-mural
+## Prompt J3b — Portêiner descendo
 
 ````text
 Leia o CLAUDE.md, o spec (seção 3, "Revisão 2026-10-31") e os
-componentes CraneLift.tsx, craneAnchors.ts, Load.tsx e Road.tsx. Use as
-skills animate, animation-performance e emil-design-eng.
+componentes CraneLift.tsx, craneAnchors.ts e Load.tsx. Use as skills
+animate, animation-performance e emil-design-eng.
 
-Parte A — Cena 2 invertida: o container desce
-1. A cena abre com o container APG já preso ao spreader, no alto, junto
-   ao carrinho do portêiner, em close. Ao rolar, o container DESCE
-   (cabos alongando, presos ao carrinho e ao spreader) e a câmera
+1. A cena 2 abre com o container APG já preso ao spreader, no alto,
+   junto ao carrinho do portêiner, em close. Ao rolar, o container
+   DESCE (cabos alongando, presos ao carrinho e ao spreader) e a câmera
    acompanha a descida, abrindo até mostrar o portêiner inteiro. No
    fim, o container sai pela base do quadro; a cena 3 começa com ele
    entrando pelo topo e caindo na carreta (confira a continuidade:
@@ -1620,61 +1619,59 @@ Parte A — Cena 2 invertida: o container desce
    - o texto "O braço rodoviário da cabotagem no Brasil" entra em
      SplitText na metade da descida.
 3. O portêiner nunca some (mantenha o teste do H1 item 8).
+4. Screenshots da cena 2 (p 0, 0.25, 0.5, 0.75, 1) e da passagem 2 → 3,
+   desktop e mobile. Vídeo da cena 1 ao fim da cena 3.
 
-Parte B — Cena 4: a carreta atravessa um mural
-4. Aumente a cena para ~600vh no desktop (~450vh no mobile). A carreta
-   anda DEVAGAR durante todo o scroll: a câmera a acompanha (carreta
-   fica entre 35% e 55% da largura) e o mundo passa atrás.
-5. Atrás da carreta, um mural longo em camadas (SVG em traço fino
-   navy-900, paralaxe em 2 velocidades): silhuetas do porto de Suape
-   → placa "BR-101 · KM 96,4" → marcos de km → silhueta de Salvador e
-   placa "BR-324". Linha vermelha no chão como rastro da carreta.
-6. Textos da frota aparecem como RASTRO: cada bloco é revelado (clip
-   no sentido da viagem) no ponto em que a traseira da carreta passa
-   por ele, e fica no mural até sair do quadro:
-   - "Frota 100% própria" · "sem terceirização";
-   - "100% rastreada" · "todos os veículos monitorados";
-   - "Atendimento 24h" · "desde 1996";
-   - "1.900 TEUs por mês" · "o braço rodoviário da cabotagem";
-   - "Pernambuco e Bahia" · "Suape · PE  /  BR-324 · Salvador · BA".
-   Velocímetro e rodas girando continuam, atrelados à velocidade real
-   do deslocamento.
-7. Todo passo de 10vh move a carreta e revela ou desloca algo. No fim,
-   a carreta sai e entra a cena 5.
-8. Reduced motion: mural estático com todos os textos e a carreta
-   parada no centro.
-
-Testes e entrega
-9. Screenshots da cena 2 (p 0, 0.25, 0.5, 0.75, 1) e da cena 4 (p 0,
-   0.2, 0.4, 0.6, 0.8, 1), desktop e mobile. Vídeo da cena 1 ao fim da
-   cena 4.
-
-Pronto quando: lint, typecheck, test e e2e passam, o container desce
-do alto e chega à carreta sem salto, e a estrada leva o scroll inteiro
-revelando os textos como rastro.
-Commit: "feat: portêiner descendo e estrada com mural"
+Pronto quando: lint, typecheck, test e e2e passam e o container desce
+do alto e chega à carreta sem salto.
+Commit: "feat: portêiner descendo o container"
 ````
 
-## Prompt J3c — Pista do terminal com a história da APG
+## Prompt J3c — Estrada contínua: de lado, vira vista de cima, pista com a história
+
+> Referência: unitedcarriers.com (sequência de prints do usuário em 2026-10-31). Precisa de `carreta-alto-30.webp` e `carreta-alto-60.webp` em `assets-src/ai/` (prompts 9 e 10 em `docs/assets/2026-10-30-imagens-ia-jornada.md`).
 
 ````text
-Leia o CLAUDE.md, o spec (seção 3, "Revisão 2026-10-31") e
-Terminal.tsx. Use as skills animate, animation-performance,
-emil-design-eng, frontend-design:frontend-design e mobile-native.
+Leia o CLAUDE.md, o spec (seção 3, "Revisão 2026-10-31b") e Road.tsx,
+Terminal.tsx, Load.tsx, homeSections.ts e site.ts. Use as skills
+animate, animation-performance, emil-design-eng,
+frontend-design:frontend-design e mobile-native.
 
-1. Troque a planta baixa por uma PISTA vista de cima: asfalto grafite
-   #1B1E27 com borda fina, faixa central tracejada sand-50, sobre fundo
-   sand-50 com grade técnica sutil. A pista é sinuosa (curvas largas em
-   S) e mais alta que a tela (~5 telas); a câmera desce acompanhando a
-   carreta.
-2. A carreta vista de cima (carreta-cima) percorre a pista pelo
-   progresso do scroll, girando conforme a tangente da curva
-   (getPointAtLength), com a linha red-500 desenhando-se atrás dela
-   como rastro.
-3. Ao lado da pista, alternando esquerda/direita, capítulos da história
-   (textos do site original da APG). Cada um entra quando a carreta
-   chega na altura dele (linha de chamada da pista até o texto, número
-   grande + título mono + 1 frase):
+As cenas 4 (Estrada) e 5 (Terminal) viram UMA cena contínua, a
+"Estrada", com a carreta sempre em quadro e a câmera subindo da vista
+lateral até a vista de cima. A planta baixa do terminal sai.
+
+Fase A — De lado (fundo branco, ~300vh)
+1. A carreta lateral (carreta-lado, vinda da cena 3) anda para a
+   esquerda devagar; o velocímetro marca a velocidade real do
+   deslocamento e as rodas giram.
+2. Atrás dela, uma palavra gigante em contorno/cinza claro
+   ("FROTA PRÓPRIA") desliza no sentido oposto, como na referência.
+3. Abaixo da linha da estrada, uma faixa navy-900 com o título
+   "DO PORTO AO DESTINO FINAL." e cartões que entram deslizando na
+   horizontal conforme a carreta anda (ícone de linha, título mono,
+   1 frase): os 3 serviços de site.services e os diferenciais
+   (Frota 100% própria · 100% rastreada · Atendimento 24h ·
+   1.900 TEUs por mês). Cada cartão entra quando a carreta passa por
+   ele (rastro), não todos de uma vez.
+
+Fase B — A câmera sobe (~150vh)
+4. A faixa navy sobe e vira o asfalto sob a carreta (mesma cor
+   navy-900, faixas tracejadas sand-50 surgindo). Ao mesmo tempo a
+   câmera "sobe": troca de imagem lateral → alto-30 → alto-60 → cima
+   (carreta-cima girada para apontar para a esquerda), cada troca com
+   cross-fade curto (~6% da fase) e ajuste de escala/posição para o
+   comprimento e a posição das rodas coincidirem entre os quadros.
+   Se a troca saltar, ajuste os encaixes por imagem (como o
+   TRUCK_FRAME) até ficar sem pulo; registre os valores.
+
+Fase C — Pista vista de cima (~100vh por capítulo)
+5. A pista navy-900 faz curvas largas (S) e depois vira para baixo; a
+   câmera acompanha a carreta, que gira conforme a tangente
+   (getPointAtLength), deixando a linha red-500 como rastro.
+6. Ao lado da pista, alternando lados, os capítulos da história (do
+   site original da APG), cada um revelado quando a carreta chega na
+   altura dele (número/título grande + título mono + 1 frase):
    - 1996 · "A FUNDAÇÃO": Paulo Germano de Albuquerque Ramos, vindo de
      grandes empresas de logística, funda a APG para atender bem o
      transporte rodoviário de containers, que era mal servido.
@@ -1684,27 +1681,35 @@ emil-design-eng, frontend-design:frontend-design e mobile-native.
    - "LOGÍSTICA EM PERNAMBUCO": armazenagem, cross-docking, supply
      chain e 500 entregas fracionadas por dia.
    - "BAHIA": operação às margens da BR-324, em Salvador.
-   - "TERMINAL CONE": 35.000 m², 4.000 TEUs estáticos, 46 docas,
-     5.000 m² (texto conforme site.ts), docas niveladoras
-     eletro-hidráulicas.
-   Não invente anos além de 1996. Coloque os textos em site.ts
-   (journeyScene.history) com comentário "confirmar com cliente".
-4. No fim da pista, a carreta encosta numa doca estilizada do terminal
-   CONE e os quatro números finais aparecem como placar.
-5. Mobile: pista vertical no centro, textos em cartões abaixo/acima
-   da carreta (sem sobrepor a pista), ≥ 14px.
-6. Altura da cena proporcional ao número de capítulos (~100vh cada) e
-   todo passo de 10vh move a carreta. Reduced motion: pista inteira
-   estática com todos os capítulos.
+   Não invente anos além de 1996. Textos em site.ts
+   (journeyScene.history), comentário "confirmar com cliente".
+   Título fixo da fase, à esquerda no desktop, como na referência:
+   "CONFIANÇA / EM CADA / QUILÔMETRO" (a 1ª linha em cinza).
 
-Testes e entrega
-7. Screenshots desktop e mobile em p 0, 0.2, 0.4, 0.6, 0.8, 1. Vídeo da
-   cena 4 ao fim da cena 5.
+Fase D — Chegada ao terminal CONE (~120vh)
+7. A pista termina numa doca do terminal CONE vista de cima (galpão
+   em traço, docas numeradas); a carreta encosta e os números entram
+   como placar: 35.000 m² · 4.000 TEUs estáticos · 46 docas ·
+   5.000 m² (texto conforme site.ts). Depois, a cena 6.
 
-Pronto quando: lint, typecheck, test e e2e passam, a carreta segue a
-pista sem pular nem sair dela, e cada capítulo da história aparece ao
-lado dela no momento em que ela passa.
-Commit: "feat: terminal como pista com a história da APG"
+Geral
+8. Remova a cena "terminal" de homeSections/journey e reajuste os
+   códigos APGU 1996-NN (sem buracos nem repetidos). Apague o código
+   da planta que ficar sem uso.
+9. Todo passo de 10vh move a carreta e revela ou desloca algo.
+   Mobile (×0.75 de altura): fase A com cartões um por vez sob a
+   carreta; fase C com a pista vertical no centro e os textos em
+   cartões acima/abaixo, ≥ 14px. Reduced motion: cada fase como
+   quadro estático com todos os textos.
+10. Orçamento: as 4 imagens da carreta em AVIF/WebP responsivo;
+    carregue alto-30/alto-60/cima só quando a fase A começar.
+11. Screenshots desktop e mobile em p 0, 0.1 … 1 da cena; vídeo da
+    cena 3 ao início da cena 6.
+
+Pronto quando: lint, typecheck, test e e2e passam, a carreta passa da
+vista lateral à de cima sem pulo, segue a pista sem sair dela, cada
+cartão e capítulo aparece quando ela passa e a cena termina na doca.
+Commit: "feat: estrada contínua da vista lateral à pista com a história"
 ````
 
 ## Prompt J4 — Cena 6, transições, indicador e mobile
@@ -1722,9 +1727,8 @@ emil-design-eng e mobile-native.
 2. Transições entre cenas sem cortes secos: cada cena termina num
    estado que conversa com o começo da próxima (oceano → branco: do
    close no container do convés, um wipe branco sobe e o mesmo container
-   aparece preso ao spreader do portêiner; estrada → terminal: a
-   carreta sai pela esquerda e a pista sand entra; terminal →
-   distribuição: zoom out e escurecimento).
+   aparece preso ao spreader do portêiner; estrada → distribuição:
+   a carreta encosta na doca e a câmera se afasta; a doca escurece até o mapa).
 3. Indicador lateral: 7 marcas (hero + 6 cenas), a ativa em red-500,
    clicáveis (lenis.scrollTo), aria-label por cena.
 4. Mobile (< 768px): alturas de scroll menores (×0.75); textos embaixo
