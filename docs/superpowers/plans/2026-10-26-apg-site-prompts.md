@@ -1162,7 +1162,9 @@ visto de cima, com a espuma e o rastro reais da própria foto). A foto
 não se mexe; só a câmera desce, como num drone.
 
 1. Pipeline: inclua navio-mar no npm run images (WebP/AVIF 800, 1200,
-   1920 e original). Não recorte: a foto ocupa a tela toda.
+   1920 e original de 6688 px). Não recorte: a foto ocupa a tela toda.
+   A original só é necessária no close do desktop; no mobile, a 1920
+   basta.
 2. Meça na foto e registre em src/components/journey/oceanCamera.ts (px
    da imagem original): o centro do navio, a largura do casco e o FOCO:
    o centro do bloco de containers do meio do convés, num ponto com
@@ -1171,7 +1173,7 @@ não se mexe; só a câmera desce, como num drone.
 3. OceanArrival (cena 1, 280vh), no lugar do navio, do oceano e da
    espuma:
    - a foto em tela cheia (cover). No começo da cena, o enquadramento é
-     largo: o navio pequeno no meio do oceano;
+     largo: a foto inteira, com o navio no centro e o oceano em volta;
    - 0–0.08: segura parado (é a imagem em que o mergulho do hero
      termina);
    - 0.08–0.85: zoom contínuo até o FOCO ficar no centro da tela e o
