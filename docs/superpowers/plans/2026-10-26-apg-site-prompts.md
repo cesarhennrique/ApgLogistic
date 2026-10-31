@@ -1629,7 +1629,7 @@ Commit: "feat: portêiner descendo o container"
 
 ## Prompt J3c — Estrada contínua: de lado, vira vista de cima, pista com a história
 
-> Referência: unitedcarriers.com (sequência de prints do usuário em 2026-10-31). Usa `assets-src/ai/carreta-alto-30.png` (sem logo, cavalo com 2 eixos; aceita pelo usuário em 2026-10-31). Não há quadro de 60°.
+> Referência: unitedcarriers.com (sequência de prints do usuário em 2026-10-31). Usa `assets-src/ai/carreta-alto-30.png` e `carreta-alto-60.png` (sem logo, cavalo com 2 eixos; aceitas pelo usuário em 2026-10-31).
 
 ````text
 Leia o CLAUDE.md, o spec (seção 3, "Revisão 2026-10-31b") e Road.tsx,
@@ -1658,18 +1658,15 @@ Fase A — De lado (fundo branco, ~300vh)
 Fase B — A câmera sobe (~150vh)
 4. A faixa navy sobe e vira o asfalto sob a carreta (mesma cor
    navy-900, faixas tracejadas sand-50 surgindo). Ao mesmo tempo a
-   câmera "sobe": troca de imagem lateral → alto-30 → cima
+   câmera "sobe": troca de imagem lateral → alto-30 → alto-60 → cima
    (carreta-cima girada para apontar para a esquerda). Imagens em
-   assets-src/ai/: carreta-lado.webp, carreta-alto-30.png (converta
-   para WebP como as outras), carreta-cima.webp. Cada troca com
+   assets-src/ai/: carreta-lado.webp, carreta-alto-30.png e
+   carreta-alto-60.png (1916×821; converta para WebP/AVIF como as
+   outras e recorte o fundo branco), carreta-cima.webp. Cada troca com
    cross-fade curto (~6% da fase) e ajuste de escala/posição para o
-   comprimento e a traseira coincidirem entre os quadros. Não há
-   quadro de 60°: na troca alto-30 → cima, a carreta-cima entra com
-   um leve achatamento vertical (scaleY 0.7 → 1) e um borrão de
-   movimento curto (blur ≤ 4px só durante a troca) para esconder o
-   salto de ângulo. A alto-30 não tem logo e o cavalo tem 2 eixos:
-   deixe a troca lateral → alto-30 acontecer em movimento, nunca com a
-   carreta parada.
+   comprimento e a traseira coincidirem entre os quadros. As de 30° e
+   60° não têm logo e o cavalo tem 2 eixos (a lateral tem 1): faça a
+   troca lateral → alto-30 em movimento, nunca com a carreta parada.
    Se a troca saltar, ajuste os encaixes por imagem (como o
    TRUCK_FRAME) até ficar sem pulo; registre os valores.
 
@@ -1709,8 +1706,8 @@ Geral
    carreta; fase C com a pista vertical no centro e os textos em
    cartões acima/abaixo, ≥ 14px. Reduced motion: cada fase como
    quadro estático com todos os textos.
-10. Orçamento: as 3 imagens da carreta em AVIF/WebP responsivo;
-    carregue alto-30/cima só quando a fase A começar.
+10. Orçamento: as 4 imagens da carreta em AVIF/WebP responsivo;
+    carregue alto-30/alto-60/cima só quando a fase A começar.
 11. Screenshots desktop e mobile em p 0, 0.1 … 1 da cena; vídeo da
     cena 3 ao início da cena 6.
 
