@@ -156,8 +156,9 @@ const LABELS = [
   { at: new Vector3(1.4, 0.6, -1.2), text: site.journeyScene.mapLabels.suape },
   { at: new Vector3(SALVADOR_HERO.x + 1.2, 0.6, SALVADOR_HERO.z), text: site.journeyScene.mapLabels.salvador },
 ];
+// A navy shadow keeps them legible over the photo's bright sky.
 const LABEL_CLASS =
-  "pointer-events-none absolute top-0 left-0 font-mono text-[11px] tracking-[0.18em] whitespace-nowrap text-sand-50/85";
+  "pointer-events-none absolute top-0 left-0 font-mono text-[11px] tracking-[0.18em] whitespace-nowrap text-sand-50 [text-shadow:0_1px_2px_rgb(10_19_56/0.9),0_0_10px_rgb(10_19_56/0.8)]";
 const HOVER_CLASS =
   "pointer-events-none absolute top-0 left-0 border border-sand-50/15 bg-navy-900/85 px-3 py-2 font-mono text-[11px] tracking-[0.12em] whitespace-nowrap text-sand-50 opacity-0 transition-opacity duration-150 ease-out data-on:opacity-100";
 
@@ -171,6 +172,8 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
   const core = useRef<Mesh>(null);
   const labels = useRef<HTMLDivElement[]>([]);
   const hoverLabel = useRef<HTMLDivElement | null>(null);
+  // Suape's red dot, its glow breathing in CSS (globals.css, .suape-dot): over the photo the 3D core alone reads weak.
+  const dot = useRef<HTMLDivElement | null>(null);
   const pointer = useRef({ x: 0, y: 0, inside: false, fine: false });
   const pulseFrom = useRef<number | null>(null);
   const getState = useThree((s) => s.get);
@@ -199,8 +202,10 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
     const hover = make(site.journeyScene.suapeHover, HOVER_CLASS);
     hover.style.removeProperty("opacity");
     hoverLabel.current = hover;
+    dot.current = make("", "suape-dot pointer-events-none absolute top-0 left-0 size-2.5 rounded-full bg-red-500");
     return () => {
-      for (const el of [...labels.current, hover]) el.remove();
+      for (const el of [...labels.current, hover, dot.current!]) el.remove();
+      dot.current = null;
       labels.current = [];
       hoverLabel.current = null;
     };
@@ -290,6 +295,10 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
       label.style.opacity = String(opacity);
       if (opacity > 0) place(label, LABELS[i].at, 0, "translateY(-50%)");
     });
+    if (dot.current) {
+      dot.current.style.opacity = String(coreIn * dive);
+      if (coreIn > 0) place(dot.current, ORIGIN, 0, "translate(-50%, -50%)");
+    }
 
     // Pointer: parallax tilt and the Suape hover, both only in the hero.
     const { x, y, inside, fine } = pointer.current;

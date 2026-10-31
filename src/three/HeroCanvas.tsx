@@ -7,7 +7,6 @@ import { NAVIGATE_EVENT } from "@/components/layout/PageCurtain";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { CameraRig } from "./CameraRig";
 import { readDebugParams } from "./debug";
-import { Effects } from "./Effects";
 import { LoadProbe } from "./LoadProbe";
 import { heroDive } from "./progress";
 import { HeroMapStage } from "./stages/HeroMapStage";
@@ -55,16 +54,15 @@ export default function HeroCanvas() {
           dpr={[1, 2]}
           // Under the first-visit loader, only the frames asked for (the hero map's first one).
           frameloop={onScreen && !leaving ? (covered ? "demand" : "always") : "never"}
-          // Unlit lines and dots in exact brand colors: no tone mapping; SMAA (Effects) replaces MSAA.
+          // Unlit lines and dots in exact brand colors: no tone mapping. See-through, over the hero's photo (no post
+          // effects: they would flatten the alpha), so MSAA for the lines.
           flat
-          gl={{ antialias: false }}
+          gl={{ antialias: true, alpha: true }}
           camera={{ fov: 35, near: 0.5, far: 1000, position: sampleHeroCamera(heroDive.value).position }}
           onCreated={() => setReady(true)}
         >
           <LoadProbe />
-          <color attach="background" args={["#0a1338"]} />
           <HeroMapStage reducedMotion={reducedMotion} />
-          <Effects />
           {debug ? (
             <Suspense fallback={null}>
               <DebugOrbit />

@@ -62,6 +62,14 @@ A jornada é uma sequência de **cenas** fixadas (sticky), cada uma com o seu pr
 | 5 | Terminal | sand-50 | Planta do terminal CONE em traço fino (SVG). A carreta vista de cima segue a linha vermelha e encosta numa doca; números entram como cotas | "35.000 m² · 4.000 TEUs estáticos · 46 docas · 5.000 m² cobertos" |
 | 6 | Distribuição | navy-900 | Zoom out até o mapa do hero; a linha vermelha ramifica em 24 rotas por PE e BA. Depois, a seção Serviços | "500 entregas fracionadas por dia" |
 
+### Revisão 2026-10-31 (substitui as linhas 0, 1, 2, 4 e 5 da tabela acima)
+
+- **0 Hero:** o **mapa é o destaque** (grande, à direita, ~55% da largura). A foto `hero-porto` vira só fundo: escurecida em navy (noite), com as luzes do porto no canto inferior direito. Título "TRANSPORTANDO / CONFIANÇA / DESDE 1996" (DESDE 1996 em red-500), menu inline e faixa de 4 pilares (do H1). Saída: a câmera mergulha em Suape no mapa e o ponto vermelho vira o navio da cena 1.
+- **1 Chegada:** a foto continua parada, mas o zoom não fica sozinho: rota tracejada desenhada na água até Suape, HUD com coordenadas que correm até 08°23′S 34°57′W, contornos red-500 que se desenham um a um com o contador de TEUs, e a mira que trava no container-alvo com uma ficha (código, 40′, destino).
+- **2 Portêiner:** invertido. A cena **abre com o container já preso ao spreader no alto** e a câmera acompanha a **descida** (cabos alongando, cota de altura em metros diminuindo, chamadas técnicas). O container sai por baixo do quadro e a cena 3 o recebe caindo na carreta.
+- **4 Estrada:** cena longa (≥ 600vh no desktop). A carreta anda devagar e a câmera a acompanha; atrás dela passa um **mural** (silhuetas de Suape, BR-101, marcos de km) e os textos da frota aparecem **como rastro**, revelados à medida que a carreta passa.
+- **5 Terminal:** a planta baixa sai. Entra uma **pista de asfalto vista de cima** (grafite #1B1E27 sobre sand-50, faixa central tracejada), sinuosa, que a carreta de cima percorre; a câmera desce junto, e ao lado da pista aparecem os **capítulos da história da APG** (conteúdo do site original), cada um quando a carreta passa. Termina no terminal CONE com os números.
+
 - **Assinatura:** a linha vermelha da seta do logo atravessa todas as cenas: rotas do hero → rumo do navio → rastro da carreta → caminho no terminal → ramificação final.
 - **Imagens:** fotorrealistas, isoladas, mesma luz de estúdio; nunca mostram marca de terceiros. Escala: cada cena mostra cada imagem no tamanho em que ela é nítida (por isso portêiner e carga são cenas separadas).
 - **Movimento:** só `transform` e `opacity`; tudo atrelado ao progresso da cena (scrub), com easing por trecho (entra → segura enquanto o texto é lido → sai).

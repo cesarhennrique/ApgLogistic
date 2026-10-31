@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";
+import { HeaderNav } from "./HeaderNav";
 import { MenuOverlay } from "./MenuOverlay";
 import { TransitionLink } from "./TransitionLink";
 
@@ -116,6 +117,7 @@ export function Header() {
               className="absolute inset-0 bg-navy-900 opacity-0 transition-opacity duration-200 ease-out [mask:url(/brand/logo-mark-white.svg)_center/contain_no-repeat] group-data-[tone=dark]/header:opacity-100"
             />
           </TransitionLink>
+          <HeaderNav />
           <div className="flex items-center gap-2 md:gap-6">
             {/* Below md the hero carries the CTA; the header keeps just logo and menu. */}
             <div className="max-md:hidden">
@@ -127,7 +129,8 @@ export function Header() {
               aria-expanded={open}
               aria-controls={MENU_ID}
               onClick={() => setOpen(true)}
-              className="grid min-h-11 min-w-11 items-center justify-center text-sm font-semibold tracking-wide uppercase transition-transform duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--focus-ring)"
+              // wide screens have the links inline (HeaderNav)
+              className="grid min-h-11 xl:hidden min-w-11 items-center justify-center text-sm font-semibold tracking-wide uppercase transition-transform duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--focus-ring)"
             >
               {/* Two stacked copies, sand and navy, crossfaded with the tone (opacity only). */}
               {(["text-sand-50 group-data-[tone=dark]/header:opacity-0", "text-navy-900 opacity-0 group-data-[tone=dark]/header:opacity-100"] as const).map(

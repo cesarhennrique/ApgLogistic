@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { gsap } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { ContainerCode } from "@/components/ui/ContainerCode";
@@ -38,10 +38,21 @@ const DIMENSION_FADE = 0.07;
 // The dimensions' labels: the scene's line, item by item ("35.000 m² · 4.000 TEUs estáticos · …").
 const LABELS = scene.text.split(" · ");
 
+// Phones: the plan turned 90° (portrait), to fill the screen's height; its words turned back, to read level.
+const PHONE = "(max-width: 767px)";
+const subscribe = (onChange: () => void) => {
+  const mq = window.matchMedia(PHONE);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+};
+// Its names and numbers at least this big on screen, whatever the plan's scale.
+const LABEL_PX = 12;
+
 const pctX = (x: number) => `${(x / PLAN.width) * 100}%`;
 const pctY = (y: number) => `${(y / PLAN.height) * 100}%`;
 // Thin and even at any size.
 const line = { vectorEffect: "non-scaling-stroke", strokeWidth: 1 } as const;
+const LABEL = { fontSize: "var(--label, 12px)" };
 
 // Scene 5: the CONE terminal as a technical drawing, the truck's photo driving over it.
 export function Terminal() {
@@ -49,8 +60,12 @@ export function Terminal() {
   const svg = useRef<SVGSVGElement>(null);
   const route = useRef<SVGPathElement>(null);
   const truck = useRef<HTMLDivElement>(null);
-  const dims = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
+  const turned = useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(PHONE).matches,
+    () => false,
+  );
   const raw = useRef(0);
 
   const apply = useCallback(() => {
@@ -64,15 +79,19 @@ export function Terminal() {
     const behind = path.getPointAtLength(Math.max(t * total - 1, 0));
     const angle = Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * (180 / Math.PI) + 90;
     const s = plan.current!.offsetWidth / PLAN.width;
+    svg.current!.style.setProperty("--label", `${(LABEL_PX / s).toFixed(2)}px`);
     const el = truck.current!;
     el.style.transform = `translate3d(${(at.x * s - el.offsetWidth / 2).toFixed(1)}px, ${(at.y * s - el.offsetHeight / 2).toFixed(1)}px, 0) rotate(${angle.toFixed(2)}deg)`;
     // The red line: the path itself, up to the truck.
     path.style.strokeDashoffset = String(1 - t);
     // The dimensions, one at a time.
-    [...dims.current!.children].forEach((d, i) => {
-      const fade = reduced ? 1 : segment(p, DIMENSION_IN[i], DIMENSION_IN[i] + DIMENSION_FADE);
-      (d as HTMLElement).style.opacity = String(fade);
-    });
+    // (on the plan, and in the phones' legend)
+    for (const group of document.querySelectorAll("#terminal [data-dims]")) {
+      [...group.children].forEach((d, i) => {
+        const fade = reduced ? 1 : segment(p, DIMENSION_IN[i], DIMENSION_IN[i] + DIMENSION_FADE);
+        (d as HTMLElement).style.opacity = String(fade);
+      });
+    }
   }, [reduced]);
 
   const onProgress = useCallback(
@@ -105,6 +124,8 @@ export function Terminal() {
   }, []);
 
   const { plan: names } = site.journeyScene;
+  // A word turned back level on phones, about its own anchor.
+  const level = (x: number, y: number) => (turned ? `rotate(-90 ${x} ${y})` : undefined);
   const r = ROAD_WIDTH / 2;
   return (
     <Scene id="terminal" heightVh={HEIGHT_VH} background="#f3efe7" headerTheme="light" onProgress={onProgress}>
@@ -112,12 +133,23 @@ export function Terminal() {
         <ContainerCode index={homeCode("terminal")} label={scene.code} />
         <p className="font-mono-tabular mt-2 text-xs text-navy-900/70">{site.journeyScene.suapeHover}</p>
         <p className="sr-only">{scene.text}</p>
+        {/* Phones: the dimensions' legend (the plan's marks 1–4). */}
+        <ol data-dims="" aria-hidden="true" className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-xs text-navy-900 md:hidden">
+          {LABELS.map((label, i) => (
+            <li key={label} className="flex items-center gap-2 opacity-0">
+              <span className="grid size-5 shrink-0 place-items-center rounded-full border border-navy-900/60 text-[11px]">{i + 1}</span>
+              {label}
+            </li>
+          ))}
+        </ol>
       </div>
 
       <div
         ref={plan}
         aria-hidden="true"
-        className="absolute left-1/2 aspect-[1000/660] w-[min(92vw,calc((100svh-260px)*1000/660))] -translate-x-1/2 max-md:top-1/2 max-md:-translate-y-1/2 md:bottom-[5svh]"
+        // wide: up to 80vw × 70svh, low in the frame; phones: turned 90° about its centre, as tall as the screen below
+        // the copy allows (its width, turned, is its height on screen)
+        className="absolute left-1/2 aspect-[1000/660] -translate-x-1/2 max-md:top-[calc(50%+6.25rem)] max-md:w-[min(calc(100svh-236px),calc(92vw*1000/660))] max-md:-translate-y-1/2 max-md:rotate-90 md:bottom-[5svh] md:w-[min(80vw,calc(70svh*1000/660))]"
       >
         <svg ref={svg} viewBox={`0 0 ${PLAN.width} ${PLAN.height}`} className="absolute inset-0 h-full w-full overflow-visible" fill="none">
           <g className="stroke-navy-900/60">
@@ -192,21 +224,26 @@ export function Terminal() {
           </g>
 
           {/* Names and numbers, small mono, as on a drawing. */}
-          <g className="plan-text fill-navy-900/70 font-mono" fontSize={9} textAnchor="middle">
-            {STACKS.map((b) => (
-              <text key={`${b.x},${b.y}`} x={b.x + b.w / 2} y={b.y + b.h / 2 + 3} className="fill-navy-900" paintOrder="stroke" stroke="#f3efe7" strokeWidth={4}>
-                {b.teus}
-              </text>
-            ))}
+          {/* Names and numbers, mono, as on a drawing: at least LABEL_PX on screen (--label, set from the scale);
+              the docks' numbers are the drawing's texture. Turned back level on phones. */}
+          <g className="plan-text fill-navy-900/70 font-mono" textAnchor="middle" dominantBaseline="central">
+            {STACKS.map((b) => {
+              const [x, y] = [b.x + b.w / 2, b.y + b.h / 2];
+              return (
+                <text key={`${x},${y}`} x={x} y={y} transform={level(x, y)} className="fill-navy-900" paintOrder="stroke" stroke="#f3efe7" strokeWidth={4} style={LABEL}>
+                  {b.teus}
+                </text>
+              );
+            })}
             {DOCKS.map((d) => (
-              <text key={d.n} x={d.x + d.w / 2} y={d.y + d.h / 2 + 2} fontSize={5.5}>
+              <text key={d.n} x={d.x + d.w / 2} y={d.y + d.h / 2} fontSize={5.5} transform={level(d.x + d.w / 2, d.y + d.h / 2)}>
                 {String(d.n).padStart(2, "0")}
               </text>
             ))}
-            <text x={WAREHOUSE.x + WAREHOUSE.w / 2} y={WAREHOUSE.y + WAREHOUSE.h / 2} fontSize={11} letterSpacing={2}>
+            <text x={WAREHOUSE.x + WAREHOUSE.w / 2} y={WAREHOUSE.y + WAREHOUSE.h / 2} transform={level(WAREHOUSE.x + WAREHOUSE.w / 2, WAREHOUSE.y + WAREHOUSE.h / 2)} letterSpacing={2} style={LABEL}>
               {names.warehouse.toLocaleUpperCase("pt-BR")}
             </text>
-            <text x={GATE.house.x + GATE.house.w + 6} y={GATE.house.y + 12} textAnchor="start" fontSize={8} letterSpacing={1}>
+            <text x={GATE.house.x + GATE.house.w + 6} y={GATE.house.y + GATE.house.h / 2} transform={level(GATE.house.x + GATE.house.w + 6, GATE.house.y + GATE.house.h / 2)} textAnchor="start" letterSpacing={1} style={LABEL}>
               {names.gate.toLocaleUpperCase("pt-BR")}
             </text>
           </g>
@@ -215,15 +252,17 @@ export function Terminal() {
           <path ref={route} d={TRUCK_PATH} pathLength={1} className="stroke-red-500" strokeWidth={2.5} vectorEffect="non-scaling-stroke" strokeDasharray="1" strokeDashoffset="1" />
         </svg>
 
-        {/* The dimensions' labels: screen-sized mono over the line they measure. */}
-        <div ref={dims}>
+        {/* The dimensions' labels: screen-sized mono over the line they measure. On phones (the plan turned, the
+            lines upright) a numbered mark, level, keyed to the legend under the title. */}
+        <div data-dims="">
           {DIMENSIONS.map((d, i) => (
             <span
               key={LABELS[i]}
-              className="absolute -translate-x-1/2 -translate-y-1/2 bg-[#f3efe7] px-1.5 font-mono text-[10px] tracking-[0.08em] whitespace-nowrap text-navy-900 opacity-0 md:text-xs"
+              className="absolute -translate-x-1/2 -translate-y-1/2 bg-[#f3efe7] px-1.5 font-mono text-xs tracking-[0.08em] whitespace-nowrap text-navy-900 opacity-0 max-md:-rotate-90 max-md:rounded-full max-md:border max-md:border-navy-900/60 max-md:px-1.5"
               style={{ left: pctX(d.label.x), top: pctY(d.label.y) }}
             >
-              {LABELS[i]}
+              <span className="md:hidden">{i + 1}</span>
+              <span className="max-md:hidden">{LABELS[i]}</span>
             </span>
           ))}
         </div>

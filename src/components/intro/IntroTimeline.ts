@@ -13,6 +13,8 @@ export const INTRO = {
   actions: { at: 1.3, duration: 0.5 },
   header: { at: 1.3, duration: 0.4 },
   strip: { at: 1.6, duration: 0.5 },
+  // The photo's slow zoom out (1.08 → 1), under all of it.
+  photo: { at: 0, duration: 2.4, from: 1.08 },
   // Later visits in the session: the same sequence, squeezed into this.
   short: 0.6,
 } as const;
@@ -30,6 +32,8 @@ export async function playIntro({ short }: { short: boolean }): Promise<void> {
   const actions = find("actions");
   const header = find("header");
   const strip = find("strip");
+  // Not a data-intro: the photo is the LCP and must never be hidden; only its scale (from globals.css) is handed over.
+  const photo = document.querySelector<HTMLElement>("[data-intro-photo]");
 
   let chars: SplitText | null = null;
   const tl = gsap.timeline({ paused: true });
@@ -68,6 +72,7 @@ export async function playIntro({ short }: { short: boolean }): Promise<void> {
   if (actions) rise([...actions.children], INTRO.actions, 0.08);
   if (header) tl.fromTo(header, { yPercent: -100 }, { yPercent: 0, duration: INTRO.header.duration, ease: EASE }, INTRO.header.at);
   if (strip) rise(strip, INTRO.strip);
+  if (photo) tl.fromTo(photo, { scale: INTRO.photo.from }, { scale: 1, duration: INTRO.photo.duration, ease: "power2.out" }, INTRO.photo.at);
 
   // From states are in place (the fromTo's render at once): hand the elements over from the CSS that hid them.
   for (const el of [code, title, subtitle, actions, header, strip]) el?.setAttribute("data-intro-ready", "");

@@ -14,7 +14,8 @@ import "./globals.css";
 const archivo = Archivo({
   variable: "--font-display",
   subsets: ["latin"],
-  axes: ["wdth"],
+  // No wdth axis: nothing uses font-stretch (the condensed face is the static cut below); it cost ~50 KB on the
+  // hero's critical path.
 });
 
 // Static cut, not the wdth axis: WebKit on iOS ignores font-stretch and overlapped the letters.
@@ -23,7 +24,6 @@ const archivoCondensed = localFont({
   variable: "--font-condensed",
   src: [
     { path: "./fonts/ArchivoExtraCondensed-Bold.woff2", weight: "700" },
-    { path: "./fonts/ArchivoExtraCondensed-ExtraBold.woff2", weight: "800" },
   ],
 });
 

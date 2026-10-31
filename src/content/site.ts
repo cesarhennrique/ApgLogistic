@@ -255,11 +255,18 @@ export const site = {
       code: "Quem somos",
       subtitle:
         "Do navio de cabotagem em Suape à entrega fracionada: frota própria, terminal próprio e atendimento 24 h.",
+      // The tagline set in three lines, the last one in red.
+      title: { lines: ["Transportando", "confiança"], accent: "desde 1996" },
       // Secondary link: scrolls to chapter 1.
       seeOperation: "Ver a operação",
-      scrollHint: "Role para descobrir",
-      clock: "SUAPE",
-      ticker: ["1.900 TEUs/mês", "500 entregas/dia", "desde 1996", "24h"],
+      photoAlt: "Navio porta-contêineres chegando ao porto ao nascer do sol, com portêineres no cais",
+      // The band at the bottom: four pillars of the operation.
+      pillars: [
+        { title: "Cabotagem", text: "Suape → Nordeste" },
+        { title: "Frota própria", text: "500 entregas/dia" },
+        { title: "Atendimento 24h", text: "desde 1996" },
+        { title: "Terminal próprio", text: "Suape · PE" },
+      ],
     },
     services: { code: "Serviços", title: "Do porto ao destino final", more: "Ver serviço" },
     differentials: { code: "Por que a APG", title: "Por que a APG" },

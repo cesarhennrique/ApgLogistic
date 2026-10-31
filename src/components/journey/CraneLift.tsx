@@ -36,6 +36,9 @@ export function CraneLift() {
   const stage = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
   const copy = useRef<HTMLDivElement>(null);
+  const sharp = useRef<HTMLImageElement>(null);
+  // decode() first, so it shows only once it can paint
+  const showSharp = () => void sharp.current?.decode().then(() => sharp.current && (sharp.current.style.opacity = "1"), () => {});
   const reduced = useReducedMotion();
   const raw = useRef(0);
   // The moving parts (data-load, data-rope), gathered on the first draw (the scene may draw before this mounts).
@@ -70,6 +73,11 @@ export function CraneLift() {
     [apply],
   );
 
+  // Loaded before hydration: onLoad never fires.
+  useEffect(() => {
+    if (sharp.current?.complete && sharp.current.naturalWidth) showSharp();
+  });
+
   useEffect(() => {
     apply();
     const observer = new ResizeObserver(apply);
@@ -88,19 +96,37 @@ export function CraneLift() {
             className="absolute rounded-[50%] bg-[radial-gradient(closest-side,rgb(10_19_56/0.22),transparent)]"
             style={{ left: GROUND.x0 - 160, width: GROUND.x1 - GROUND.x0 + 320, top: GROUND.y - 80, height: 160 }}
           />
-          {/* The original (4488 px) on desktop, where the close needs it; 1920 on phones. */}
+          {/* The crane, always there: a light layer (1200 px) first, so no frame ever lacks it (the sharp one is
+              25 megapixels: on a busy device it decodes for seconds)... */}
           <picture>
-            <source media="(min-width: 768px)" type="image/avif" srcSet={base(4488, "avif")} />
-            <source media="(min-width: 768px)" type="image/webp" srcSet={base(4488, "webp")} />
-            <source type="image/avif" srcSet={base(1920, "avif")} />
+            <source type="image/avif" srcSet={base(1200, "avif")} />
             <img
-              src={base(1920, "webp")}
+              data-crane=""
+              src={base(1200, "webp")}
               width={CRANE.width}
               height={CRANE.height}
               alt=""
               decoding="async"
               loading="lazy"
               className="absolute inset-0 h-full w-full"
+            />
+          </picture>
+          {/* ...then the sharp one over it, faded in once it is in: the original (4488 px) on desktop, where the
+              close needs it; 1920 on phones. */}
+          <picture>
+            <source media="(min-width: 768px)" type="image/avif" srcSet={base(4488, "avif")} />
+            <source media="(min-width: 768px)" type="image/webp" srcSet={base(4488, "webp")} />
+            <source type="image/avif" srcSet={base(1920, "avif")} />
+            <img
+              ref={sharp}
+              src={base(1920, "webp")}
+              width={CRANE.width}
+              height={CRANE.height}
+              alt=""
+              decoding="async"
+              loading="lazy"
+              onLoad={showSharp}
+              className="absolute inset-0 h-full w-full opacity-0 transition-opacity duration-300 ease-out"
             />
           </picture>
           {ROPES.map((r) => (

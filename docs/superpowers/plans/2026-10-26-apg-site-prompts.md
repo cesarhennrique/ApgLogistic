@@ -1519,6 +1519,185 @@ do terminal enche a tela no mobile.
 Commit: "feat: hero cinematográfico e ajustes das cenas 2 e 5"
 ````
 
+## Prompt H2 — Mapa como destaque do hero e cena 1 animada
+
+> Rodar depois que o H1 terminar e for commitado. Referência visual do hero: `docs/reference/hero-mapa-2026-10-31.webp` (mockup do usuário; não copiar pixel a pixel).
+
+````text
+Leia o CLAUDE.md, o spec (seção 3, incluindo a "Revisão 2026-10-31") e
+os componentes do hero e da cena 1 (Hero.tsx, HeroStage.tsx,
+HeroCanvas.tsx, HeroMapStage.tsx, heroPhoto.ts, OceanArrival.tsx,
+ArrivalFrame.tsx, oceanCamera.ts). Veja o mockup em
+docs/reference/hero-mapa-2026-10-31.webp. Use as skills animate,
+animation-performance, emil-design-eng e frontend-design:frontend-design.
+
+Parte A — Hero: o mapa é o destaque
+1. O mapa do Nordeste volta a ser a peça principal: grande, à direita
+   (~55% da largura no desktop, de ~12% a ~78% da altura), estados em
+   pontilhado claro com divisas finas, Suape com ponto red-500 e brilho
+   pulsando (2.4 s), rotas red-500 em arco saindo de Suape (desenham
+   na entrada, depois um pulso de luz corre por elas a cada ~4 s).
+   Rótulos "SUAPE · PE" e "SALVADOR · BA" em mono, ≥ 14px.
+2. A foto hero-porto vira só fundo: escurecida para noite (camada
+   navy-900 ~75% + leve duotone azul), com as luzes do porto aparecendo
+   no canto inferior direito, abaixo do mapa. O navio não precisa
+   aparecer inteiro. Mantenha preload/LCP do H1; se a foto deixar de
+   ser o LCP (o título passa a ser), ajuste o preload e registre.
+3. Mantenha do H1: título com DESDE 1996 em red-500, menu inline,
+   botões, faixa de 4 pilares, paralaxe do mouse (mapa ±14px, foto
+   ±6px). Texto à esquerda, mapa à direita, sem sobreposição em
+   1280–1920px. Mobile (390×844): mapa em cima ocupando a largura,
+   texto embaixo, pilares em 2×2.
+4. Saída para a cena 1: ao rolar, os textos sobem e somem, a câmera
+   mergulha no ponto de Suape (o mapa escala para o ponto vermelho,
+   que cresce e vira um brilho), e o brilho se abre na foto do navio da
+   cena 1 no enquadramento largo. Sem faixa entre os dois e sem
+   rolagem morta.
+
+Parte B — Cena 1: não é só zoom
+A foto continua parada (não animar água). O zoom da câmera fica, mas
+cada trecho do scroll tem uma camada animada por cima, em coordenadas
+da foto (mesma matemática das anotações atuais):
+5. 0–20%: HUD de navegação no canto (mono, sand-50 com halo):
+   LAT/LONG correndo até "08°23′S 34°57′W", "DESTINO: SUAPE · PE",
+   "CABOTAGEM". Uma rota tracejada red-500 se desenha na água à frente
+   da proa até sair pelo topo do quadro (rumo a Suape).
+6. 20–45%: anel de sonar/radar pulsa a partir do navio (2 ondas,
+   opacidade baixa). Rótulo "CABOTAGEM · RUMO A SUAPE · PE" na proa.
+7. 45–75%: os contornos red-500 dos containers navy se desenham um a
+   um (stroke-dashoffset, em sequência) e o contador "1.900 TEUs por
+   mês" sobe junto. Rótulo "CONTAINERS APG".
+8. 75–100%: a mira de cantos fecha sobre o container-alvo (de grande
+   para justa, com uma "trava" de 120 ms) e aparece uma ficha técnica
+   ao lado: "APGU 1996-07 · 40′ · DESTINO: TERMINAL CONE" (use o
+   ContainerCode). Esse container é o que desce na cena 2.
+9. Todo passo de 10vh muda algo visível. Textos ≥ 12px, AA sobre a
+   foto (halo ou placa navy translúcida). Reduced motion: estado final
+   estático com HUD, contornos e ficha.
+
+Testes e entrega
+10. Screenshots: hero 1440×900, 1920×1080, 390×844; passagem hero →
+    cena 1 (3 pontos); cena 1 em p 0.1, 0.3, 0.6, 0.9 (desktop e
+    mobile). Vídeo do topo até o fim da cena 1. Lighthouse mobile:
+    LCP.
+
+Pronto quando: lint, typecheck, test e e2e passam, o mapa domina o hero
+como no mockup, o mergulho em Suape leva ao navio e a cena 1 tem
+animação em todo o percurso.
+Commit: "feat: mapa como destaque do hero e cena 1 animada"
+````
+
+## Prompt J3b — Portêiner descendo e estrada-mural
+
+````text
+Leia o CLAUDE.md, o spec (seção 3, "Revisão 2026-10-31") e os
+componentes CraneLift.tsx, craneAnchors.ts, Load.tsx e Road.tsx. Use as
+skills animate, animation-performance e emil-design-eng.
+
+Parte A — Cena 2 invertida: o container desce
+1. A cena abre com o container APG já preso ao spreader, no alto, junto
+   ao carrinho do portêiner, em close. Ao rolar, o container DESCE
+   (cabos alongando, presos ao carrinho e ao spreader) e a câmera
+   acompanha a descida, abrindo até mostrar o portêiner inteiro. No
+   fim, o container sai pela base do quadro; a cena 3 começa com ele
+   entrando pelo topo e caindo na carreta (confira a continuidade:
+   mesmo container, mesma escala aparente na troca).
+2. Camadas animadas para a cena não ser só "guindaste + texto":
+   - cota vertical red-500 ao lado do container com a altura em metros
+     diminuindo até 0 (calcule pela escala da foto: container 2,59 m de
+     altura);
+   - chamadas técnicas com linha de chamada, entrando quando a peça
+     aparece: "CARRINHO", "SPREADER · TWISTLOCKS", "CONTAINER 40′";
+   - o texto "O braço rodoviário da cabotagem no Brasil" entra em
+     SplitText na metade da descida.
+3. O portêiner nunca some (mantenha o teste do H1 item 8).
+
+Parte B — Cena 4: a carreta atravessa um mural
+4. Aumente a cena para ~600vh no desktop (~450vh no mobile). A carreta
+   anda DEVAGAR durante todo o scroll: a câmera a acompanha (carreta
+   fica entre 35% e 55% da largura) e o mundo passa atrás.
+5. Atrás da carreta, um mural longo em camadas (SVG em traço fino
+   navy-900, paralaxe em 2 velocidades): silhuetas do porto de Suape
+   → placa "BR-101 · KM 96,4" → marcos de km → silhueta de Salvador e
+   placa "BR-324". Linha vermelha no chão como rastro da carreta.
+6. Textos da frota aparecem como RASTRO: cada bloco é revelado (clip
+   no sentido da viagem) no ponto em que a traseira da carreta passa
+   por ele, e fica no mural até sair do quadro:
+   - "Frota 100% própria" · "sem terceirização";
+   - "100% rastreada" · "todos os veículos monitorados";
+   - "Atendimento 24h" · "desde 1996";
+   - "1.900 TEUs por mês" · "o braço rodoviário da cabotagem";
+   - "Pernambuco e Bahia" · "Suape · PE  /  BR-324 · Salvador · BA".
+   Velocímetro e rodas girando continuam, atrelados à velocidade real
+   do deslocamento.
+7. Todo passo de 10vh move a carreta e revela ou desloca algo. No fim,
+   a carreta sai e entra a cena 5.
+8. Reduced motion: mural estático com todos os textos e a carreta
+   parada no centro.
+
+Testes e entrega
+9. Screenshots da cena 2 (p 0, 0.25, 0.5, 0.75, 1) e da cena 4 (p 0,
+   0.2, 0.4, 0.6, 0.8, 1), desktop e mobile. Vídeo da cena 1 ao fim da
+   cena 4.
+
+Pronto quando: lint, typecheck, test e e2e passam, o container desce
+do alto e chega à carreta sem salto, e a estrada leva o scroll inteiro
+revelando os textos como rastro.
+Commit: "feat: portêiner descendo e estrada com mural"
+````
+
+## Prompt J3c — Pista do terminal com a história da APG
+
+````text
+Leia o CLAUDE.md, o spec (seção 3, "Revisão 2026-10-31") e
+Terminal.tsx. Use as skills animate, animation-performance,
+emil-design-eng, frontend-design:frontend-design e mobile-native.
+
+1. Troque a planta baixa por uma PISTA vista de cima: asfalto grafite
+   #1B1E27 com borda fina, faixa central tracejada sand-50, sobre fundo
+   sand-50 com grade técnica sutil. A pista é sinuosa (curvas largas em
+   S) e mais alta que a tela (~5 telas); a câmera desce acompanhando a
+   carreta.
+2. A carreta vista de cima (carreta-cima) percorre a pista pelo
+   progresso do scroll, girando conforme a tangente da curva
+   (getPointAtLength), com a linha red-500 desenhando-se atrás dela
+   como rastro.
+3. Ao lado da pista, alternando esquerda/direita, capítulos da história
+   (textos do site original da APG). Cada um entra quando a carreta
+   chega na altura dele (linha de chamada da pista até o texto, número
+   grande + título mono + 1 frase):
+   - 1996 · "A FUNDAÇÃO": Paulo Germano de Albuquerque Ramos, vindo de
+     grandes empresas de logística, funda a APG para atender bem o
+     transporte rodoviário de containers, que era mal servido.
+   - "O BRAÇO RODOVIÁRIO DA CABOTAGEM": parceira dos grandes players
+     da cabotagem no Brasil, com 1.900 TEUs por mês.
+   - "SUAPE": frota 100% própria e rastreada, atendimento 24 h.
+   - "LOGÍSTICA EM PERNAMBUCO": armazenagem, cross-docking, supply
+     chain e 500 entregas fracionadas por dia.
+   - "BAHIA": operação às margens da BR-324, em Salvador.
+   - "TERMINAL CONE": 35.000 m², 4.000 TEUs estáticos, 46 docas,
+     5.000 m² (texto conforme site.ts), docas niveladoras
+     eletro-hidráulicas.
+   Não invente anos além de 1996. Coloque os textos em site.ts
+   (journeyScene.history) com comentário "confirmar com cliente".
+4. No fim da pista, a carreta encosta numa doca estilizada do terminal
+   CONE e os quatro números finais aparecem como placar.
+5. Mobile: pista vertical no centro, textos em cartões abaixo/acima
+   da carreta (sem sobrepor a pista), ≥ 14px.
+6. Altura da cena proporcional ao número de capítulos (~100vh cada) e
+   todo passo de 10vh move a carreta. Reduced motion: pista inteira
+   estática com todos os capítulos.
+
+Testes e entrega
+7. Screenshots desktop e mobile em p 0, 0.2, 0.4, 0.6, 0.8, 1. Vídeo da
+   cena 4 ao fim da cena 5.
+
+Pronto quando: lint, typecheck, test e e2e passam, a carreta segue a
+pista sem pular nem sair dela, e cada capítulo da história aparece ao
+lado dela no momento em que ela passa.
+Commit: "feat: terminal como pista com a história da APG"
+````
+
 ## Prompt J4 — Cena 6, transições, indicador e mobile
 
 ````text
@@ -1535,7 +1714,7 @@ emil-design-eng e mobile-native.
    estado que conversa com o começo da próxima (oceano → branco: do
    close no container do convés, um wipe branco sobe e o mesmo container
    aparece preso ao spreader do portêiner; estrada → terminal: a
-   carreta sai pela esquerda e a planta sand entra; terminal →
+   carreta sai pela esquerda e a pista sand entra; terminal →
    distribuição: zoom out e escurecimento).
 3. Indicador lateral: 7 marcas (hero + 6 cenas), a ativa em red-500,
    clicáveis (lenis.scrollTo), aria-label por cena.

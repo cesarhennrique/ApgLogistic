@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import images from "@/content/journeyImages.json";
 import { site } from "@/content/site";
 import { APG_CONTAINERS, PHOTO, type View } from "./oceanCamera";
@@ -89,6 +89,15 @@ const note = (group: Element): Note => ({
 
 export function ArrivalFrame({ alt }: { alt: string }) {
   const root = useRef<HTMLDivElement>(null);
+  // The photo only after the page's load: on a slow connection Chrome fetches lazy images far ahead (~2500 px), and
+  // this one competed with the hero's LCP.
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const go = () => setLoaded(true);
+    if (document.readyState === "complete") go();
+    else window.addEventListener("load", go, { once: true });
+    return () => window.removeEventListener("load", go);
+  }, []);
 
   useEffect(() => {
     const el = root.current!;
@@ -113,21 +122,21 @@ export function ArrivalFrame({ alt }: { alt: string }) {
       {/* The photo in a box of its own pixel size, placed by the camera (oceanCamera). No will-change: the browser
           re-rasters the image at each scale, so the close stays sharp. */}
       <div data-photo="" className="absolute top-0 left-0 origin-top-left" style={{ width: PHOTO.width, height: PHOTO.height }}>
-        <picture>
-          <source type="image/avif" srcSet={srcSet("avif")} sizes={SIZES} />
-          <source type="image/webp" srcSet={srcSet("webp")} sizes={SIZES} />
-          <img
-            src={src(1920, "webp")}
-            width={PHOTO.width}
-            height={PHOTO.height}
-            alt={alt}
-            sizes={SIZES}
-            decoding="async"
-            // In view under the hero from the start (transparent): lazy keeps it off the LCP's path.
-            loading="lazy"
-            className="absolute inset-0 h-full w-full"
-          />
-        </picture>
+        {loaded && (
+          <picture>
+            <source type="image/avif" srcSet={srcSet("avif")} sizes={SIZES} />
+            <source type="image/webp" srcSet={srcSet("webp")} sizes={SIZES} />
+            <img
+              src={src(1920, "webp")}
+              width={PHOTO.width}
+              height={PHOTO.height}
+              alt={alt}
+              sizes={SIZES}
+              decoding="async"
+              className="absolute inset-0 h-full w-full"
+            />
+          </picture>
+        )}
         {/* The original, crossfaded over the same box: no jump between the two. */}
         <picture data-sharp="">
           <source type="image/avif" />

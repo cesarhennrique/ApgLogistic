@@ -13,12 +13,14 @@ type Props = {
    *  (src/components/intro/IntroTimeline.ts). Split into masked words in the server HTML, so the reveal never
    *  replaces the text that painted first (the LCP) and the words re-wrap on resize by themselves. */
   manual?: string;
+  /** With manual: the text set in these lines, each a block of its own (with its own class, e.g. a colour). */
+  lines?: { text: string; className?: string }[];
   children: string;
 };
 
 const TRIGGER = { start: "top 85%", once: true } as const;
 
-export function RevealText({ as: Tag = "p", className, immediate = false, manual, children }: Props) {
+export function RevealText({ as: Tag = "p", className, immediate = false, manual, lines, children }: Props) {
   const ref = useRef<HTMLHeadingElement & HTMLParagraphElement>(null);
   const reducedMotion = useReducedMotion();
 
@@ -65,12 +67,16 @@ export function RevealText({ as: Tag = "p", className, immediate = false, manual
       data-intro={manual}
     >
       {manual
-        ? children.split(" ").map((word, i) => (
-            <span key={i}>
-              {i > 0 && " "}
-              <span className="reveal-line-mask inline-block overflow-hidden align-bottom">
-                <span className="reveal-word inline-block">{word}</span>
-              </span>
+        ? (lines ?? [{ text: children }]).map((line, l) => (
+            <span key={l} className={lines ? `block ${line.className ?? ""}` : undefined}>
+              {line.text.split(" ").map((word, i) => (
+                <span key={i}>
+                  {(i > 0 || l > 0) && " "}
+                  <span className="reveal-line-mask inline-block overflow-hidden align-bottom">
+                    <span className="reveal-word inline-block">{word}</span>
+                  </span>
+                </span>
+              ))}
             </span>
           ))
         : children}

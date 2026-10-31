@@ -50,7 +50,7 @@ async function imagesIn(page: Page) {
     .toBe(true);
 }
 
-const photo = (page: Page) => page.getByRole("img", { name: /Navio porta-contêineres/ });
+const photo = (page: Page) => page.locator("#chegada").getByRole("img", { name: /Navio porta-contêineres/ });
 // The camera's scale: the photo box's transform.
 const cameraScale = (page: Page) =>
   photo(page).evaluate((img) => new DOMMatrix(getComputedStyle(img.closest("picture")!.parentElement!).transform).a);
@@ -79,10 +79,9 @@ test("no dead scroll: from the moment scene 1 slides in to the close, every 10vh
   let previous = 0;
   for (let q = 0; q <= 0.8 + 1e-9; q += step) {
     await scrollToArrival(page, q);
-    await page.waitForTimeout(120);
-    const scale = await cameraScale(page);
-    expect(scale, `q = ${q.toFixed(3)}`).toBeGreaterThan(previous);
-    previous = scale;
+    // (polled: under the test's load the scrubbed trigger can take a few frames to catch up)
+    await expect.poll(() => cameraScale(page), { message: `q = ${q.toFixed(3)}` }).toBeGreaterThan(previous);
+    previous = await cameraScale(page);
   }
 });
 
@@ -140,9 +139,10 @@ test("the header is light over the hero and scene 1, navy over the light scenes,
   await expect(header).toHaveAttribute("data-solid", "true", { timeout: 15_000 });
 });
 
-// The hero's copy (on phones with the map's slot above it) sits in the middle of the screen left between the header
-// and the strip, at three sizes; the frames are saved for a human to look at.
-test("the hero's copy is centred below the header", async ({ page }, testInfo) => {
+// The hero's copy: on wide screens in the middle of the screen left between the header and the pillars; on phones
+// at the bottom, just above them, over the photo's darker foot. At three sizes; the frames are saved for a human to
+// look at.
+test("the hero's copy is centred below the header (at the bottom on phones)", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "the sizes are set here");
   for (const [width, height] of [
     [1440, 900],
@@ -154,13 +154,13 @@ test("the hero's copy is centred below the header", async ({ page }, testInfo) =
     await settle(page);
     const { above, below } = await page.evaluate(() => {
       const copy = document.getElementById("hero-copy")!.getBoundingClientRect();
-      const slot = document.getElementById("hero-map-slot")!.getBoundingClientRect();
-      const top = slot.height > 0 ? slot.top : copy.top;
+      const top = copy.top;
       const header = document.querySelector("header")!.getBoundingClientRect();
       const strip = document.querySelector("#hero [data-intro=strip]")?.getBoundingClientRect();
       return { above: top - header.bottom, below: (strip?.top ?? window.innerHeight) - copy.bottom };
     });
-    expect(Math.abs(above - below), `${width}×${height}: ${above} above, ${below} below`).toBeLessThan(24);
+    if (width >= 768) expect(Math.abs(above - below), `${width}×${height}: ${above} above, ${below} below`).toBeLessThan(24);
+    else expect(below, `${width}×${height}: ${below} below`).toBeLessThan(40);
     await page.screenshot({ path: `e2e/__screenshots__/hero-${width}x${height}.png` });
   }
 });
@@ -248,7 +248,8 @@ test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) 
 // Art-direction review: five points of scenes 2 and 3, saved for a human to look at (not diffed).
 test.describe("scenes 2 to 5 frames", () => {
   for (const id of ["porteiner", "carga", "estrada", "terminal"]) {
-    for (const p of [0, 0.25, 0.5, 0.75, 1]) {
+    // (scene 2 also at 0.4 and 0.6, round the middle of its pull-back)
+    for (const p of id === "porteiner" ? [0, 0.25, 0.4, 0.5, 0.6, 0.75, 1] : [0, 0.25, 0.5, 0.75, 1]) {
       test(`${id} at ${p}`, async ({ page }, testInfo) => {
         const errors = collectErrors(page);
         await page.goto("/");
@@ -313,10 +314,50 @@ test("scene 5's truck drives from the gate to its dock, the red line behind it",
   };
   const start = await centre(0.05);
   const end = await centre(0.95);
-  // in from the bottom left (the gate), parked up and to the right (the dock)
-  expect(end.x).toBeGreaterThan(start.x + 100);
-  expect(end.y).toBeLessThan(start.y);
+  // across the plan, from the gate to the dock (on phones the plan is turned: measured as a distance)
+  expect(Math.hypot(end.x - start.x, end.y - start.y)).toBeGreaterThan(100);
   const dash = await page.locator("#terminal path.stroke-red-500").evaluate((el) => Number(getComputedStyle(el).strokeDashoffset.replace("px", "")));
   expect(dash).toBeLessThan(0.01);
   expect(errors).toEqual([]);
+});
+
+// The crane never leaves the frame: at ten points of scene 2 its light layer (always under the sharp one) is in and
+// shown.
+test("scene 2 always shows the crane", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await settle(page);
+  const crane = page.locator("#porteiner img[data-crane]");
+  for (let i = 0; i < 10; i++) {
+    await scrollToScene(page, "porteiner", i / 9);
+    await expect
+      .poll(() => crane.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0 && getComputedStyle(img).opacity === "1"), {
+        message: `p = ${(i / 9).toFixed(2)}`,
+      })
+      .toBe(true);
+    // in the frame: some of it on screen
+    const box = (await crane.boundingBox())!;
+    const { width, height } = page.viewportSize()!;
+    expect(box.x < width && box.x + box.width > 0 && box.y < height && box.y + box.height > 0).toBe(true);
+  }
+  expect(errors).toEqual([]);
+});
+
+// The hero's exit into scene 1, at three points of its scroll (d: 0–1 over its first 120vh), saved for a human to
+// look at: the copy and the map rising away, the photo pushing in on the deck, scene 1's picture coming over it.
+test.describe("hero to scene 1 frames", () => {
+  for (const d of [0.3, 0.65, 0.95]) {
+    test(`hero exit at ${d}`, async ({ page }, testInfo) => {
+      const errors = collectErrors(page);
+      await page.goto("/");
+      await settle(page);
+      await page.evaluate((d) => {
+        const hero = document.getElementById("hero")!;
+        window.scrollTo({ top: d * (hero.offsetHeight - 2 * window.innerHeight), behavior: "instant" });
+      }, d);
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-hero-exit-${d}.png` });
+      expect(errors).toEqual([]);
+    });
+  }
 });

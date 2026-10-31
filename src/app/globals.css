@@ -168,3 +168,33 @@ body {
     transition: none;
   }
 }
+
+/* The hero photo's entrance starts zoomed in (the intro timeline zooms it out); not with reduced motion, nor when
+   no intro runs (no intro-full / intro-short class). */
+.intro-full [data-intro-photo],
+.intro-short [data-intro-photo] {
+  transform: scale(1.08);
+}
+
+/* Suape on the hero's map: a red dot whose glow breathes slowly; still with reduced motion. */
+.suape-dot::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgb(227 30 36 / 0.65), transparent);
+  animation: suape-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes suape-glow {
+  50% {
+    opacity: 0.35;
+    transform: scale(1.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suape-dot::after {
+    animation: none;
+  }
+}

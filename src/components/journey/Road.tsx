@@ -73,10 +73,11 @@ export function Road() {
     drive.current!.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`;
     // Rolling, not sliding: the wheels turn by the distance over the tyre's radius.
     const deg = (x / ((ROAD_Y - WHEELS[0].y) * s)) * (180 / Math.PI);
-    // Parked, the discs stay hidden: a disc resamples the image a hair differently from the image under it.
+    // Parked, the discs are out (display: none, so their image is not even fetched before the scene: it competed
+    // with the hero's LCP); a disc also resamples the image a hair differently from the image under it.
     for (const rim of drive.current!.querySelectorAll<HTMLElement>("[data-rim]")) {
       rim.style.transform = `rotate(${deg.toFixed(2)}deg)`;
-      rim.style.visibility = x < 0 ? "" : "hidden";
+      rim.style.display = x < 0 ? "block" : "";
     }
     // The trail: from the screen's right edge to the truck's rear.
     trail.current!.style.transform = `scaleX(${Math.min(Math.max((W - (left + REAR_X * s + x)) / W, 0), 1).toFixed(4)})`;
@@ -152,7 +153,7 @@ export function Road() {
                 key={w.x}
                 data-rim=""
                 aria-hidden="true"
-                className="absolute aspect-square rounded-full"
+                className="absolute hidden aspect-square rounded-full"
                 style={{
                   left: pct(w.x - RIM_R, TRUCK.width),
                   top: pct(w.y - RIM_R, TRUCK.height),

@@ -43,6 +43,24 @@
       1266
     ]
   },
+  "hero-porto": {
+    "width": 3840,
+    "height": 1645,
+    "widths": [
+      800,
+      1200,
+      1920,
+      2560,
+      3840
+    ]
+  },
+  "hero-porto-mobile": {
+    "width": 760,
+    "height": 1645,
+    "widths": [
+      760
+    ]
+  },
   "navio-mar": {
     "width": 6688,
     "height": 3764,

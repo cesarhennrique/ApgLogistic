@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { MathUtils, type PerspectiveCamera, Vector3 } from "three";
 import { heroDive } from "./progress";
 import { HERO_KEYS, sampleHeroCamera } from "./stages/heroCamera";
+import { PHOTO_MARKS, photoToScreen } from "@/components/home/heroPhoto";
 import { fitHeroFrame, type Rect } from "./stages/heroFrame";
 
 // The hero's slow orbit: ±6° about the map's vertical axis, a 20 s cycle, fading out over the first third of the
@@ -16,10 +17,9 @@ const Y = new Vector3(0, 1, 0);
 // "SUAPE · PE" sits right of Suape, on the coast: room for it on a portrait screen.
 const SUAPE_LABEL = 80;
 
-// The opening shot is refitted to the viewport (heroFrame): the map in the screen left free by the copy
-// (#hero-copy) and the bars, beside it on landscape screens; on portrait ones in the slot kept for it above the copy
-// (#hero-map-slot, so map and copy centre together), short of the room Suape's label needs at the right. The refit
-// fades out over the dive.
+// The opening shot is refitted to the viewport (heroFrame): the map small, in the photo's sky: on landscape screens
+// right of the copy (#hero-copy) and left of the cranes, in the upper part; on portrait ones above the copy, short of
+// the room Suape's label needs at the right.
 const HERO_START = HERO_KEYS.start;
 const START_POSITION = new Vector3(...HERO_START.position);
 const START_TARGET = new Vector3(...HERO_START.target);
@@ -29,18 +29,18 @@ const fit = { position: new Vector3(), target: new Vector3(), offsetX: 0, offset
 function freeRegion(width: number, height: number): Rect {
   const md = width >= 768;
   const header = md ? 80 : 64;
-  const strip = md ? 56 : 48;
   const margin = MathUtils.clamp(width * 0.04, 16, 64);
   const copy = document.getElementById("hero-copy")?.getBoundingClientRect();
-  if (!copy) return { left: margin, right: width - margin, top: header, bottom: height - strip };
-  // The hero sits at the top of the page: its layout box, as at scroll 0.
-  const top = copy.top + window.scrollY;
-  if (width >= height) return { left: copy.right + 48, right: width - margin, top: header + 16, bottom: height - strip - 16 };
-  const slot = document.getElementById("hero-map-slot")?.getBoundingClientRect();
-  if (slot && slot.height > 0) {
-    return { left: margin, right: width - margin - SUAPE_LABEL, top: slot.top + window.scrollY, bottom: slot.bottom + window.scrollY };
+  if (width >= height) {
+    // The sky: above the ship's bridge, left of the cranes, where the photo's cover fit puts them.
+    const left = (copy?.right ?? 0.4 * width) + 32;
+    const right = photoToScreen(width, height, PHOTO_MARKS.cranesLeft, 0).x - 16;
+    const bottom = photoToScreen(width, height, 0, PHOTO_MARKS.bridgeTop).y - 8;
+    return { left, right: Math.max(right, left + 160), top: header + 16, bottom: Math.max(bottom, header + 136) };
   }
-  return { left: margin, right: width - margin, top: header + 8, bottom: top - 24 };
+  // The hero sits at the top of the page: its layout box, as at scroll 0.
+  const top = copy ? copy.top + window.scrollY : height / 2;
+  return { left: margin, right: width - margin - SUAPE_LABEL, top: header + 8, bottom: Math.min(top - 24, 0.34 * height) };
 }
 
 const pose = sampleHeroCamera(0);
