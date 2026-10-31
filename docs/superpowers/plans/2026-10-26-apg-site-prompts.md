@@ -1552,7 +1552,16 @@ Parte A — Hero: o mapa é o destaque
    mergulha no ponto de Suape (o mapa escala para o ponto vermelho,
    que cresce e vira um brilho), e o brilho se abre na foto do navio da
    cena 1 no enquadramento largo. Sem faixa entre os dois e sem
-   rolagem morta.
+   rolagem morta. Reaproveite heroCamera/heroDive (ficaram sem uso no
+   H1); o que continuar sem uso depois disso, remova, junto com as
+   dependências de pós-processamento.
+4b. Desempenho (o H1 deixou LCP simulado em 4,4 s e TBT ~1,2 s com CPU
+   lenta): o canvas do mapa só monta depois do primeiro paint (idle ou
+   após o load), com um SVG/PNG estático do mapa no lugar até lá. O
+   elemento de LCP (foto ou título) precisa estar pintado no primeiro
+   paint: revele o título com clip/transform, nunca opacity 0 até o
+   loading acabar. Meta: LCP < 2,5 s e TBT < 400 ms no Lighthouse
+   mobile simulado; informe os dois.
 
 Parte B — Cena 1: não é só zoom
 A foto continua parada (não animar água). O zoom da câmera fica, mas
