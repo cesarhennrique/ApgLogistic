@@ -1385,6 +1385,31 @@ Leia o CLAUDE.md, o spec (seção 3), src/components/proof/TruckPass.tsx e
 src/components/journey/Scene.tsx. Use as skills animate e
 frontend-design:frontend-design.
 
+0. Antes, ajustes das cenas 2 e 3 (vistos nos screenshots do J2):
+   a. Cena 2 com câmera: a cena 1 termina no close de um container; a
+      cena 2 passa a começar no mesmo tipo de close (o container APG
+      preso ao spreader enchendo ~45% da largura da tela) e a câmera
+      RECUA enquanto ele sobe, até revelar o portêiner inteiro, como na
+      cena 1 (um só transform translate3d + scale num wrapper, escala
+      exponencial, a câmera segue o spreader). Hoje o guindaste fica
+      pequeno, com muito branco em volta, e a cena parece parada.
+      Fonte em alta: assets-src/ai/porteiner-lado.png (upscale 4×).
+      Refaça a partir dela o recorte (scripts/cutout-white.mjs, modo
+      --global, limiar 244), as camadas porteiner-base e
+      porteiner-spreader e as medidas de craneAnchors.ts (escale as
+      coordenadas atuais ×4 e confira em recortes). Mesmo limite de
+      ampliação da cena 1 (1,5× por pixel da foto, com devicePixelRatio).
+   b. Faixa cinza no topo: no desktop, em p ≥ 0.75 da cena 2, aparece um
+      degradê cinza atrás do header; no mobile, em p=0 da cena 2, aparece
+      uma faixa colorida da cena anterior no topo. Ache a causa (fundo do
+      header na fronteira entre cenas ou 1px do palco anterior) e corrija.
+   c. Cena 3 no mobile: a carreta a 100vw fica pequena, com muito branco
+      em cima e embaixo. No mobile, enquadre mais perto (o container e o
+      chassi ocupando ~140% da largura, com a câmera centrada no
+      container) e, depois do encaixe, recue até a carreta inteira
+      caber, que é o enquadramento em que a cena 4 começa.
+   d. Screenshots de conferência das cenas 2 e 3 (desktop e mobile).
+
 1. Road.tsx (cena 4): promova a prova TruckPass para a jornada usando
    Scene, com a imagem carreta-lado (com logo) e as mesmas coordenadas
    de rodas (a carreta com logo está alinhada a 1 px com a original).
