@@ -1608,13 +1608,16 @@ animate, animation-performance e emil-design-eng.
    os containers. Em p ≥ 0.85 ela fica 100% opaca, em placa navy-900
    sólida, mono ≥ 13px, com linha de chamada até a mira; a mira em
    stroke 2px red-500 com halo. Confira o contraste no screenshot.
-1. A cena 2 abre com o container APG já preso ao spreader, no alto,
-   junto ao carrinho do portêiner, em close. Ao rolar, o container
-   DESCE (cabos alongando, presos ao carrinho e ao spreader) e a câmera
-   acompanha a descida, abrindo até mostrar o portêiner inteiro. No
-   fim, o container sai pela base do quadro; a cena 3 começa com ele
-   entrando pelo topo e caindo na carreta (confira a continuidade:
-   mesmo container, mesma escala aparente na troca).
+1. Câmera ao contrário da atual (pedido do usuário): a cena 2 abre SEM
+   zoom, com o portêiner inteiro em quadro e o container APG preso ao
+   spreader no alto, junto ao carrinho. Ao rolar, o container DESCE
+   (cabos alongando, presos ao carrinho e ao spreader) e, ao mesmo
+   tempo, a câmera vai DANDO ZOOM, acompanhando o container: começa
+   larga e termina em close no container chegando à carreta que
+   espera embaixo (item 2b). A cena 3 continua desse close, com o
+   container caindo na carreta (confira a continuidade: mesmo
+   container, mesma escala aparente na troca). Zoom exponencial e
+   limite de 1.5× por pixel da fonte, como na cena 1.
 2. Camadas animadas para a cena não ser só "guindaste + texto":
    - cota vertical red-500 ao lado do container com a altura em metros
      diminuindo até 0 (calcule pela escala da foto: container 2,59 m de
@@ -1631,7 +1634,7 @@ animate, animation-performance e emil-design-eng.
      containers no convés: é de onde o container veio.
    - CARRETA ESPERANDO: sob o spreader, entre as pernas, a
      carreta-lado-vazia pequena, na escala do portêiner (container 40′
-     = 12,2 m). No fim da descida, a câmera fecha nela e o container
+     = 12,2 m). Com o zoom, ela cresce até o close final e o container
      encaixa na escala certa: é a ponte para a cena 3.
    - FUNDO: palavra gigante "SUAPE" em cinza muito claro (#EDEBE6)
      atrás do portêiner, deslizando devagar no sentido oposto ao
