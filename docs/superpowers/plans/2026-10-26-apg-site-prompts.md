@@ -1147,7 +1147,7 @@ Commit: "feat: cenas da jornada por imagens e cena 1 (chegada)"
 
 ## Prompt J1b — Cena 1 por zoom de câmera e ordem da Home
 
-> Revisão 2026-10-30b, depois do J1 (`0aa66ce`). O navio e a espuma animados separadamente não pareceram reais. Rode só depois que `assets-src/ai/navio-mar.png` existir e tiver sido aprovada.
+> Revisão 2026-10-30b, depois do J1 (`0aa66ce`). O navio e a espuma animados separadamente não pareceram reais. Foto aprovada: `assets-src/ai/navio-mar.webp`, 6688×3764 (upscale 4× no Upscayl; o PNG de 30 MB fica fora do git em `assets-src/reference/`).
 
 ````text
 Leia o CLAUDE.md, o spec (seção 3, linha da cena 1, e seção 4 "Ordem da
@@ -1157,7 +1157,7 @@ animation-performance e superpowers:test-driven-development.
 
 Parte A — Cena 1: foto parada, câmera em zoom
 O navio animado sobre o oceano, com espuma em canvas, não ficou real.
-Agora a cena é UMA foto (assets-src/ai/navio-mar.png: navio no oceano,
+Agora a cena é UMA foto (assets-src/ai/navio-mar.webp: navio no oceano,
 visto de cima, com a espuma e o rastro reais da própria foto). A foto
 não se mexe; só a câmera desce, como num drone.
 
