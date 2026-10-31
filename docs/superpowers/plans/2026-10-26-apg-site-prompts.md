@@ -1317,6 +1317,24 @@ Commit: "feat: roteiro da cena 1 e hero centralizado"
 Leia o CLAUDE.md, o spec (seção 3) e src/components/journey/Scene.tsx.
 Use as skills animate e animation-performance.
 
+0. Antes, ajustes da cena 1 (OceanArrival), vistos nos screenshots do
+   J1c: no desktop as anotações quase não aparecem.
+   - Rótulos ("CABOTAGEM · RUMO A SUAPE · PE", "CONTAINERS APG", "SEU
+     CONTAINER"): mono de no mínimo 12px no desktop e 11px no mobile,
+     tracking 0.12em, sobre fundo navy-900 a 80% com padding 4px 8px.
+   - Contornos dos containers APG: 2px red-500 com um halo escuro
+     (sombra/contorno navy-900 a 60% de 2px por fora), para destacar
+     sobre a pintura vermelha e navy.
+   - Mira do container-alvo: cantos de 3px, cada perna com 28% do lado
+     menor do alvo, e uma pulsação lenta de opacidade (0.7↔1, 1.6 s,
+     só quando parada no close; sem pulsar em reduced motion).
+   - Linhas guia: 1px branco a 85% com o mesmo halo escuro.
+   - Mobile do hero: centralize o mapa e o bloco de texto juntos na
+     vertical (hoje sobra um vazio embaixo) e garanta que o rótulo
+     "SUAPE · PE" do mapa não encoste na borda direita (margem ≥ 16px).
+   - Screenshots de conferência: cena 1 em p = 0.05, 0.5 e 1 (desktop e
+     mobile) e hero 390×844.
+
 Imagens: porteiner-lado (recortado), carreta-lado-vazia, carreta-lado
 (com logo). As duas carretas estão alinhadas a 1 px.
 
