@@ -73,6 +73,14 @@ Photorealistic aerial top-down view, camera pointing straight down, of a white c
 Photorealistic aerial drone photograph taken from high altitude, camera pointing straight down, of a medium coastal container ship sailing on deep blue tropical ocean. Bow pointing straight up, ship perfectly centered in the frame and occupying about one third of the frame height. Deck fully loaded with neatly stacked shipping containers in muted colors (rust red, ocean blue, teal, ochre, white, grey), with several deep navy blue containers with one red stripe near the middle of the deck. White superstructure at the stern. Natural white bow wave and a long turbulent foamy wake trailing behind the stern toward the bottom of the frame. Fine natural wave texture and subtle sun glints on the water. No land, no other boats, no logos, no text, no names on the hull. Natural midday light, ultra sharp, highest resolution, 16:9.
 ```
 
+**9 e 10. Carreta com a câmera subindo (revisão 2026-10-31b).** São os quadros intermediários entre a carreta de lado e a de cima. Faça como **edição** da `carreta-lado` (suba a imagem), para manter o mesmo caminhão, o logo e o container. Gere 3–4 variações de cada, salve na maior resolução como `carreta-alto-30.png` e `carreta-alto-60.png`.
+
+```text
+Edit this image: show the exact same truck and container from a higher camera, raised to about 30 degrees above the horizon and looking down at it, so the roof of the container and the top of the cab become visible while the side is still seen. Keep the truck pointing left, same position and length in the frame, same white cab with the logo on the door, same navy container with the red stripe along the side; the container roof is navy with one red stripe running along its length. Pure white background, very subtle contact shadow, same soft studio lighting, ultra sharp.
+```
+
+Para a de 60°, use o mesmo texto trocando "about 30 degrees" por "about 60 degrees" e "while the side is still seen" por "with only a thin sliver of the side still visible".
+
 ## Depois de gerar
 
 Me avise quando os arquivos estiverem na pasta. Eu reviso a consistência entre eles (cor, luz, escala), recorto o fundo onde for preciso e reescrevo a jornada no novo padrão.
