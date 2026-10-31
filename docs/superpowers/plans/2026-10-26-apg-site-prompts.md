@@ -1618,6 +1618,24 @@ animate, animation-performance e emil-design-eng.
      aparece: "CARRINHO", "SPREADER · TWISTLOCKS", "CONTAINER 40′";
    - o texto "O braço rodoviário da cabotagem no Brasil" entra em
      SplitText na metade da descida.
+2b. Contexto, para o portêiner não ficar solto no branco (revisão do
+   usuário: "seção sem vida"):
+   - CAIS: linha de chão em traço navy sob as pernas, com régua de
+     cotas; à esquerda, sob a lança, o costado do navio em traço fino
+     (silhueta, sem foto) com a linha d'água e 2–3 pilhas de
+     containers no convés: é de onde o container veio.
+   - CARRETA ESPERANDO: sob o spreader, entre as pernas, a
+     carreta-lado-vazia pequena, na escala do portêiner (container 40′
+     = 12,2 m). No fim da descida, a câmera fecha nela e o container
+     encaixa na escala certa: é a ponte para a cena 3.
+   - FUNDO: palavra gigante "SUAPE" em cinza muito claro (#EDEBE6)
+     atrás do portêiner, deslizando devagar no sentido oposto ao
+     scroll, como o "OUR SERVICES" da referência.
+   - COTA DO PORTÊINER: cota vertical do chão ao topo da lança
+     ("≈ 50 m", calcule pela escala; marque "confirmar com cliente").
+   - TÍTULO: reduza para ~2/3 do tamanho atual e coloque abaixo dele
+     2 números com contador: "1.900 TEUs / mês" e "24 h / operação".
+   - Mobile: navio e régua somem; carreta esperando e cotas ficam.
 3. O portêiner nunca some (mantenha o teste do H1 item 8).
 4. Screenshots da cena 2 (p 0, 0.25, 0.5, 0.75, 1) e da passagem 2 → 3,
    desktop e mobile. Vídeo da cena 1 ao fim da cena 3.
