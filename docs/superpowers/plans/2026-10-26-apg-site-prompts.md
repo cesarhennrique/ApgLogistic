@@ -1164,9 +1164,10 @@ não se mexe; só a câmera desce, como num drone.
 1. Pipeline: inclua navio-mar no npm run images (WebP/AVIF 800, 1200,
    1920 e original). Não recorte: a foto ocupa a tela toda.
 2. Meça na foto e registre em src/components/journey/oceanCamera.ts (px
-   da imagem original): o centro do navio e o centro de um container
-   navy com faixa vermelha perto do meio do convés (o FOCO), e a largura
-   desse container. Confira medindo num recorte salvo com sharp.
+   da imagem original): o centro do navio, a largura do casco e o FOCO:
+   o centro do bloco de containers do meio do convés, num ponto com
+   containers navy de faixa vermelha. Confira medindo num recorte salvo
+   com sharp.
 3. OceanArrival (cena 1, 280vh), no lugar do navio, do oceano e da
    espuma:
    - a foto em tela cheia (cover). No começo da cena, o enquadramento é
@@ -1174,17 +1175,19 @@ não se mexe; só a câmera desce, como num drone.
    - 0–0.08: segura parado (é a imagem em que o mergulho do hero
      termina);
    - 0.08–0.85: zoom contínuo até o FOCO ficar no centro da tela e o
-     container ocupar ~60% da largura. Escala exponencial
+     convés encher a tela (a largura do casco ≈ 90% da altura da tela no
+     desktop, já que o navio está na vertical). Escala exponencial
      (scale = Zmax^t), para a descida ter velocidade constante (zoom
      linear acelera no fim e parece falso). A translação leva o centro
      da tela do centro do navio até o FOCO junto com a escala, sem
      desviar. Tudo num só transform (translate3d + scale) num wrapper,
      escrito no onUpdate, sem re-render;
-   - 0.85–1: segura no close do container (é onde a cena 2 começa);
+   - 0.85–1: segura no close do convés (é onde a cena 2 começa: um
+     container navy desse bloco é o que o portêiner iça);
    - Zmax: limite para que no fim cada pixel da foto original não seja
      ampliado mais que 1,5× na tela (considere o devicePixelRatio). Se o
-     container não chegar a ~60% da largura com esse limite, pare no
-     limite e registre no relatório o tamanho que chegou;
+     convés não encher a tela com esse limite, pare no limite e registre
+     no relatório até onde chegou;
    - nitidez: a camada inicial usa a largura do srcset; uma segunda
      camada com a original carrega quando a cena se aproxima
      (IntersectionObserver com rootMargin) e entra em crossfade antes
@@ -1234,7 +1237,7 @@ Testes e entrega
     da cena 1 baixadas (desktop e mobile) e se o close final está nítido.
 
 Pronto quando: lint, typecheck, test e e2e passam, a foto não se move
-por conta própria, o close final do container está nítido e os códigos
+por conta própria, o close final do convés está nítido e os códigos
 da Home seguem 01 a 11 sem repetição.
 Commit: "feat: cena 1 por zoom de câmera e ordem da Home"
 ````
