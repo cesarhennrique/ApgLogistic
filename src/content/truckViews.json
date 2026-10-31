@@ -1,0 +1,50 @@
+{
+  "carreta-lado": {
+    "width": 1672,
+    "height": 941,
+    "front": 20,
+    "rear": 1640,
+    "top": 247,
+    "bottom": 701,
+    "wheel": {
+      "x": 1490,
+      "y": 701
+    }
+  },
+  "carreta-alto-30": {
+    "width": 1915,
+    "height": 821,
+    "front": 77,
+    "rear": 1842,
+    "top": 165,
+    "bottom": 638,
+    "wheel": {
+      "x": 1698,
+      "y": 638
+    }
+  },
+  "carreta-alto-60": {
+    "width": 1916,
+    "height": 821,
+    "front": 73,
+    "rear": 1852,
+    "top": 195,
+    "bottom": 598,
+    "wheel": {
+      "x": 1667,
+      "y": 598
+    }
+  },
+  "carreta-cima": {
+    "width": 1672,
+    "height": 941,
+    "front": 53,
+    "rear": 1575,
+    "top": 289,
+    "bottom": 646,
+    "wheel": {
+      "x": 1434,
+      "y": 646
+    }
+  }
+}

@@ -247,14 +247,14 @@ export const site = {
       ],
     },
     // Scene 4 from above: the track's title (its first line grey) and the history's chapters, one as the truck
-    // reaches each (a big mark, a title, one line).
+    // reaches each (a big mark, counted up from count.from when it is a number, a title, one line).
     track: { title: ["Confiança", "em cada", "quilômetro"] },
     // confirmar com cliente: os textos dos capítulos (o único ano confirmado é 1996)
     history: [
-      { mark: "1996", title: "A fundação", text: "Paulo Germano de Albuquerque Ramos funda a APG, em Pernambuco." },
-      { mark: "1.900", title: "O braço rodoviário da cabotagem", text: "Em média, 1.900 TEUs por mês levados do navio ao destino." },
+      { mark: "1996", count: { from: 1990, to: 1996 }, title: "A fundação", text: "Paulo Germano de Albuquerque Ramos funda a APG, em Pernambuco." },
+      { mark: "1.900", count: { from: 0, to: 1900 }, title: "O braço rodoviário da cabotagem", text: "Em média, 1.900 TEUs por mês levados do navio ao destino." },
       { mark: "Suape", title: "Frota própria no porto", text: "Frota 100% própria e rastreada em Suape, com atendimento 24 h." },
-      { mark: "500", title: "Logística em Pernambuco", text: "Armazenagem, cross-docking, supply chain e 500 entregas fracionadas por dia." },
+      { mark: "500", count: { from: 0, to: 500 }, title: "Logística em Pernambuco", text: "Armazenagem, cross-docking, supply chain e 500 entregas fracionadas por dia." },
       { mark: "Bahia", title: "BR-324 · Salvador", text: "A operação de containers chega à Bahia pela BR-324, com filial em Salvador." },
     ],
     // Scene 4's arrival: the CONE terminal's dock and its numbers, as a scoreboard.

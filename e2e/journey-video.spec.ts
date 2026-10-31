@@ -27,3 +27,32 @@ test("records the full scroll", async ({ page }, testInfo) => {
   await page.close();
   await page.video()!.saveAs(`e2e/__videos__/journey-${testInfo.project.name}.webm`);
 });
+
+// For review: phase B of scene 4 alone (the camera rising from the side view to above), slowly, as
+// e2e/__videos__/estrada-b-<project>.webm (git-ignored).
+test("records scene 4's camera rising, slowly", async ({ page }, testInfo) => {
+  test.setTimeout(180_000);
+  await page.addInitScript(() => sessionStorage.setItem("apg-intro", "1"));
+  await page.goto("/");
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(3_000);
+  const [start, end] = await page.evaluate(() => {
+    const s = document.getElementById("estrada")!;
+    const top = s.getBoundingClientRect().top + window.scrollY - window.innerHeight;
+    // B: after the slide (100vh) and A (300vh), 150vh (×0.75 on phones)
+    const k = window.innerWidth < 768 ? 0.75 : 1;
+    const vh = s.offsetHeight / (100 + 1070 * k);
+    return [top + (100 + 300 * k) * vh, top + (100 + 450 * k) * vh];
+  });
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), start);
+  await page.waitForTimeout(2_000);
+  // ~30 s for the phase
+  const steps = 300;
+  for (let i = 1; i <= steps; i++) {
+    await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), start + ((end - start) * i) / steps);
+    await page.waitForTimeout(100);
+  }
+  await page.waitForTimeout(1_000);
+  await page.close();
+  await page.video()!.saveAs(`e2e/__videos__/estrada-b-${testInfo.project.name}.webm`);
+});

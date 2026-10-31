@@ -22,8 +22,8 @@ export const TRUCK_IN_CRANE = {
   w: TRUCK.width * TRUCK_SCALE,
   h: TRUCK.height * TRUCK_SCALE,
 };
-// Scene 2 leaves the container this far above its seat (crane px); scene 3 finishes the drop.
-export const HANDOFF_GAP = 0.6 * CONTAINER.h;
+// Scene 2 leaves the container this far above its seat as scene 3 pins (crane px): scene 3 sets it down at once.
+export const HANDOFF_GAP = 0.12 * CONTAINER.h;
 // How far the container comes down to sit in the truck's container box (crane px).
 export const seatDrop = TRUCK_IN_CRANE.y + CONTAINER_BOX.y * TRUCK_SCALE - CONTAINER.top;
 

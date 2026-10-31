@@ -148,6 +148,29 @@ body {
   }
 }
 
+/* Scene 4's chapters: a pin's ring pulsing out as the truck passes it; a chapter's line icon drawing itself as it
+   comes in (its strokes each of length 1, set by Estrada), undrawn as it goes. */
+@keyframes pin-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+.chapter-icon * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.9s var(--ease-out);
+}
+
+[data-in] .chapter-icon * {
+  stroke-dashoffset: 0;
+}
+
 /* A journey scene's scroll length: its own on phones (--scene-h-phone, when it has one), from md up --scene-h. */
 .scene-height {
   height: var(--scene-h-phone, var(--scene-h));

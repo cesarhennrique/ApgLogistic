@@ -1,14 +1,28 @@
 "use client";
 
-import { Clock, Container, Radar, Route, Ship, Truck, Warehouse } from "lucide-react";
+import { Clock, Container, MapPinned, Radar, Route, Ship, Truck, Warehouse } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { gsap } from "@/components/motion/gsap";
+import { gsap, SplitText } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
 import { TRUCK } from "./craneAnchors";
-import { ESTRADA_VH, TRUCK_VIEWS, type TruckView, estradaHeightVh, phasesAt, roadDistance, roadSpeed, trackPath, viewFit } from "./estradaScript";
+import {
+  ESTRADA_VH,
+  TRUCK_VIEWS,
+  type TruckView,
+  estradaHeightVh,
+  phasesAt,
+  rigCentre,
+  roadDistance,
+  roadSpeed,
+  thetaAt,
+  trackPath,
+  viewFit,
+  viewWeights,
+} from "./estradaScript";
+import { leader } from "./marks";
 import { CONTAINER_CLIP, TRUCK_FRAME } from "./Load";
 import { Scene, segment } from "./Scene";
 import { SceneImage } from "./SceneImage";
@@ -23,19 +37,19 @@ const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const easeInOut = gsap.parseEase("power2.inOut");
 const easeOut = gsap.parseEase("power2.out");
 
-// The side view's anchor (truck px): the middle of the rig on the tyres' line. Every placement of the truck is about
-// it, and the other views are fitted to it (viewFit).
+// The rig's centre (side view px): the middle of its footprint seen from above. The camera holds it through B and
+// the truck turns about it in C; every view is fitted to the side one (viewFit).
 const SIDE = TRUCK_VIEWS.lado;
-const ANCHOR = { x: (SIDE.front + SIDE.rear) / 2, y: SIDE.anchor };
-const RIG_LENGTH = SIDE.rear - SIDE.front;
-// Seen from above, the rig's width over its length (carreta-cima's footprint), and the road's width over the rig's.
-const TOP_WIDTH = 357 / (TRUCK_VIEWS.cima.rear - TRUCK_VIEWS.cima.front);
+const TOP = TRUCK_VIEWS.cima;
+const O = rigCentre();
+// Seen from above: the rig's length (side view px) and its width over its length; the road's width over the rig's.
+const TOP_LENGTH = (TOP.rear - TOP.front) * viewFit(TOP).k;
+const TOP_WIDTH = (TOP.bottom - TOP.top) / (TOP.rear - TOP.front);
 const LANE = 2.4;
-// B: the views swap in turn (side → 30° → 60° → above), each a crossfade over 6% of the phase, the first one while
-// the truck is still moving on (the 30° tractor has two axles, the side one one: the eye takes the swap for the turn).
-const SWAPS = [0.3, 0.55, 0.8];
-const SWAP_HALF = 0.03;
 const FAR_VIEWS: TruckView[] = [TRUCK_VIEWS.alto30, TRUCK_VIEWS.alto60, TRUCK_VIEWS.cima];
+// B's ground: a plane under the truck, seen in perspective (this many lane widths away), tilted by the camera's
+// angle: edge on, a line under the tyres, side on; flat, the road, from above.
+const PERSPECTIVE = 3;
 
 // The wheels of the side view (Road's, carried on): hubs, the disc's radius on the plain sidewall, the tyres' line.
 const IMG = "/images/journey/carreta-lado-vazia-1672.webp";
@@ -43,8 +57,9 @@ const WHEELS = [172, 578, 1216, 1357, 1498].map((x) => ({ x, y: 639 }));
 const RIM_R = 54;
 const TOP_SPEED = 80;
 
-// A's cards, the services then the differentials, each with its line icon.
+// A's cards, the services then the differentials, each with its line icon; C's chapters, theirs.
 const ICONS = [Container, Route, Warehouse, Truck, Radar, Clock, Ship];
+const CHAPTER_ICONS = [Ship, Truck, CraneIcon, Warehouse, MapPinned];
 // The trail's segments (world px) and the chapters' reveal, in truck lengths along the track.
 const TRAIL_STEP = 12;
 const CHAPTER_IN = 0.5;
@@ -59,14 +74,18 @@ type Layout = {
   H: number;
   mobile: boolean;
   s0: number;
-  // the truck's anchor on screen in TRUCK_FRAME, untransformed
+  // the rig's centre on screen in TRUCK_FRAME, untransformed
   a0: { x: number; y: number };
+  // A's pulled-back scale
+  zA: number;
   // the truck's length from above (C, D) and the road's width
   Lc: number;
   lane: number;
   zC: number;
-  // where the camera keeps the truck in C
+  // where the camera keeps the truck from A's end through C
   c: { x: number; y: number };
+  // the chapters' cards: where each one's leader ends on it (stage px)
+  cardEnds: { x: number; y: number }[];
   spacing: number;
   roadTotal: number;
   // the track: its samples every 4 px (x, y), its length, where C starts along it
@@ -107,7 +126,6 @@ export function Estrada() {
   const dashesEl = useRef<HTMLDivElement>(null);
   const trailAEl = useRef<HTMLDivElement>(null);
   const bandEl = useRef<HTMLDivElement>(null);
-  const bandLaneEl = useRef<HTMLDivElement>(null);
   const rigEl = useRef<HTMLDivElement>(null);
   const viewsEl = useRef<HTMLDivElement>(null);
   const copyEl = useRef<HTMLDivElement>(null);
@@ -116,6 +134,12 @@ export function Estrada() {
   const cardsEl = useRef<HTMLUListElement>(null);
   const trackTitleEl = useRef<HTMLParagraphElement>(null);
   const boardEl = useRef<HTMLDivElement>(null);
+  const planeEl = useRef<HTMLDivElement>(null);
+  const planeLaneEl = useRef<HTMLDivElement>(null);
+  const planeShadowEl = useRef<HTMLDivElement>(null);
+  const pinsEl = useRef<HTMLDivElement>(null);
+  const leadersEl = useRef<HTMLDivElement>(null);
+  const titleLines = useRef<HTMLElement[][]>([]);
   const trackRef = useRef<SVGPathElement>(null);
   const laneRef = useRef<SVGPathElement>(null);
 
@@ -126,7 +150,10 @@ export function Estrada() {
     const mobile = W < 768;
     const s0 = (0.9 * W) / TRUCK.width;
     const top0 = 0.54 * H - (TRUCK.height * s0) / 2;
-    const a0 = { x: 0.05 * W + ANCHOR.x * s0, y: top0 + ANCHOR.y * s0 };
+    const a0 = { x: 0.05 * W + O.x * s0, y: top0 + O.y * s0 };
+    // A pulls back (wide screens), the tyres to 60% of the height, and drifts a little to the left
+    const zA = mobile ? 1 : 0.66;
+    const c = mobile ? { x: a0.x - 0.04 * W, y: a0.y } : { x: 0.46 * W, y: 0.6 * H - (SIDE.wheel.y - O.y) * s0 * zA };
     const Lc = mobile ? 0.42 * W : Math.min(0.2 * W, 0.45 * H);
     const lane = LANE * TOP_WIDTH * Lc;
     const { d, start } = trackPath({ width: W, height: H }, Lc, mobile);
@@ -143,6 +170,11 @@ export function Estrada() {
       xs[i] = p.x;
       ys[i] = p.y;
     }
+    // the ground plane, the lane's width (its tilt and scale set by apply)
+    const plane = planeEl.current!;
+    plane.style.width = `${4 * W}px`;
+    plane.style.height = `${lane}px`;
+    planeShadowEl.current!.style.width = `${1.04 * Lc}px`;
     const spacing = mobile ? 0.8 * W : 312;
     // the last card reaches the cab by the end of A (two thirds of the road's run through A and B)
     const roadTotal = (7.6 * spacing) / roadDistance(ESTRADA_VH.a / (ESTRADA_VH.a + ESTRADA_VH.b));
@@ -157,8 +189,18 @@ export function Estrada() {
       a0,
       Lc,
       lane,
-      zC: Lc / (RIG_LENGTH * s0),
-      c: mobile ? { x: 0.5 * W, y: 0.45 * H } : { x: 0.6 * W, y: 0.5 * H },
+      zA,
+      zC: Lc / (TOP_LENGTH * s0),
+      c,
+      cardEnds: [...chaptersEl.current!.querySelectorAll<HTMLElement>("[data-chapter]")].map((card, i) => {
+        // the side facing the truck: wide screens, the left edge (right card) or the right (left card), near the
+        // top; phones, the bottom edge (top card) or the top (bottom card), near the left
+        const box = card.getBoundingClientRect();
+        const st = el.getBoundingClientRect();
+        const [x, y] = [box.left - st.left, box.top - st.top];
+        if (!mobile) return { x: i % 2 ? x + box.width : x, y: y + 28 };
+        return { x: x + 40, y: i % 2 ? y : y + box.height };
+      }),
       spacing,
       roadTotal,
       xs,
@@ -181,6 +223,18 @@ export function Estrada() {
       seg.style.transform = seg.dataset.base;
       trail.append(seg);
     }
+    // The chapters' pins at the track's edge, on the side of their card.
+    pinsEl.current!.querySelectorAll<HTMLElement>("[data-pin]").forEach((pin, i) => {
+      const p = pointAt(L, chapters[i]);
+      // the edge's normal pointing towards the card: right or left (wide screens), up or down (phones)
+      let [nx, ny] = [-Math.sin(p.angle), Math.cos(p.angle)];
+      const towards = mobile ? (i % 2 ? ny : -ny) : i % 2 ? -nx : nx;
+      if (towards < 0) [nx, ny] = [-nx, -ny];
+      const off = lane / 2 + 14;
+      pin.dataset.x = String(p.x + nx * off);
+      pin.dataset.y = String(p.y + ny * off);
+      pin.style.transform = `translate(${(p.x + nx * off).toFixed(1)}px, ${(p.y + ny * off).toFixed(1)}px)`;
+    });
     // The dock: under the track's end, one of its doors on the track's line.
     const end = pointAt(L, length);
     dockEl.current!.style.transform = `translate(${end.x.toFixed(1)}px, ${end.y.toFixed(1)}px) scale(${(Lc / DOCK_UNIT).toFixed(4)})`;
@@ -209,20 +263,17 @@ export function Estrada() {
     const dist = roadDistance(tAB) * L.roadTotal;
     const speed = roadSpeed(tAB) * (1 - segment(ph.d, 0, 0.6));
 
-    // The truck: A pulls the camera back a little (wide screens), B rises to the top view and down to its size on
-    // the track, C keeps it where the camera follows it, D pulls back over the dock.
-    const zA = mobile ? 1 : 0.66;
-    const yA = mobile ? L.a0.y : 0.56 * H;
-    const xA = mobile ? L.a0.x : 0.5 * W;
+    // The truck: A pulls the camera back a little (wide screens) and drifts left; B holds its centre still while the
+    // camera rises (θ, 0° to 90°) and the truck shrinks to its size on the track, smoothly with θ; C keeps it where
+    // the camera follows it; D pulls back over the dock.
+    const theta = ph.b > 0 ? thetaAt(ph.b) : 0;
     const u = segment(ph.a, 0, 0.12, easeInOut);
-    const v = easeInOut(ph.b);
-    let z = lerp(1, zA, u);
-    let X = lerp(L.a0.x, xA, u) - 0.04 * W * segment(ph.a, 0.12, 1);
-    let Y = lerp(L.a0.y, yA, u);
+    let z = lerp(1, L.zA, u);
+    let X = lerp(L.a0.x, L.c.x + 0.04 * W, u) - 0.04 * W * segment(ph.a, 0.12, 1);
+    let Y = lerp(L.a0.y, L.c.y, u);
     if (ph.b > 0) {
-      z = zA * (L.zC / zA) ** v;
-      X = lerp(xA - 0.04 * W, L.c.x, v);
-      Y = lerp(yA, L.c.y, v);
+      z = L.zA * (L.zC / L.zA) ** (theta / 90);
+      [X, Y] = [L.c.x, L.c.y];
     }
     // along the track (C, then D easing to the stop)
     const cEnd = L.length - 2.2 * L.Lc;
@@ -247,58 +298,59 @@ export function Estrada() {
       ? `translate3d(${(X - L.a0.x).toFixed(2)}px, ${(Y - L.a0.y).toFixed(2)}px, 0) rotate(${angle.toFixed(4)}rad) scale(${z.toFixed(5)})`
       : "";
     const sz = s0 * z;
-    const front = X - (ANCHOR.x - SIDE.front) * sz;
-    const rear = X + (SIDE.rear - ANCHOR.x) * sz;
+    const front = X - (O.x - SIDE.front) * sz;
+    const rear = X + (SIDE.rear - O.x) * sz;
 
-    // The views: each crossfades in over the one before, which then goes (one layer composited at a time).
-    const w = SWAPS.map((c) => segment(ph.b, c - SWAP_HALF, c + SWAP_HALF));
+    // The views, crossfading with the angle (viewWeights).
+    const weights = viewWeights(theta);
     const views = viewsEl.current!.children as HTMLCollectionOf<HTMLElement>;
-    for (let i = 0; i < 4; i++) {
-      const on = i === 0 ? 1 : w[i - 1];
-      const next = i < 3 ? w[i] : 0;
-      views[i].style.opacity = String(next >= 1 ? 0 : on);
-    }
+    for (let i = 0; i < 4; i++) views[i].style.opacity = String(weights[i]);
     // Rolling, not sliding: the wheels turn by the road's distance over the tyre's radius.
-    const deg = (-dist / ((SIDE.anchor - WHEELS[0].y) * sz)) * (180 / Math.PI);
+    const deg = (-dist / ((SIDE.wheel.y - WHEELS[0].y) * sz)) * (180 / Math.PI);
     for (const rim of viewsEl.current!.querySelectorAll<HTMLElement>("[data-rim]")) {
       rim.style.transform = `rotate(${deg.toFixed(2)}deg)`;
-      rim.style.display = dist > 0 && ph.b < 0.4 ? "block" : "";
+      rim.style.display = dist > 0 && weights[0] > 0 ? "block" : "";
     }
+
+    // B's ground: the plane, tilted to the camera's angle about the road's middle, which sits on the tyres' line side
+    // on and under the rig's centre from above; scaled with the truck; the lane's dashes run on it.
+    const inC = ph.c > 0;
+    const rad = (theta * Math.PI) / 180;
+    const planeY = Y + (SIDE.wheel.y - O.y) * sz * Math.cos(rad);
+    planeEl.current!.style.transform = `translate3d(${(X - 2 * W).toFixed(1)}px, ${(planeY - L.lane / 2).toFixed(1)}px, 0) scale(${(z / L.zC).toFixed(5)}) perspective(${(PERSPECTIVE * L.lane).toFixed(0)}px) rotateX(${(90 - theta).toFixed(3)}deg)`;
+    planeEl.current!.style.opacity = ph.b > 0 && !inC ? "1" : "0";
+    planeLaneEl.current!.style.transform = `translate3d(${((dist % 64) - 64).toFixed(1)}px, 0, 0)`;
 
     // A: the road (its edge at the tyres, the lane's dashes running back, the red trail behind the truck), the
     // word sliding the other way, the copy and the speedometer.
-    const roadOut = 1 - segment(ph.b, 0, 0.25);
-    roadEl.current!.style.transform = `translate3d(0, ${Y.toFixed(1)}px, 0)`;
+    const roadOut = 1 - segment(theta, 0, 12);
+    roadEl.current!.style.transform = `translate3d(0, ${(Y + (SIDE.wheel.y - O.y) * sz).toFixed(1)}px, 0)`;
     roadEl.current!.style.opacity = String(reveal * roadOut);
     dashesEl.current!.style.transform = `translate3d(${((dist % 96) - 96).toFixed(1)}px, 0, 0)`;
     trailAEl.current!.style.transform = `scaleX(${Math.min(Math.max((W - rear) / W, 0), 1).toFixed(4)})`;
-    wordEl.current!.style.transform = `translate3d(${(-0.25 * W + 0.3 * dist).toFixed(1)}px, ${(Y - 0.3 * H).toFixed(1)}px, 0)`;
+    wordEl.current!.style.transform = `translate3d(${(-0.25 * W + 0.3 * dist).toFixed(1)}px, ${(Y - 0.36 * H).toFixed(1)}px, 0)`;
     // (the word only once pinned: across the slide nothing may change round scene 3's truck)
-    wordEl.current!.style.opacity = String(segment(ph.a, 0, 0.05) * (1 - segment(ph.b, 0, 0.3)));
-    copyEl.current!.style.opacity = String(reveal * (1 - segment(ph.b, 0.6, 0.9)));
+    wordEl.current!.style.opacity = String(segment(ph.a, 0, 0.05) * (1 - segment(theta, 0, 25)));
+    // (once pinned: sliding, scene 3's own code still shows under it)
+    copyEl.current!.style.opacity = String(segment(ph.a, 0, 0.03) * (1 - segment(theta, 50, 80)));
     speedEl.current!.textContent = String(Math.round(TOP_SPEED * speed)).padStart(3, "0");
 
-    // The navy band, under the road (A), rises to the road under the truck seen from above (B): its edges eased
-    // from A's to the lane's, the lane's dashes drawn on it; C's track takes over on the same pixels.
-    const bandTopA = Y + (mobile ? 36 : 56);
-    const bb = easeInOut(segment(ph.b, 0, 0.7));
-    const bandTop = lerp(bandTopA, L.c.y - L.lane / 2, bb);
-    const bandBottom = lerp(H, L.c.y + L.lane / 2, bb);
-    const inC = ph.c > 0;
-    bandEl.current!.style.transform = `translate3d(0, ${bandTop.toFixed(1)}px, 0) scaleY(${((bandBottom - bandTop) / H).toFixed(5)})`;
-    bandEl.current!.style.opacity = String(inC ? 0 : reveal);
-    bandLaneEl.current!.style.transform = `translate3d(${((dist % 64) - 64).toFixed(1)}px, ${((bandTop + bandBottom) / 2).toFixed(1)}px, 0)`;
-    bandLaneEl.current!.style.opacity = String(inC ? 0 : segment(ph.b, 0.45, 0.7));
-    bandCopyEl.current!.style.transform = `translate3d(0, ${bandTop.toFixed(1)}px, 0)`;
-    bandCopyEl.current!.style.opacity = String(reveal * (1 - segment(ph.b, 0, 0.2)));
-    // The cards: riding the road (wide screens), each revealed as the cab passes it; on phones one at a time under
-    // the truck, in from the left as the truck reaches it, out to the right for the next.
+    // A's navy band under the road, its title and cards: they go down and out as the camera starts to rise.
+    const bandTop = Y + (SIDE.wheel.y - O.y) * sz + (mobile ? 36 : 56);
+    const bandOut = segment(theta, 0, 18);
+    bandEl.current!.style.transform = `translate3d(0, ${(bandTop + bandOut * 60).toFixed(1)}px, 0) scaleY(${((H - bandTop) / H).toFixed(5)})`;
+    bandEl.current!.style.opacity = String(reveal * (1 - bandOut));
+    bandCopyEl.current!.style.transform = `translate3d(0, ${(bandTop + bandOut * 60).toFixed(1)}px, 0)`;
+    bandCopyEl.current!.style.opacity = String(reveal * (1 - bandOut));
+    // The cards: riding the road (wide screens), each revealed as the cab passes it, the first one there from the
+    // start (never an empty band); on phones one at a time under the truck, in from the left as the truck reaches
+    // it, out to the right for the next.
     const cards = cardsEl.current!.children as HTMLCollectionOf<HTMLElement>;
     for (let i = 0; i < cards.length; i++) {
-      const at0 = (i + 1) * L.spacing;
+      const at0 = i * L.spacing;
       if (!mobile) {
         const x = front + dist - at0;
-        const k = reduced ? 1 : segment(dist, at0 - 0.15 * L.spacing, at0 + 0.1 * L.spacing, easeOut);
+        const k = segment(dist, at0 - 0.25 * L.spacing, at0, easeOut);
         cards[i].style.transform = `translate3d(${x.toFixed(1)}px, ${((1 - k) * 16).toFixed(1)}px, 0)`;
         cards[i].style.opacity = String(k);
       } else {
@@ -309,7 +361,7 @@ export function Estrada() {
       }
     }
 
-    // C and D: the world (track, trail, chapters, dock) under the camera, which keeps the truck where it is.
+    // C and D: the world (track, trail, pins, dock) under the camera, which keeps the truck where it is.
     const zw = inC ? zD : 1;
     worldEl.current!.style.opacity = String(inC ? 1 : 0);
     worldEl.current!.style.transform = `translate3d(${(X - at.x * zw).toFixed(1)}px, ${(Y - at.y * zw).toFixed(1)}px, 0) scale(${zw.toFixed(5)})`;
@@ -321,15 +373,44 @@ export function Estrada() {
       if (f > 0 && f < 1) seg.style.transform = `${seg.dataset.base} scaleX(${f.toFixed(3)})`;
       else if (f >= 1 && seg.style.transform !== seg.dataset.base) seg.style.transform = seg.dataset.base!;
     }
-    // Each chapter as the truck reaches it, until the next one: alternately either side of the truck (wide screens:
-    // right of it, then left under the title; phones: above it, then below).
+    // Each chapter as the truck reaches it, until the next one, alternately either side of the truck (wide screens:
+    // right of it, then left under the title; phones: above it, then below): its pin on the track lights up and
+    // pulses, a leader draws from it to the card, the card comes in (its icon drawing itself, its number counting,
+    // its title rising line by line, its bar of chapters filling) and slides out as the next one comes.
+    const pins = pinsEl.current!.querySelectorAll<HTMLElement>("[data-pin]");
+    const leaders = leadersEl.current!.children as HTMLCollectionOf<HTMLElement>;
     chaptersEl.current!.querySelectorAll<HTMLElement>("[data-chapter]").forEach((ch, i) => {
-      const k = inC ? segment(s, L.chapters[i] - CHAPTER_IN * L.Lc, L.chapters[i], easeOut) : 0;
+      const at0 = L.chapters[i];
+      const k = inC ? segment(s, at0 - CHAPTER_IN * L.Lc, at0, easeOut) : 0;
       const next = L.chapters[i + 1];
       const out = next !== undefined ? segment(s, next - 1.4 * CHAPTER_IN * L.Lc, next - CHAPTER_IN * L.Lc) : segment(ph.d, 0, 0.15);
-      const o = k * (1 - out);
-      ch.style.opacity = String(o);
-      ch.querySelector<HTMLElement>("[data-lift]")!.style.transform = `translate3d(0, ${((1 - k) * 14).toFixed(1)}px, 0)`;
+      ch.style.opacity = String(k * (1 - out));
+      ch.style.transform = `translate3d(${(out * (mobile || i % 2 ? -32 : 32)).toFixed(1)}px, ${((1 - k) * 14).toFixed(1)}px, 0)`;
+      // (the attribute only on a change: the icon's strokes draw by a CSS transition)
+      const isIn = k > 0.4 && out < 1;
+      if (isIn !== ch.hasAttribute("data-in")) ch.toggleAttribute("data-in", isIn);
+      const pin = pins[i];
+      const lit = inC && s >= at0 - CHAPTER_IN * L.Lc;
+      if (lit !== pin.hasAttribute("data-lit")) pin.toggleAttribute("data-lit", lit);
+      // the number, counting
+      const c = history[i].count;
+      if (c) {
+        const n = Math.round(lerp(c.from, c.to, easeOut(segment(s, at0 - CHAPTER_IN * L.Lc, at0 + L.Lc))));
+        ch.querySelector<HTMLElement>("[data-count]")!.textContent = c.from === 0 ? count.format(n) : String(n);
+      }
+      // the title's lines out of their masks, one after the other
+      titleLines.current[i]?.forEach((line, j) => {
+        const t = segment(s, at0 - (CHAPTER_IN - 0.12 * (j + 1)) * L.Lc, at0 + 0.12 * (j + 1) * L.Lc, easeOut);
+        line.style.transform = `translate3d(0, ${((1 - t) * 110).toFixed(1)}%, 0)`;
+      });
+      ch.querySelector<HTMLElement>("[data-bar]")!.style.transform = `scaleX(${k.toFixed(4)})`;
+      // the leader, from the pin (world → stage px) to the card, drawn as far as k
+      const [ax, ay] = [X + (Number(pin.dataset.x) - at.x) * zw, Y + (Number(pin.dataset.y) - at.y) * zw];
+      const end = L.cardEnds[i];
+      // (gone once the card is in and the truck drives on: a long line across the track would only clutter it)
+      const shown = k * (1 - out) * (1 - segment(s, at0 + 0.6 * L.Lc, at0 + 1.2 * L.Lc));
+      leaders[i].style.opacity = String(shown);
+      if (shown > 0) leader(leaders[i], ax, ay, lerp(ax, end.x, k), lerp(ay, end.y, k));
     });
     trackTitleEl.current!.style.opacity = String(segment(ph.c, 0, 0.05) * (1 - segment(ph.d, 0, 0.2)));
 
@@ -352,6 +433,20 @@ export function Estrada() {
     },
     [apply],
   );
+
+  // The chapters' titles split into masked lines (raised by apply); their icons' strokes each of length 1, to draw.
+  useEffect(() => {
+    if (reduced) return;
+    const titles = [...chaptersEl.current!.querySelectorAll<HTMLElement>("[data-title]")];
+    const splits = titles.map((t) => SplitText.create(t, { type: "lines", mask: "lines" }));
+    titleLines.current = splits.map((sp) => sp.lines as HTMLElement[]);
+    for (const shape of chaptersEl.current!.querySelectorAll(".chapter-icon *")) shape.setAttribute("pathLength", "1");
+    apply();
+    return () => {
+      for (const sp of splits) sp.revert();
+      titleLines.current = [];
+    };
+  }, [reduced, apply]);
 
   useEffect(() => {
     if (reduced) return;
@@ -386,7 +481,7 @@ export function Estrada() {
         <div
           ref={wordEl}
           aria-hidden="true"
-          className="font-condensed absolute top-0 left-0 text-[30vw] leading-none font-bold whitespace-nowrap text-transparent uppercase opacity-0 [-webkit-text-stroke:2px_#dcdfe6] md:text-[22vw]"
+          className="font-condensed absolute top-0 left-0 text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase opacity-0 md:text-[22vw]"
         >
           {roadText.word}
         </div>
@@ -401,6 +496,17 @@ export function Estrada() {
             <Dock />
           </div>
           <div ref={trailEl} />
+          <div ref={pinsEl}>
+            {history.map((ch) => (
+              <div key={ch.title} data-pin="" className="group absolute top-0 left-0">
+                <span className="absolute -top-2 -left-2 size-4 rounded-full bg-red-500 opacity-0 group-data-lit:animate-[pin-pulse_1.4s_var(--ease-out)_3]" />
+                <span className="absolute -top-2 -left-2 size-4 rounded-full border-2 border-navy-900 bg-[#fefefe] transition-colors duration-200 group-data-lit:border-red-500 group-data-lit:bg-red-500" />
+                <span className="absolute top-0 left-3.5 -translate-y-1/2 bg-navy-900 px-1.5 py-0.5 font-mono text-[11px] leading-none whitespace-nowrap text-sand-50 transition-colors duration-200 group-data-lit:bg-red-500">
+                  {ch.mark}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* A's road, level with the tyres. */}
@@ -416,17 +522,28 @@ export function Estrada() {
           <div ref={trailAEl} className="absolute top-px left-0 h-[3px] w-full origin-right bg-red-500" style={{ transform: "scaleX(0)" }} />
         </div>
 
-        {/* The navy band under the road: a plain box scaled between its edges (only transform), its lane's dashes. */}
+        {/* A's navy band under the road: a plain box (only transform). */}
         <div ref={bandEl} aria-hidden="true" className="absolute inset-x-0 top-0 h-full origin-top bg-navy-900 opacity-0" />
-        <div ref={bandLaneEl} aria-hidden="true" className="absolute top-0 -left-16 h-0.5 w-[calc(100%+8rem)] opacity-0">
-          <div className="h-full w-full" style={{ backgroundImage: "linear-gradient(90deg, rgb(243 239 231 / 0.7) 0 32px, transparent 32px 64px)", backgroundSize: "64px 2px" }} />
+        {/* B's ground: the road as a plane, tilted to the camera's angle; its contact shadow and its lane's dashes on it. */}
+        <div ref={planeEl} aria-hidden="true" className="absolute top-0 left-0 overflow-hidden bg-navy-900 opacity-0">
+          <div
+            ref={planeShadowEl}
+            className="absolute top-[24%] left-1/2 h-[52%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(closest-side,rgb(0_0_0/0.35),transparent)]"
+          />
+          <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2">
+            <div
+              ref={planeLaneEl}
+              className="h-full w-[calc(100%+64px)]"
+              style={{ backgroundImage: "linear-gradient(90deg, rgb(243 239 231 / 0.7) 0 32px, transparent 32px 64px)", backgroundSize: "64px 2px" }}
+            />
+          </div>
         </div>
 
         {/* The truck, every view in one rig placed by the camera about its anchor. */}
         <div
           ref={rigEl}
           className={TRUCK_FRAME}
-          style={{ transformOrigin: `${pct(ANCHOR.x, TRUCK.width)} ${pct(ANCHOR.y, TRUCK.height)}` }}
+          style={{ transformOrigin: `${pct(O.x, TRUCK.width)} ${pct(O.y, TRUCK.height)}` }}
         >
           <div ref={viewsEl} className="absolute inset-0">
             <div className="absolute inset-0">
@@ -506,7 +623,7 @@ export function Estrada() {
         {/* C: the track's title, fixed at the left (wide screens). */}
         <p
           ref={trackTitleEl}
-          className="font-condensed absolute top-[30%] left-[4vw] -translate-y-1/2 rounded-sm bg-[#fefefe]/85 p-3 text-[clamp(2.6rem,5vw,5rem)] backdrop-blur-sm leading-[0.9] font-bold text-navy-900 uppercase opacity-0 max-md:hidden"
+          className="font-condensed absolute top-[30%] left-[4vw] -translate-y-1/2 border border-navy-900/15 bg-sand-50 px-4 py-3 text-[clamp(2.6rem,5vw,5rem)] leading-[0.9] font-bold text-navy-900 uppercase opacity-0 max-md:hidden"
         >
           {trackText.title.map((line, i) => (
             <span key={line} className={`block ${i === 0 ? "text-steel-400" : ""}`}>
@@ -514,6 +631,11 @@ export function Estrada() {
             </span>
           ))}
         </p>
+        <div ref={leadersEl} aria-hidden="true" className="pointer-events-none absolute inset-0">
+          {history.map((ch) => (
+            <i key={ch.title} className="absolute top-0 left-0 size-px origin-top-left bg-red-500 opacity-0" />
+          ))}
+        </div>
         <div ref={chaptersEl}>
           <Chapters />
         </div>
@@ -548,21 +670,65 @@ export function Estrada() {
 }
 
 // The history's chapters, alternately either side of the truck: on wide screens right of it, then left under the
-// track's title; on phones above it, then below. Frosted, the track runs under them.
+// track's title; on phones above it, then below. Each with its code (n of 5), the chapters' bar, its line icon, its
+// big mark (counted by apply when it is a number), its title (lines raised by apply) and one line.
+const pad = (n: number) => String(n).padStart(2, "0");
 function Chapters() {
-  return history.map((ch, i) => (
-    <article
-      key={ch.title}
-      data-chapter=""
-      className={`absolute opacity-0 max-md:inset-x-4 md:w-[19rem] ${i % 2 ? "max-md:bottom-[6svh] md:bottom-[10svh] md:left-[4vw]" : "max-md:top-[10svh] md:top-1/2 md:right-[4vw] md:-translate-y-1/2"}`}
+  return history.map((ch, i) => {
+    const Icon = CHAPTER_ICONS[i];
+    return (
+      <article
+        key={ch.title}
+        data-chapter=""
+        className={`absolute opacity-0 max-md:inset-x-4 md:w-[20rem] ${i % 2 ? "max-md:bottom-[5svh] md:bottom-[10svh] md:left-[4vw]" : "max-md:top-[9svh] md:top-[38%] md:right-[4vw]"}`}
+      >
+        <div className="border border-navy-900/15 bg-[#fefefe] p-4 text-navy-900">
+          <div className="flex items-center justify-between gap-4">
+            <ContainerCode index={homeCode("estrada")} label={`${pad(i + 1)}/${pad(history.length)}`} />
+            <Icon aria-hidden="true" className="chapter-icon size-7 shrink-0 text-red-500" strokeWidth={1.5} />
+          </div>
+          <div aria-hidden="true" className="mt-2 flex gap-1">
+            {history.map((other, j) => (
+              <span key={other.title} className="h-0.5 flex-1 overflow-hidden bg-navy-900/15">
+                <span data-bar={j === i ? "" : undefined} className="block h-full origin-left bg-red-500" style={{ transform: j < i ? "" : "scaleX(0)" }} />
+              </span>
+            ))}
+          </div>
+          <p className="font-condensed mt-3 text-[clamp(2.4rem,4vw,3.6rem)] leading-none font-bold uppercase tabular-nums">
+            {ch.count ? <span data-count="">{ch.mark}</span> : ch.mark}
+          </p>
+          <p data-title="" className="mt-2 font-mono text-xs tracking-[0.12em] text-red-500 uppercase">
+            {ch.title}
+          </p>
+          <p className="mt-1.5 text-[0.9375rem] leading-snug text-navy-900/80">{ch.text}</p>
+        </div>
+      </article>
+    );
+  });
+}
+
+// A crane, in lucide's line style (24 px, round joins): legs, boom, its A-frame, the hoist and a container.
+function CraneIcon({ className, strokeWidth = 2 }: { className?: string; strokeWidth?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
     >
-      <div data-lift="" className="rounded-sm bg-[#fefefe]/90 p-3 backdrop-blur-sm">
-        <p className="font-condensed text-[clamp(2rem,3.4vw,3.2rem)] leading-none font-bold text-navy-900 uppercase">{ch.mark}</p>
-        <p className="mt-2 font-mono text-xs tracking-[0.12em] text-red-500 uppercase">{ch.title}</p>
-        <p className="mt-1.5 text-[0.9375rem] leading-snug text-navy-900/80">{ch.text}</p>
-      </div>
-    </article>
-  ));
+      <path d="M6 21V8" />
+      <path d="M11 21V8" />
+      <path d="M2 8h20" />
+      <path d="M6 8l2.5-5L11 8" />
+      <path d="M18 8v5" />
+      <path d="M15.5 13h5v3h-5z" />
+      <path d="M3 21h10" />
+    </svg>
+  );
 }
 
 // D's dock: the CONE terminal's warehouse from above, in line under the track's end, its doors numbered (the truck

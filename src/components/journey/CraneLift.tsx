@@ -26,8 +26,12 @@ const SCRIPT_END = 160 / (HEIGHT_VH - 100);
 // trolley; the container comes down (the ropes paying out) while the camera zooms in after it (craneCamera), to a
 // close on the truck waiting under the spreader, the container just above it: where scene 3 takes over.
 const ZOOM = [0.04, 0.92] as const;
-const DESCENT = [0.04, 0.92] as const;
+// The descent runs on past the script, through the hold under scene 3's slide (over the scene's raw progress, from
+// the script's 4%), never stopping: it reaches HANDOFF_GAP above the seat still moving, as scene 3 pins and sets the
+// container down within its first steps. Its ease is power1.inOut cut at 90%, so it ends on the move.
+const DESCENT_START = 0.04 * SCRIPT_END;
 const descentEase = gsap.parseEase("power1.inOut");
+const descent = (u: number) => descentEase(0.9 * u) / descentEase(0.9);
 // The callouts, each in as its part shows, out as the camera leaves it.
 const CALLOUTS = {
   trolley: { in: [0.02, 0.08], out: [0.3, 0.36] },
@@ -42,16 +46,16 @@ const TITLE_IN = [0.42, 0.55] as const;
 const COUNT = [0.5, 0.65] as const;
 const COPY_OUT = [0.8, 0.86] as const;
 // Depth of field, over the zoom's progress: from 60% of it the crane crossfades to an out-of-focus copy of itself
-// (8 px of blur on screen at the end) and the set (crane, quay, ruler, ship, word) fades to 25%, leaving the truck,
+// (8 px of blur on screen at the end) and the set (crane, quay, ruler, word) fades to 25%, leaving the truck,
 // the container and the spreader sharp.
 const DOF = [0.6, 0.9] as const;
 const DOF_BLUR = 8;
-// The crane, the quay, the ship and the word leave the close to the truck and the container (scene 3's picture).
+// The crane, the quay and the word leave the close to the truck and the container (scene 3's picture).
 const SET_OUT = [0.9, 1] as const;
 // Reduced motion: halfway down, everything shown.
 const REDUCED_C = 0.6;
 
-// The quay's edge (the ship lies left of it) and the ruler's step.
+// The quay's edge and the ruler's step.
 const QUAY_X = 1500;
 const RULER_STEP_M = 5;
 const RULER_TICKS = Math.floor((CRANE.width - QUAY_X) / (RULER_STEP_M * PX_PER_M)) + 1;
@@ -61,11 +65,6 @@ const metres = (m: number) => `${m.toFixed(1).replace(".", ",")} m`;
 const count = new Intl.NumberFormat("pt-BR");
 
 const base = (w: number, ext: string) => `/images/journey/porteiner-base-${w}.${ext}`;
-const SHIP_STROKE = { vectorEffect: "none", strokeWidth: 8 } as const;
-// The ship (crane px): its deck, its bow (100 px short of the quay wall) and the waterline, 2 m under the quay.
-const SHIP_DECK = 4700;
-const SHIP_BOW = QUAY_X - 100;
-const WATERLINE = GROUND.y + 2 * PX_PER_M;
 
 type Note = { group: HTMLElement; leader: HTMLElement; leaderHalo: HTMLElement; label: HTMLElement };
 const noteOf = (el: Element): Note => ({
@@ -125,7 +124,8 @@ export function CraneLift() {
       stats: [...copy.current!.querySelectorAll<HTMLElement>("[data-stat]")],
     };
     const P = parts.current;
-    const c = reduced ? REDUCED_C : Math.min(raw.current / SCRIPT_END, 1);
+    const p = reduced ? REDUCED_C * SCRIPT_END : raw.current;
+    const c = Math.min(p / SCRIPT_END, 1);
     const view = viewOf(stage.current!);
     const cam: Camera = sampleCraneCamera(segment(c, ...ZOOM), view);
     w.style.transform = cameraTransform(cam);
@@ -134,11 +134,11 @@ export function CraneLift() {
 
     // The load comes down (crane px), the ropes paying out with it.
     // down to HANDOFF_GAP above its seat on the truck: scene 3 finishes the drop
-    const dy = descentEase(segment(c, ...DESCENT)) * (seatDrop - HANDOFF_GAP);
+    const dy = descent(segment(p, DESCENT_START, 1)) * (seatDrop - HANDOFF_GAP);
     P.load.style.transform = `translate3d(0, ${dy.toFixed(1)}px, 0)`;
     ROPES.forEach((r, i) => (P.ropes[i].style.transform = `scaleY(${(SPREADER_BOX.y - r.top + dy).toFixed(1)})`));
 
-    // The set (crane, quay, ship, word) goes out of focus, then leaves the close to the truck and the container. The
+    // The set (crane, quay, word) goes out of focus, then leaves the close to the truck and the container. The
     // blur never changes (a varying filter repaints every frame): the crane crossfades, by opacity alone, to a copy
     // blurred once by a fixed amount (in its own px, 8 px on screen at the zoom where the blur ends).
     const dof = reduced ? 0 : segment(segment(c, ...ZOOM), ...DOF);
@@ -253,32 +253,6 @@ export function CraneLift() {
         {/* The crane image in a box of its own pixel size, placed by the camera. No will-change, so the close
             re-rasters sharp. */}
         <div ref={world} className="absolute top-0 left-0 origin-top-left" style={{ width: CRANE.width, height: CRANE.height }}>
-          {/* The ship's side, left of the quay, in line (where the container came from): its hull afloat (down to
-              the waterline, its bow clear of the quay wall), the waterline and three stacks of containers on deck.
-              It leaves the wide shot only by the left. Wide screens only. */}
-          <svg
-            data-set=""
-            viewBox={`0 0 ${CRANE.width} ${CRANE.height}`}
-            className="absolute inset-0 h-full w-full overflow-visible max-md:hidden"
-            fill="none"
-          >
-            <g className="stroke-navy-900/45" {...SHIP_STROKE}>
-              <path d={`M-400 ${SHIP_DECK}H${SHIP_BOW - 90}Q${SHIP_BOW} ${SHIP_DECK} ${SHIP_BOW - 6} ${SHIP_DECK + 110}L${SHIP_BOW - 40} ${WATERLINE}`} />
-              <path d={`M-400 ${WATERLINE}H${QUAY_X}`} strokeDasharray="40 30" />
-              <path d={`M${QUAY_X} ${GROUND.y}V${WATERLINE + 60}`} />
-              {[
-                [60, 3],
-                [480, 2],
-                [900, 3],
-              ].map(([x, tiers]) => (
-                <g key={x}>
-                  {Array.from({ length: tiers }, (_, t) => (
-                    <rect key={t} x={x} y={SHIP_DECK - (t + 1) * 170} width={380} height={170} />
-                  ))}
-                </g>
-              ))}
-            </g>
-          </svg>
           {/* The truck waiting under the spreader, at the crane's scale, behind the crane's near leg (multiplied: its
               white ground disappears into the page). */}
           <div

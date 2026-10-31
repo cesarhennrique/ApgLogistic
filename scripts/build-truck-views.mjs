@@ -130,3 +130,58 @@ for (const v of VIEWS) {
   writeFileSync(`${OUT}/${v.name}.webp`, out);
   console.log(v.name, v.rotate ? `${H}×${W}` : `${W}×${H}`);
 }
+
+// The fits (src/content/truckViews.json), measured on the cut-outs, for the views to swap in place
+// (estradaScript's viewFit): the rig's front (the cab's nose) and rear, and the rear wheel's contact point (the
+// near side's last tyre, its lowest row). Seen straight from above no tyre shows: its contact point sits as far
+// from the rear as the side view's, on the footprint's near edge.
+const solidAt = (data, W) => (x, y) => {
+  const i = (y * W + x) * 4;
+  return data[i + 3] > 200 && Math.max(data[i], data[i + 1], data[i + 2]) > 6;
+};
+const fits = {};
+for (const name of ["carreta-lado", "carreta-alto-30", "carreta-alto-60", "carreta-cima"]) {
+  const { data, info } = await sharp(`${OUT}/${name}.webp`).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: W, height: H } = info;
+  const solid = solidAt(data, W);
+  let [x0, x1, y0, y1] = [W, 0, H, 0];
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (!solid(x, y)) continue;
+      [x0, x1, y0, y1] = [Math.min(x0, x), Math.max(x1, x), Math.min(y0, y), Math.max(y1, y)];
+    }
+  }
+  const fit = { width: W, height: H, front: x0, rear: x1, top: y0, bottom: y1 };
+  if (name === "carreta-cima") {
+    const side = fits["carreta-lado"];
+    const back = (side.rear - side.wheel.x) / (side.rear - side.front);
+    fits[name] = { ...fit, wheel: { x: Math.round(x1 - back * (x1 - x0)), y: y1 } };
+    continue;
+  }
+  // the tyres: in the rig's rear fifth, the columns darkest over the bottom 2.2% of the image (below the rims) (a tyre is dark all the
+  // way down; between two, only the contact shadow is), grouped; the last group is the rear wheel
+  const band = Math.round(0.022 * H);
+  const dark = [];
+  for (let x = Math.ceil(x1 - 0.2 * (x1 - x0)); x <= x1; x++) {
+    let n = 0;
+    for (let yy = y1 - band; yy <= y1; yy++) {
+      const i = (yy * W + x) * 4;
+      if (solid(x, yy) && Math.max(data[i], data[i + 1], data[i + 2]) < 70) n++;
+    }
+    dark.push([x, n]);
+  }
+  const most = Math.max(...dark.map(([, n]) => n));
+  const groups = [];
+  for (const [x, n] of dark) {
+    if (n < 0.7 * most) continue;
+    const last = groups[groups.length - 1];
+    if (last && x - last[1] < 8) last[1] = x;
+    else groups.push([x, x]);
+  }
+  // (a mudflap is dark too, but narrow: the rear wheel is the last group at least half as wide as the widest)
+  const widest = Math.max(...groups.map(([g0, g1]) => g1 - g0));
+  const [a, b] = groups.filter(([g0, g1]) => g1 - g0 >= widest / 2).at(-1);
+  fits[name] = { ...fit, wheel: { x: Math.round((a + b) / 2), y: y1 } };
+}
+writeFileSync("src/content/truckViews.json", JSON.stringify(fits, null, 2) + "\n");
+console.log(fits);

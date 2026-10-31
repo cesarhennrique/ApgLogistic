@@ -1,3 +1,4 @@
+import truckViews from "@/content/truckViews.json";
 import { segment } from "./segment";
 
 // Scene 4, "Estrada" (spec §3, revision 2026-10-31b): one continuous scene, the truck always in frame while the
@@ -37,23 +38,50 @@ export const roadDistance = (t: number) => {
 };
 export const roadSpeed = (t: number) => Math.min(Math.max(t, 0) / RAMP, 1);
 
-// The four views of the truck (scripts/build-truck-views.mjs), each pointing left, measured on the cut-outs (px):
-// the front and rear of the whole rig, and the anchor row it sits on (the tyres' line side on; seen from above, the
-// middle of the footprint). Each is fitted to the side view by its length and its rear (viewFit), so the swaps
-// keep the truck's size and its back where they were.
+// The four views of the truck, each pointing left, as scripts/build-truck-views.mjs measured them on the cut-outs
+// (px): the rig's front (the cab's nose) and rear, its top and bottom, and the rear wheel's contact point.
+const VIEW = (name: keyof typeof truckViews) => ({ name, ...truckViews[name] });
 export const TRUCK_VIEWS = {
-  lado: { name: "carreta-lado", width: 1672, height: 941, front: 20, rear: 1640, anchor: 701 },
-  alto30: { name: "carreta-alto-30", width: 1915, height: 821, front: 77, rear: 1842, anchor: 600 },
-  alto60: { name: "carreta-alto-60", width: 1916, height: 821, front: 73, rear: 1852, anchor: 540 },
-  cima: { name: "carreta-cima", width: 1672, height: 941, front: 53, rear: 1575, anchor: 467 },
-} as const;
+  lado: VIEW("carreta-lado"),
+  alto30: VIEW("carreta-alto-30"),
+  alto60: VIEW("carreta-alto-60"),
+  cima: VIEW("carreta-cima"),
+};
 export type TruckView = (typeof TRUCK_VIEWS)[keyof typeof TRUCK_VIEWS];
 
-// A view's box in the side view's px: its scale (k) and its top-left corner.
+// A view's box in the side view's px (its scale k and its top-left corner), fitted on two points: the rear wheel's
+// contact and the cab's nose, so the swaps keep the truck's length and its rear wheels on the ground where they were.
 export function viewFit(v: TruckView) {
   const side = TRUCK_VIEWS.lado;
-  const k = (side.rear - side.front) / (v.rear - v.front);
-  return { k, left: side.rear - v.rear * k, top: side.anchor - v.anchor * k };
+  const k = (side.wheel.x - side.front) / (v.wheel.x - v.front);
+  return { k, left: side.wheel.x - v.wheel.x * k, top: side.wheel.y - v.wheel.y * k };
+}
+
+// The point the camera holds through B and the truck turns about in C (side view px): the middle of its footprint
+// seen from above.
+export function rigCentre() {
+  const top = TRUCK_VIEWS.cima;
+  const fit = viewFit(top);
+  return { x: fit.left + ((top.front + top.rear) / 2) * fit.k, y: fit.top + ((top.top + top.bottom) / 2) * fit.k };
+}
+
+// B: the camera's angle over the ground, 0° (side on) to 90° (straight above), easing in and out of the phase.
+export const thetaAt = (b: number) => 45 * (1 - Math.cos(Math.PI * Math.min(Math.max(b, 0), 1)));
+
+// The views' opacities at the angle θ: each view whole at its own angle (0°, 30°, 60°, 90°), the crossfades between
+// two neighbours centred halfway, each over 18° (a fifth of the phase), overlapping: the incoming view fades in
+// over the outgoing one, which only goes once the incoming is half in (never a see-through moment).
+const ANGLES = [0, 30, 60, 90];
+const FADE = 18;
+export function viewWeights(theta: number) {
+  const w = [1, 0, 0, 0];
+  for (let i = 1; i < 4; i++) {
+    const mid = (ANGLES[i - 1] + ANGLES[i]) / 2;
+    const t = segment(theta, mid - FADE / 2, mid + FADE / 2);
+    w[i] = t;
+    w[i - 1] *= 1 - segment(t, 0.5, 1);
+  }
+  return w;
 }
 
 const n = (v: number) => Math.round(v * 10) / 10;

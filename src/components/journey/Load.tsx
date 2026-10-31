@@ -22,22 +22,22 @@ const SLIDE_END = 100 / HEIGHT_VH;
 const SCRIPT = [SLIDE_END, SLIDE_END + 120 / HEIGHT_VH] as const;
 const BACKGROUND = "#fefefe";
 
-// The script (spec §3), over c: it opens on scene 2's last picture (the container on its spreader, just above the
-// truck; craneHandoff) and the camera eases to its own framing while the container sets down, slowing to it; at the
-// set-down the twist locks light up and the empty truck swaps for the loaded one (over about 120 ms of an ordinary
+// The script (spec §3), over c: it opens on scene 2's last picture (the container on its spreader, a hand's breadth
+// above the truck, still coming down; craneHandoff) and sets it down within the first steps (no dead scroll across
+// the hand-over), the camera easing to its own framing; at the set-down the twist locks light up and the empty truck swaps for the loaded one (over about 120 ms of an ordinary
 // scroll); the spreader lets go and rises away on its ropes; the locks fade, leaving the loaded truck as scene 4
 // opens on it.
-const LOWER = [0, 0.35] as const;
-const COTA_OUT = [0.36, 0.42] as const;
-const LOCKS_IN = [0.35, 0.4] as const;
-const SWAP = [0.38, 0.41] as const;
-const LIFT_OFF = [0.42, 0.62] as const;
-const LOCKS_OUT = [0.75, 0.9] as const;
+const LOWER = [0, 0.06] as const;
+const COTA_OUT = [0.07, 0.13] as const;
+const LOCKS_IN = [0.06, 0.11] as const;
+const SWAP = [0.09, 0.12] as const;
+const LIFT_OFF = [0.13, 0.6] as const;
+const LOCKS_OUT = [0.55, 0.95] as const;
 const lowerEase = gsap.parseEase("power2.out");
 // Phones: seated, the camera is close (the container ~140% of the screen's width, centred), then pulls back,
 // exponentially, to the whole truck (TRUCK_FRAME).
 const CLOSE_SHARE = 1.4;
-const RECEDE = [0.45, 0.75] as const;
+const RECEDE = [0.2, 0.6] as const;
 
 // The truck's framing: ~90vw wide, a little below the middle. Scene 4 opens on the same box.
 export const TRUCK_FRAME = "absolute left-1/2 top-[54%] aspect-[1672/941] w-[90vw] -translate-x-1/2 -translate-y-1/2";

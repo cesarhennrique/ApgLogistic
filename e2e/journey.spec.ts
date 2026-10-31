@@ -131,10 +131,11 @@ test("the Home's container codes run 01, 02, 03… in order, without repeats", a
   await page.goto("/");
   const codes = await page
     .locator("main")
-    // (the sections' codes: not the container code on scene 1's card, a note on the photo)
+    // (the sections' codes: not the container code on scene 1's card, a note on the photo, nor scene 4's chapters,
+    // which carry the scene's own code with their number, 01/05…)
     .evaluate((main) => {
       const copy = main.cloneNode(true) as HTMLElement;
-      for (const note of copy.querySelectorAll("[data-note]")) note.remove();
+      for (const note of copy.querySelectorAll("[data-note], [data-chapter]")) note.remove();
       return [...copy.textContent!.matchAll(/APGU 1996-(\d{2})/g)].map((m) => Number(m[1]));
     });
   expect(codes.length).toBeGreaterThanOrEqual(9);
@@ -244,8 +245,8 @@ test("scene 2 lowers the container to the truck while the camera zooms in", asyn
   expect(errors).toEqual([]);
 });
 
-// Scene 3 opens on scene 2's last picture: across the slide, the truck and the container do not move (the best
-// match between the two is no shift at all, within a device pixel).
+// Scene 3 opens on scene 2's last picture: as it pins, scene 2's frame at that same scroll (scene 3 hidden) and
+// scene 3's own match, the best shift between them none at all, within a device pixel.
 test("scene 3 takes over scene 2's close without a jump", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/");
@@ -258,7 +259,10 @@ test("scene 3 takes over scene 2's close without a jump", async ({ page }) => {
     await page.waitForTimeout(1500);
     return page.screenshot();
   };
-  const [before, pinned] = [await shot(1), await shot(0)];
+  const hide = await page.addStyleTag({ content: "#carga { visibility: hidden !important }" });
+  const before = await shot(0);
+  await hide.evaluate((el) => (el as Element).remove());
+  const pinned = await shot(0);
   const sharp = (await import("sharp")).default;
   const grey = (b: Buffer) => sharp(b).greyscale().raw().toBuffer({ resolveWithObject: true });
   const [a, c] = await Promise.all([grey(before), grey(pinned)]);
@@ -275,11 +279,42 @@ test("scene 3 takes over scene 2's close without a jump", async ({ page }) => {
   }
   expect(Math.abs(best.dx)).toBeLessThanOrEqual(1);
   expect(Math.abs(best.dy)).toBeLessThanOrEqual(1);
-  await page.screenshot({ path: `e2e/__screenshots__/journey/${test.info().project.name}-scene2to3-pinned.png` });
-  await shot(1);
-  await page.screenshot({ path: `e2e/__screenshots__/journey/${test.info().project.name}-scene2to3-before.png` });
-  await shot(0.5);
-  await page.screenshot({ path: `e2e/__screenshots__/journey/${test.info().project.name}-scene2to3-mid.png` });
+  // five points across the hand-over, for a human to look at: scene 3 a screen away, half in, pinned, 4vh and 8vh on
+  for (const k of [1, 0.5, 0, -0.04, -0.08]) {
+    await shot(k);
+    await page.screenshot({ path: `e2e/__screenshots__/journey/${test.info().project.name}-scene2to3-${k}.png` });
+  }
+  expect(errors).toEqual([]);
+});
+
+// No dead scroll at the hand-over: from the end of scene 2's script to the set-down early in scene 3, every 5vh the
+// container is lower (its dimension in metres, scene 2's then scene 3's, goes down), to 0.
+test("the container keeps coming down from scene 2 to its seat in scene 3", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await settle(page);
+  const [from, to] = await page.evaluate((script) => {
+    const crane = document.getElementById("porteiner")!;
+    const load = document.getElementById("carga")!;
+    const top = (el: HTMLElement) => el.getBoundingClientRect().top + window.scrollY;
+    // to scene 3's set-down: 0.06 of its 120vh script after it pins
+    return [top(crane) + script * (crane.offsetHeight - innerHeight), top(load) + 0.072 * innerHeight];
+  }, SCENE2_SCRIPT);
+  const vh = await page.evaluate(() => innerHeight);
+  const heights: number[] = [];
+  for (let y = from; y <= to + 1; y += 0.05 * vh) {
+    await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), y);
+    await page.waitForTimeout(250);
+    heights.push(
+      await page.evaluate(() => {
+        const pinned = document.getElementById("carga")!.getBoundingClientRect().top <= 0.5;
+        const label = document.querySelector(pinned ? "#carga [data-cota] span" : "#porteiner [data-drop-cota] span")!;
+        return Number(label.textContent!.replace(" m", "").replace(",", "."));
+      }),
+    );
+  }
+  for (let i = 1; i < heights.length; i++) expect(heights[i], `step ${i}: ${heights.join(" ")}`).toBeLessThan(heights[i - 1]);
+  expect(heights[heights.length - 1]).toBe(0);
   expect(errors).toEqual([]);
 });
 
@@ -297,9 +332,8 @@ test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) 
     await page.waitForTimeout(1500);
     return page.screenshot({ clip: (await truck.boundingBox())! });
   };
-  // seated (the set-down ends at 0.6 of its script, 0.327 of its scroll), not yet swapped (from 0.338); then swapped
-  // c 0.36 (seated, not yet swapped) and 0.415 (swapped, the spreader not yet lifting): p = c × 120/220
-  const [before, after] = [await shot((0.36 * 120) / 220), await shot((0.415 * 120) / 220)];
+  // c 0.075 (seated, not yet swapped) and 0.125 (swapped, the spreader not yet lifting): p = c × 120/220
+  const [before, after] = [await shot((0.075 * 120) / 220), await shot((0.125 * 120) / 220)];
   const sharp = (await import("sharp")).default;
   const [a, b] = await Promise.all([before, after].map((s) => sharp(s).raw().toBuffer({ resolveWithObject: true })));
   expect(b.info.width).toBe(a.info.width);
@@ -376,6 +410,53 @@ async function scrollToEstrada(page: Page, p: number) {
     window.scrollTo({ top: top + progress * scene.offsetHeight, behavior: "instant" });
   }, p);
 }
+
+// Scene 4's B, the camera rising: the truck alone on a white page (everything else hidden), its pixels' box at 40
+// steps of the phase. It only shrinks, smoothly (no step's shrink more than 1.5% of its width, +4 px, off its
+// neighbours' average: a step in the curve), and its centre holds (never 12 px in a step): no jump of size or place
+// at the views' crossfades.
+test("scene 4's camera rises without a jump in the truck's size or place", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await settle(page);
+  const isPhone = (await page.evaluate(() => innerWidth)) < 768;
+  const k = isPhone ? 0.75 : 1;
+  const total = isPhone ? 902.5 : 1170;
+  const [b0, b1] = [(100 + 300 * k) / total, (100 + 450 * k) / total];
+  await scrollToEstrada(page, b0 + 0.01);
+  await page.waitForTimeout(2500);
+  await page.addStyleTag({
+    content: "#estrada > div > div > *:not([class*='aspect-[1672/941]']), header, nextjs-portal { visibility: hidden !important }",
+  });
+  const sharp = (await import("sharp")).default;
+  const boxes: { w: number; cx: number; cy: number }[] = [];
+  for (let i = 0; i <= 40; i++) {
+    await scrollToEstrada(page, b0 + ((b1 - b0) * i) / 40);
+    await page.waitForTimeout(250);
+    const { data, info } = await sharp(await page.screenshot()).raw().toBuffer({ resolveWithObject: true });
+    let [x0, x1, y0, y1] = [Infinity, -1, Infinity, -1];
+    for (let y = 0; y < info.height; y++) {
+      for (let x = 0; x < info.width; x++) {
+        const j = (y * info.width + x) * info.channels;
+        if (Math.min(data[j], data[j + 1], data[j + 2]) >= 150) continue;
+        [x0, x1, y0, y1] = [Math.min(x0, x), Math.max(x1, x), Math.min(y0, y), Math.max(y1, y)];
+      }
+    }
+    boxes.push({ w: x1 - x0, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 });
+  }
+  expect(boxes[40].w).toBeLessThan(boxes[0].w / 2);
+  for (let i = 1; i < boxes.length; i++) {
+    const [a, b] = [boxes[i - 1], boxes[i]];
+    expect(b.w - a.w, `step ${i}`).toBeLessThanOrEqual(2);
+    if (i < boxes.length - 1) {
+      const around = (boxes[i - 1].w - boxes[i + 1].w) / 2;
+      expect(Math.abs(a.w - b.w - around), `step ${i}`).toBeLessThan(0.015 * a.w + 4);
+    }
+    expect(Math.hypot(b.cx - a.cx, b.cy - a.cy), `step ${i}`).toBeLessThan(12);
+  }
+  expect(errors).toEqual([]);
+});
 
 // Scene 4 in one: the side view first, the view from above by the end of B, every chapter of the history shown as
 // the truck passes it along the track, the scoreboard full at the dock.
