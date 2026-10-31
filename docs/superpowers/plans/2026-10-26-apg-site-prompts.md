@@ -1805,7 +1805,7 @@ frontend-design:frontend-design.
      medindo os bboxes; não a olho).
    - A carreta continua andando para a esquerda (o asfalto passa) e a
      sombra acompanha o ângulo.
-   Antes do código, grave um vídeo só da fase B em câmera lenta e
+   Depois de implementar, grave um vídeo só da fase B em câmera lenta e
    confira quadro a quadro que não há salto de tamanho nem de posição.
 
 4. Fase A: no print, a faixa navy sob a carreta aparece vazia e a
