@@ -20,7 +20,15 @@ export const viewOf = (stage: HTMLElement): View => ({
   dpr: window.devicePixelRatio || 1,
 });
 
-type Note = { group: HTMLElement; leader: HTMLElement | null; label: HTMLElement; bars: HTMLElement[] };
+// A note's parts: its red bars and the dark halo bars under them, its leader (white over a dark halo), its label.
+type Note = {
+  group: HTMLElement;
+  leader: HTMLElement | null;
+  leaderHalo: HTMLElement | null;
+  label: HTMLElement;
+  bars: HTMLElement[];
+  halos: HTMLElement[];
+};
 
 // One copy of scene 1's picture: the photo, its original for the close, and the notes drawn over it. The hero's
 // last screen shows one, scene 1 another; scene 1 draws both with the same camera, so while it slides in over the
@@ -55,14 +63,16 @@ export function loadSharp() {
 }
 
 // A 1 px box scaled to a bar, a leader or an edge: only its transform changes, so its stroke never thickens.
-const Bar = ({ className = "bg-red-500" }: { className?: string }) => (
-  <i data-bar="" className={`absolute top-0 left-0 size-px origin-top-left ${className}`} />
+const Bar = () => <i data-bar="" className="absolute top-0 left-0 size-px origin-top-left bg-red-500" />;
+// The dark halo under a red bar or a leader: it lifts them off the red and navy paint.
+const Halo = ({ leader = false }: { leader?: boolean }) => (
+  <i data-halo={leader ? "leader" : ""} className="absolute top-0 left-0 size-px origin-top-left bg-navy-900/60" />
 );
 const Label = ({ children }: { children: string }) => (
   <span
     data-label=""
-    // navy at 70% under white mono text: AA over any part of the photo
-    className="absolute top-0 left-0 bg-navy-900/70 px-2 py-1 font-mono text-[11px] leading-none tracking-[0.14em] whitespace-nowrap text-sand-50"
+    // navy at 80% under white mono text: AA over any part of the photo
+    className="absolute top-0 left-0 bg-navy-900/80 px-2 py-1 font-mono text-[11px] leading-none tracking-[0.12em] whitespace-nowrap text-sand-50 md:text-xs"
   >
     {children}
   </span>
@@ -71,8 +81,10 @@ const Label = ({ children }: { children: string }) => (
 const note = (group: Element): Note => ({
   group: group as HTMLElement,
   leader: group.querySelector<HTMLElement>("[data-leader]"),
+  leaderHalo: group.querySelector<HTMLElement>("[data-halo=leader]"),
   label: group.querySelector<HTMLElement>("[data-label]")!,
-  bars: [...group.querySelectorAll<HTMLElement>("[data-bar]:not([data-leader])")],
+  bars: [...group.querySelectorAll<HTMLElement>("[data-bar]")],
+  halos: [...group.querySelectorAll<HTMLElement>("[data-halo='']")],
 });
 
 export function ArrivalFrame({ alt }: { alt: string }) {
@@ -127,22 +139,28 @@ export function ArrivalFrame({ alt }: { alt: string }) {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         {APG_CONTAINERS.map((c) => (
           <div key={`${c.x},${c.y}`} data-outline="" className="absolute inset-0 opacity-0">
-            <Bar />
-            <Bar />
-            <Bar />
-            <Bar />
+            {Array.from({ length: 4 }, (_, i) => (
+              <Halo key={i} />
+            ))}
+            {Array.from({ length: 4 }, (_, i) => (
+              <Bar key={i} />
+            ))}
           </div>
         ))}
         {(["heading", "containers"] as const).map((n) => (
           <div key={n} data-note={n} className="absolute inset-0 opacity-0">
-            <i data-bar="" data-leader="" className="absolute top-0 left-0 size-px origin-top-left bg-sand-50" />
+            <Halo leader />
+            <i data-leader="" className="absolute top-0 left-0 size-px origin-top-left bg-sand-50/85" />
             <Label>{notes[n]}</Label>
           </div>
         ))}
         <div data-note="target" className="absolute inset-0 opacity-0">
-          {Array.from({ length: 8 }, (_, i) => (
-            <Bar key={i} />
-          ))}
+          {/* The sight pulses slowly once the camera holds the close (data-held, see globals.css). */}
+          <div className="mira absolute inset-0">
+            {Array.from({ length: 8 }, (_, i) => (
+              <Bar key={i} />
+            ))}
+          </div>
           <Label>{notes.target}</Label>
         </div>
       </div>

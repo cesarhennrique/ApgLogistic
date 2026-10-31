@@ -18,6 +18,8 @@ export function Hero() {
       <HeroStage>
         {/* Centred between the header and the strip below: the top padding is the header's height plus the bottom one. */}
         <div className="site-container my-auto pt-22 pb-6 md:pt-26">
+          {/* Phones: the map's slot above the copy (CameraRig fits it there), so the two centre together. */}
+          <div id="hero-map-slot" aria-hidden="true" className="h-[min(56vw,26svh)] md:hidden" />
           {/* The map keeps out of this box (CameraRig fits it beside or above). */}
           <div id="hero-copy" className="w-fit max-w-full">
             <div data-intro="code">

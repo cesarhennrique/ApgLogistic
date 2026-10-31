@@ -277,9 +277,10 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
     coreMaterial.opacity = coreIn * routeFade;
 
     const dive = 1 - MathUtils.smoothstep(p, ...DIVE_FADE);
+    // Never closer than 16 px to the screen's right edge (a narrow phone).
     const place = (el: HTMLElement, at: Vector3, dx: number, shift: string) => {
       screen.copy(at).applyMatrix4(map.current!.matrixWorld).project(camera);
-      const sx = ((screen.x + 1) / 2) * size.width;
+      const sx = Math.min(((screen.x + 1) / 2) * size.width, size.width - 16 - el.offsetWidth - dx);
       const sy = ((1 - screen.y) / 2) * size.height;
       el.style.transform = `translate3d(${(sx + dx).toFixed(1)}px, ${sy.toFixed(1)}px, 0) ${shift}`;
     };

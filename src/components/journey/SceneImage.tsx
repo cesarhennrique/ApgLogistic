@@ -10,6 +10,8 @@ type Props = {
   className?: string;
   // Above the fold or first in its scene: fetch eagerly.
   eager?: boolean;
+  // Only its own width: for layers that must resample alike (a container over the truck it was cut from).
+  full?: boolean;
 };
 
 const srcSet = (name: string, widths: number[], ext: string) =>
@@ -17,8 +19,9 @@ const srcSet = (name: string, widths: number[], ext: string) =>
 
 // A journey image (built by `npm run images`): AVIF, then WebP, at 800, 1200 and its own width, with its intrinsic
 // size on the <img> so the layout never shifts.
-export function SceneImage({ name, alt, sizes, className, eager = false }: Props) {
-  const { width, height, widths } = images[name];
+export function SceneImage({ name, alt, sizes, className, eager = false, full = false }: Props) {
+  const { width, height } = images[name];
+  const widths = full ? [width] : images[name].widths;
   return (
     <picture>
       <source type="image/avif" srcSet={srcSet(name, widths, "avif")} sizes={sizes} />

@@ -117,3 +117,21 @@ body {
   background-color: var(--color-navy-900);
   color: var(--color-sand-50);
 }
+
+/* Scene 1's sight on the client's container: a slow pulse once the camera holds the close (data-held, set by
+   OceanArrival); none with reduced motion. */
+@keyframes mira-pulse {
+  50% {
+    opacity: 0.7;
+  }
+}
+
+[data-held] > .mira {
+  animation: mira-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-held] > .mira {
+    animation: none;
+  }
+}

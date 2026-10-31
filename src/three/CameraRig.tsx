@@ -13,10 +13,13 @@ const ORBIT = MathUtils.degToRad(6);
 const ORBIT_PERIOD = 20;
 const ORBIT_FADE = 0.3;
 const Y = new Vector3(0, 1, 0);
+// "SUAPE · PE" sits right of Suape, on the coast: room for it on a portrait screen.
+const SUAPE_LABEL = 80;
 
 // The opening shot is refitted to the viewport (heroFrame): the map in the screen left free by the copy
-// (#hero-copy) and the bars, beside it on landscape screens and above it on portrait ones. The refit fades out
-// over the dive.
+// (#hero-copy) and the bars, beside it on landscape screens; on portrait ones in the slot kept for it above the copy
+// (#hero-map-slot, so map and copy centre together), short of the room Suape's label needs at the right. The refit
+// fades out over the dive.
 const HERO_START = HERO_KEYS.start;
 const START_POSITION = new Vector3(...HERO_START.position);
 const START_TARGET = new Vector3(...HERO_START.target);
@@ -33,6 +36,10 @@ function freeRegion(width: number, height: number): Rect {
   // The hero sits at the top of the page: its layout box, as at scroll 0.
   const top = copy.top + window.scrollY;
   if (width >= height) return { left: copy.right + 48, right: width - margin, top: header + 16, bottom: height - strip - 16 };
+  const slot = document.getElementById("hero-map-slot")?.getBoundingClientRect();
+  if (slot && slot.height > 0) {
+    return { left: margin, right: width - margin - SUAPE_LABEL, top: slot.top + window.scrollY, bottom: slot.bottom + window.scrollY };
+  }
   return { left: margin, right: width - margin, top: header + 8, bottom: top - 24 };
 }
 

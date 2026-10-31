@@ -7,7 +7,7 @@ import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
 import { ArrivalFrame, type Frame, frames, loadSharp, setRedraw, viewOf } from "./ArrivalFrame";
-import { APG_CONTAINERS, BOW, type Rect, TARGET, type View, cameraTransform, sampleOceanCamera, toScreen } from "./oceanCamera";
+import { APG_CONTAINERS, BOW, type Rect, TARGET, type View, ZOOM, cameraTransform, sampleOceanCamera, toScreen } from "./oceanCamera";
 import { Scene, segment } from "./Scene";
 
 const scene = site.journey.find((s) => s.id === "chegada")!;
@@ -34,12 +34,13 @@ const REDUCED_Q = 0.5;
 // Outlined in this order: first the one the note points at (right of the deck's centre line, so the note sits on
 // the water beside the hull), then the target, then outwards.
 const ORDER = [2, 3, 1, 4, 0, 5];
-const LINE = 1.5;
+const LINE = 2;
+// The dark halo around red bars and leaders.
+const HALO = 2;
 // Outlines sit this far outside each container: on the dark gaps between them, not on the red and navy paint.
 const OUTSET = 4;
-// The target's corner marks: heavier than the outlines, this far outside its box, a fifth of its width long
-// (within bounds).
-const MARK = { line: 2.5, gap: 10, arm: [14, 40] as const };
+// The target's corner marks: heavier than the outlines, this far outside its box, each arm 28% of its shorter side.
+const MARK = { line: 3, gap: 10, arm: 0.28 };
 
 // Where the counter starts: a scroll position inside the scene (the number never scrolls itself, it sits on the
 // sticky stage).
@@ -52,9 +53,22 @@ const counterStart = () => {
 const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
 const place = (el: HTMLElement, x: number, y: number, w = 1, h = 1) =>
   (el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${w.toFixed(2)}, ${h.toFixed(2)})`);
-// A 1 px line from a to b: rotated and stretched.
-const leader = (el: HTMLElement, ax: number, ay: number, bx: number, by: number) =>
-  (el.style.transform = `translate3d(${ax.toFixed(1)}px, ${ay.toFixed(1)}px, 0) rotate(${Math.atan2(by - ay, bx - ax).toFixed(4)}rad) scale(${Math.hypot(bx - ax, by - ay).toFixed(1)}, 1)`);
+// A line t px thick from a to b, centred on it: a 1 px box rotated and stretched.
+const leader = (el: HTMLElement, ax: number, ay: number, bx: number, by: number, t = 1) =>
+  (el.style.transform = `translate3d(${ax.toFixed(1)}px, ${ay.toFixed(1)}px, 0) rotate(${Math.atan2(by - ay, bx - ax).toFixed(4)}rad) translate3d(0, ${(-t / 2).toFixed(1)}px, 0) scale(${Math.hypot(bx - ax, by - ay).toFixed(1)}, ${t})`);
+// A leader, white over its halo.
+const guide = (n: { leader: HTMLElement | null; leaderHalo: HTMLElement | null }, ax: number, ay: number, bx: number, by: number) => {
+  leader(n.leaderHalo!, ax, ay, bx, by, 1 + 2 * HALO);
+  leader(n.leader!, ax, ay, bx, by);
+};
+// A rectangle's four edges, t px thick, inside it.
+const edges = (bars: HTMLElement[], r: { x: number; y: number; w: number; h: number }, t: number) => {
+  const [top, bottom, left, right] = bars;
+  place(top, r.x, r.y, r.w, t);
+  place(bottom, r.x, r.y + r.h - t, r.w, t);
+  place(left, r.x, r.y, t, r.h);
+  place(right, r.x + r.w - t, r.y, t, r.h);
+};
 
 function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const cam = sampleOceanCamera(q, view);
@@ -74,7 +88,7 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const hx = Math.min(Math.max(bow.x + (md ? 96 : 40), 16), view.width - hw - 16);
   const hy = Math.max(bow.y + 28, header + 8);
   place(h.label, hx, hy);
-  leader(h.leader!, bow.x, bow.y, Math.min(Math.max(bow.x, hx), hx + hw), hy);
+  guide(h, bow.x, bow.y, Math.min(Math.max(bow.x, hx), hx + hw), hy);
   h.group.style.opacity = String(reduced ? 0 : clamp01(bow.y / 40));
 
   // b. The outlines, one at a time; all leave for the close.
@@ -83,11 +97,9 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
     const o = frame.outlines[i];
     const b = box(APG_CONTAINERS[i]);
     const r = { x: b.x - OUTSET, y: b.y - OUTSET, w: b.w + 2 * OUTSET, h: b.h + 2 * OUTSET };
-    const [top, bottom, left, right] = o.bars;
-    place(top, r.x, r.y, r.w, LINE);
-    place(bottom, r.x, r.y + r.h - LINE, r.w, LINE);
-    place(left, r.x, r.y, LINE, r.h);
-    place(right, r.x + r.w - LINE, r.y, LINE, r.h);
+    edges(o.bars, r, LINE);
+    // the halo: HALO px outside the red, and under it
+    edges(o.halos, { x: r.x - HALO, y: r.y - HALO, w: r.w + 2 * HALO, h: r.h + 2 * HALO }, LINE + HALO);
     const start = OUTLINE_IN + n * OUTLINE_STAGGER;
     o.group.style.opacity = String((reduced ? 1 : segment(q, start, start + OUTLINE_FADE)) * (1 - out));
   });
@@ -99,13 +111,13 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const cx = Math.min(first.x + first.w + (md ? 72 : 24), view.width - cw - 16);
   const cy = first.y + first.h / 2 - ch / 2;
   place(c.label, cx, cy);
-  leader(c.leader!, first.x + first.w, first.y + first.h / 2, cx, cy + ch / 2);
+  guide(c, first.x + first.w + OUTSET + HALO, first.y + first.h / 2, cx, cy + ch / 2);
   c.group.style.opacity = String((reduced ? 1 : segment(q, OUTLINE_IN, OUTLINE_IN + OUTLINE_FADE)) * (1 - out));
 
   // c. The client's container: four L-shaped corner marks, like a sight, and its label.
   const t = box(TARGET);
   const { gap, line: L } = MARK;
-  const arm = Math.min(Math.max(t.w / 5, MARK.arm[0]), MARK.arm[1]);
+  const arm = MARK.arm * Math.min(t.w, t.h);
   const [x0, y0, x1, y1] = [t.x - gap, t.y - gap, t.x + t.w + gap, t.y + t.h + gap];
   const m = frame.target.bars;
   place(m[0], x0, y0, arm, L);
@@ -119,6 +131,9 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const tw = frame.target.label.offsetWidth;
   place(frame.target.label, Math.min(x1 + 12, view.width - tw - 16), y0);
   frame.target.group.style.opacity = String(reduced ? 0 : segment(q, ...TARGET_IN));
+  // held at the close: the sight pulses (CSS, off with reduced motion)
+  const held = !reduced && q >= ZOOM[1];
+  if (held !== (frame.target.group.dataset.held === "")) frame.target.group.toggleAttribute("data-held", held);
 }
 
 // Scene 1 (spec §3): one still photo of the ship at sea; only the camera moves, coming down to find the APG

@@ -1,4 +1,6 @@
 import { Loader } from "@/components/intro/Loader";
+import { CraneLift } from "@/components/journey/CraneLift";
+import { Load } from "@/components/journey/Load";
 import { OceanArrival } from "@/components/journey/OceanArrival";
 import { ScenePlaceholder } from "@/components/journey/ScenePlaceholder";
 import { site } from "@/content/site";
@@ -14,8 +16,8 @@ export function Journey() {
       <Loader />
       <Hero />
       <OceanArrival />
-      <ScenePlaceholder scene={scene("porteiner")} heightVh={260} background="#fefefe" headerTheme="light" />
-      <ScenePlaceholder scene={scene("carga")} heightVh={220} background="#fefefe" headerTheme="light" />
+      <CraneLift />
+      <Load />
       <ScenePlaceholder scene={scene("estrada")} heightVh={300} background="#fefefe" headerTheme="light" />
       <ScenePlaceholder scene={scene("terminal")} heightVh={300} background="#f3efe7" headerTheme="light" />
       <ScenePlaceholder scene={scene("distribuicao")} heightVh={300} background="#0a1338" headerTheme="dark" />

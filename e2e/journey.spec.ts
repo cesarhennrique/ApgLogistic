@@ -132,8 +132,8 @@ test("the header is light over the hero and scene 1, navy over the light scenes,
   await expect(header).toHaveAttribute("data-solid", "true", { timeout: 15_000 });
 });
 
-// The hero's copy sits in the middle of the screen left between the header and the strip, at three sizes; the frames
-// are saved for a human to look at.
+// The hero's copy (on phones with the map's slot above it) sits in the middle of the screen left between the header
+// and the strip, at three sizes; the frames are saved for a human to look at.
 test("the hero's copy is centred below the header", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "the sizes are set here");
   for (const [width, height] of [
@@ -146,9 +146,11 @@ test("the hero's copy is centred below the header", async ({ page }, testInfo) =
     await settle(page);
     const { above, below } = await page.evaluate(() => {
       const copy = document.getElementById("hero-copy")!.getBoundingClientRect();
+      const slot = document.getElementById("hero-map-slot")!.getBoundingClientRect();
+      const top = slot.height > 0 ? slot.top : copy.top;
       const header = document.querySelector("header")!.getBoundingClientRect();
       const strip = document.querySelector("#hero [data-intro=strip]")?.getBoundingClientRect();
-      return { above: copy.top - header.bottom, below: (strip?.top ?? window.innerHeight) - copy.bottom };
+      return { above: top - header.bottom, below: (strip?.top ?? window.innerHeight) - copy.bottom };
     });
     expect(Math.abs(above - below), `${width}×${height}: ${above} above, ${below} below`).toBeLessThan(24);
     await page.screenshot({ path: `e2e/__screenshots__/hero-${width}x${height}.png` });
@@ -157,7 +159,7 @@ test("the hero's copy is centred below the header", async ({ page }, testInfo) =
 
 // Art-direction review: five points of scene 1, saved for a human to look at (not diffed).
 test.describe("scene 1 frames", () => {
-  for (const q of [0, 0.25, 0.5, 0.75, 1]) {
+  for (const q of [0, 0.05, 0.25, 0.5, 0.75, 1]) {
     test(`chegada at ${q}`, async ({ page }, testInfo) => {
       const errors = collectErrors(page);
       await page.goto("/");
@@ -168,5 +170,77 @@ test.describe("scene 1 frames", () => {
       await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-chegada-${q}.png` });
       expect(errors).toEqual([]);
     });
+  }
+});
+
+// Scenes 2 and 3 (spec §3): the progress of a pinned scene, from its top at the viewport's top to its end.
+async function scrollToScene(page: Page, id: string, p: number) {
+  await page.evaluate(
+    ([id, progress]) => {
+      const scene = document.getElementById(id)!;
+      const top = scene.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: top + progress * (scene.offsetHeight - window.innerHeight), behavior: "instant" });
+    },
+    [id, p] as const,
+  );
+}
+
+test("scene 2 lifts the container to the trolley: it ends higher than it starts", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await settle(page);
+  const loadTop = () => page.locator("#porteiner [data-load]").first().evaluate((el) => el.getBoundingClientRect().top);
+  await scrollToScene(page, "porteiner", 0.1);
+  await page.waitForTimeout(300);
+  const low = await loadTop();
+  await scrollToScene(page, "porteiner", 1);
+  await page.waitForTimeout(300);
+  expect(await loadTop()).toBeLessThan(low - 50);
+  await expect(page.getByText("O braço rodoviário da cabotagem no Brasil")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+// The set-down's swap from the empty truck and its container to the loaded truck: the same pixels before and after
+// (the ropes and the twist-lock dots hidden, they change on purpose).
+test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await settle(page);
+  await page.addStyleTag({ content: "#carga i { visibility: hidden !important }" });
+  const truck = page.locator("#carga [aria-hidden=true]").first();
+  const shot = async (p: number) => {
+    await scrollToScene(page, "carga", p);
+    // the scroll settles and the images finish their raster
+    await page.waitForTimeout(1500);
+    return page.screenshot({ clip: (await truck.boundingBox())! });
+  };
+  // seated (the set-down ends at 0.6), not yet swapped (from 0.62); then swapped
+  const [before, after] = [await shot(0.615), await shot(0.65)];
+  const sharp = (await import("sharp")).default;
+  const [a, b] = await Promise.all([before, after].map((s) => sharp(s).raw().toBuffer({ resolveWithObject: true })));
+  expect(b.info.width).toBe(a.info.width);
+  let off = 0;
+  for (let i = 0; i < a.data.length; i += a.info.channels) {
+    const d = Math.max(...[0, 1, 2].map((c) => Math.abs(a.data[i + c] - b.data[i + c])));
+    if (d > 8) off++;
+  }
+  expect(off).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+// Art-direction review: five points of scenes 2 and 3, saved for a human to look at (not diffed).
+test.describe("scenes 2 and 3 frames", () => {
+  for (const id of ["porteiner", "carga"]) {
+    for (const p of [0, 0.3, 0.6, 0.75, 1]) {
+      test(`${id} at ${p}`, async ({ page }, testInfo) => {
+        const errors = collectErrors(page);
+        await page.goto("/");
+        await settle(page);
+        await scrollToScene(page, id, p);
+        await page.waitForTimeout(1000);
+        await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-${id}-${p}.png` });
+        expect(errors).toEqual([]);
+      });
+    }
   }
 });

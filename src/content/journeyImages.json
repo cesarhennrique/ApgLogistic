@@ -34,6 +34,15 @@
       1672
     ]
   },
+  "container-apg-lado": {
+    "width": 1266,
+    "height": 293,
+    "widths": [
+      800,
+      1200,
+      1266
+    ]
+  },
   "navio-mar": {
     "width": 6688,
     "height": 3764,
@@ -44,12 +53,27 @@
       6688
     ]
   },
+  "porteiner-base": {
+    "width": 1122,
+    "height": 1402,
+    "widths": [
+      800,
+      1122
+    ]
+  },
   "porteiner-lado": {
     "width": 1122,
     "height": 1402,
     "widths": [
       800,
       1122
+    ]
+  },
+  "porteiner-spreader": {
+    "width": 194,
+    "height": 84,
+    "widths": [
+      194
     ]
   }
 }
