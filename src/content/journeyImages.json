@@ -1,10 +1,29 @@
 {
-  "carreta-cima": {
-    "width": 941,
-    "height": 1672,
+  "carreta-alto-30": {
+    "width": 1915,
+    "height": 821,
     "widths": [
       800,
-      941
+      1200,
+      1915
+    ]
+  },
+  "carreta-alto-60": {
+    "width": 1916,
+    "height": 821,
+    "widths": [
+      800,
+      1200,
+      1916
+    ]
+  },
+  "carreta-cima": {
+    "width": 1672,
+    "height": 941,
+    "widths": [
+      800,
+      1200,
+      1672
     ]
   },
   "carreta-lado": {

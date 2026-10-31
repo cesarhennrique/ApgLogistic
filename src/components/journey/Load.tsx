@@ -11,6 +11,7 @@ import { CONTAINER_BOX, ROPES, ROPE_WIDTH, SPREADER_BOX, TRUCK, TWIST_LOCKS } fr
 import { CONTAINER, HANDOFF_GAP, PX_PER_M, TRUCK_SCALE, craneHandoff } from "./craneCamera";
 import { Scene, segment } from "./Scene";
 import { SceneImage } from "./SceneImage";
+import { TruckShadow } from "./TruckShadow";
 
 const scene = site.journey.find((s) => s.id === "carga")!;
 // 320vh: its first 100vh slide it in over scene 2's last screen (the same truck, the same container: this stage
@@ -56,6 +57,8 @@ const SPREADER_IN_TRUCK = {
 };
 const ROPES_IN_TRUCK = ROPES.map((r) => CONTAINER_BOX.x + toTruck(r.x - CONTAINER.x));
 const GAP = toTruck(HANDOFF_GAP);
+const COTA_X = `calc(${pctX(CONTAINER_BOX.x + CONTAINER_BOX.w)} + 14px)`;
+const COTA_X_PHONE = pctX(CONTAINER_BOX.x + CONTAINER_BOX.w / 2);
 const metres = (truckPx: number) => `${((truckPx * TRUCK_SCALE) / PX_PER_M).toFixed(1).replace(".", ",")} m`;
 
 type Framing = { z: number; x: number; y: number };
@@ -122,6 +125,8 @@ export function Load() {
     lift.current!.style.opacity = String(reduced ? 0 : 1 - off);
     // The container's height above its seat (scene 2's dimension, down to 0).
     const [line, mark, label] = cota.current!.children as HTMLCollectionOf<HTMLElement>;
+    // Right of the container; on phones (the container wider than the screen) inside it, at its middle.
+    cota.current!.style.left = W < 768 ? COTA_X_PHONE : COTA_X;
     cota.current!.style.transform = `translate3d(0, ${dy.toFixed(1)}px, 0)`;
     line.style.transform = `scaleY(${(-dy).toFixed(1)})`;
     mark.style.transform = `translate3d(0, ${(-dy).toFixed(1)}px, 0)`;
@@ -172,6 +177,7 @@ export function Load() {
       <div ref={stage} className="absolute inset-0 overflow-hidden">
         <div aria-hidden="true" className="absolute inset-0 origin-top-left">
           <div ref={truck} className={TRUCK_FRAME}>
+            <TruckShadow />
             <SceneImage name="carreta-lado-vazia" alt="" sizes="(min-width: 768px) 90vw, 250vw" full className="absolute inset-0 h-full w-full" />
             {/* The container: the loaded truck itself, clipped to the container's box (container-apg-lado is that
                 same cut). Drawn in the truck's own box, so its pixels land exactly where the loaded truck's do: a
@@ -202,11 +208,11 @@ export function Load() {
               ref={cota}
               data-cota=""
               className="absolute"
-              style={{ left: `calc(${pctX(CONTAINER_BOX.x + CONTAINER_BOX.w)} + 14px)`, top: pctY(CONTAINER_BOX.y + CONTAINER_BOX.h) }}
+              style={{ left: COTA_X, top: pctY(CONTAINER_BOX.y + CONTAINER_BOX.h) }}
             >
               <i className="absolute top-0 left-0 h-px w-[1.5px] origin-top bg-red-500" />
               <i className="absolute top-0 -left-1.5 h-[1.5px] w-[13px] bg-red-500" />
-              <span className="absolute top-0 left-2.5 bg-[#fefefe] px-1.5 font-mono text-xs text-red-500 tabular-nums" />
+              <span className="absolute top-0 left-2.5 bg-[#fefefe] px-1.5 font-mono text-xs whitespace-nowrap text-red-500 tabular-nums" />
             </div>
             <div ref={locks} className="absolute inset-0 opacity-0">
               {TWIST_LOCKS.map((l) => (

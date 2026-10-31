@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 import { ScrollTrigger } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 
@@ -10,6 +10,8 @@ type Props = {
   id: string;
   // Scroll length of the scene, in vh (the stage stays pinned for heightVh − 100).
   heightVh: number;
+  // Its scroll length on phones, when different (below md).
+  phoneHeightVh?: number;
   background: string;
   // The header's ink over this scene: "dark" background → light header, "light" → navy header.
   headerTheme: "dark" | "light";
@@ -25,7 +27,7 @@ type Props = {
 
 // One journey scene (spec §6, "Cenas da jornada"): a section with its own scroll length and a 100svh sticky stage,
 // its progress from one scrubbed ScrollTrigger.
-export function Scene({ id, heightVh, background, headerTheme, onProgress, from = "pin", className = "", children }: Props) {
+export function Scene({ id, heightVh, phoneHeightVh, background, headerTheme, onProgress, from = "pin", className = "", children }: Props) {
   const section = useRef<HTMLElement>(null);
   const reduced = useReducedMotion();
   // The latest callback, so the trigger isn't rebuilt on every render.
@@ -55,8 +57,13 @@ export function Scene({ id, heightVh, background, headerTheme, onProgress, from 
       // Over the scene before it (z-10, in document order). A pinned scene bleeds 1 px of its background upwards:
       // where two scenes meet on a fractional pixel, the previous one's edge never shows as a line across the top (a
       // sliding scene must not: its picture continues the one under it).
-      className={`relative z-10 ${className}`}
-      style={{ height: `${heightVh}vh`, background, boxShadow: from === "pin" ? `0 -1px 0 ${background}` : undefined }}
+      className={`scene-height relative z-10 ${className}`}
+      style={{
+        "--scene-h": `${heightVh}vh`,
+        "--scene-h-phone": phoneHeightVh === undefined ? undefined : `${phoneHeightVh}vh`,
+        background,
+        boxShadow: from === "pin" ? `0 -1px 0 ${background}` : undefined,
+      } as CSSProperties}
     >
       <div className="sticky top-0 h-svh overflow-hidden">{children}</div>
     </section>

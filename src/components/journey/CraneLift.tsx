@@ -13,6 +13,7 @@ import { guide, place } from "./marks";
 import { type Camera, cameraTransform } from "./oceanCamera";
 import { Scene, segment } from "./Scene";
 import { SceneImage } from "./SceneImage";
+import { TruckShadow } from "./TruckShadow";
 
 const scene = site.journey.find((s) => s.id === "porteiner")!;
 const { crane: copyText } = site.journeyScene;
@@ -40,6 +41,11 @@ const DROP_COTA_IN = [0.08, 0.14] as const;
 const TITLE_IN = [0.42, 0.55] as const;
 const COUNT = [0.5, 0.65] as const;
 const COPY_OUT = [0.8, 0.86] as const;
+// Depth of field, over the zoom's progress: from 60% of it the crane crossfades to an out-of-focus copy of itself
+// (8 px of blur on screen at the end) and the set (crane, quay, ruler, ship, word) fades to 25%, leaving the truck,
+// the container and the spreader sharp.
+const DOF = [0.6, 0.9] as const;
+const DOF_BLUR = 8;
 // The crane, the quay, the ship and the word leave the close to the truck and the container (scene 3's picture).
 const SET_OUT = [0.9, 1] as const;
 // Reduced motion: halfway down, everything shown.
@@ -56,6 +62,10 @@ const count = new Intl.NumberFormat("pt-BR");
 
 const base = (w: number, ext: string) => `/images/journey/porteiner-base-${w}.${ext}`;
 const SHIP_STROKE = { vectorEffect: "none", strokeWidth: 8 } as const;
+// The ship (crane px): its deck, its bow (100 px short of the quay wall) and the waterline, 2 m under the quay.
+const SHIP_DECK = 4700;
+const SHIP_BOW = QUAY_X - 100;
+const WATERLINE = GROUND.y + 2 * PX_PER_M;
 
 type Note = { group: HTMLElement; leader: HTMLElement; leaderHalo: HTMLElement; label: HTMLElement };
 const noteOf = (el: Element): Note => ({
@@ -84,6 +94,7 @@ export function CraneLift() {
     fade: HTMLElement[];
     notes: Record<keyof typeof CALLOUTS, Note>;
     ground: HTMLElement;
+    blurred: HTMLElement;
     ticks: HTMLElement[];
     tickLabels: HTMLElement[];
     craneCota: HTMLElement[];
@@ -106,6 +117,7 @@ export function CraneLift() {
         container: noteOf(m.querySelector("[data-callout=container]")!),
       },
       ground: m.querySelector<HTMLElement>("[data-ground]")!,
+      blurred: w.querySelector<HTMLElement>("[data-blurred]")!,
       ticks: [...m.querySelectorAll<HTMLElement>("[data-tick]")],
       tickLabels: [...m.querySelectorAll<HTMLElement>("[data-tick-label]")],
       craneCota: [...m.querySelectorAll<HTMLElement>("[data-crane-cota] > *")],
@@ -126,9 +138,15 @@ export function CraneLift() {
     P.load.style.transform = `translate3d(0, ${dy.toFixed(1)}px, 0)`;
     ROPES.forEach((r, i) => (P.ropes[i].style.transform = `scaleY(${(SPREADER_BOX.y - r.top + dy).toFixed(1)})`));
 
-    // The set (crane, quay, ship, word) leaves the close to the truck and the container.
-    const set = 1 - (reduced ? 0 : segment(c, ...SET_OUT));
-    for (const el of P.fade) el.style.opacity = String(set);
+    // The set (crane, quay, ship, word) goes out of focus, then leaves the close to the truck and the container. The
+    // blur never changes (a varying filter repaints every frame): the crane crossfades, by opacity alone, to a copy
+    // blurred once by a fixed amount (in its own px, 8 px on screen at the zoom where the blur ends).
+    const dof = reduced ? 0 : segment(segment(c, ...ZOOM), ...DOF);
+    const out = 1 - (reduced ? 0 : segment(c, ...SET_OUT));
+    const set = out * (1 - 0.75 * dof);
+    for (const el of P.fade) el.style.opacity = String(el.dataset.sharp === undefined ? set : out * (1 - dof));
+    P.blurred.style.opacity = String(out * 0.25 * dof);
+    P.blurred.style.filter = `blur(${(DOF_BLUR / sampleCraneCamera(DOF[1], view).scale).toFixed(1)}px)`;
     word.current!.style.transform = `translate3d(${((0.18 - 0.5 * c) * view.width).toFixed(1)}px, 0, 0)`;
 
     // The quay: its line under the legs, a ruler along it every 5 m (from the quay's edge).
@@ -235,8 +253,9 @@ export function CraneLift() {
         {/* The crane image in a box of its own pixel size, placed by the camera. No will-change, so the close
             re-rasters sharp. */}
         <div ref={world} className="absolute top-0 left-0 origin-top-left" style={{ width: CRANE.width, height: CRANE.height }}>
-          {/* The ship's side, left of the quay, in line (where the container came from): its hull, its waterline and
-              three stacks of containers on deck. Wide screens only. */}
+          {/* The ship's side, left of the quay, in line (where the container came from): its hull afloat (down to
+              the waterline, its bow clear of the quay wall), the waterline and three stacks of containers on deck.
+              It leaves the wide shot only by the left. Wide screens only. */}
           <svg
             data-set=""
             viewBox={`0 0 ${CRANE.width} ${CRANE.height}`}
@@ -244,17 +263,17 @@ export function CraneLift() {
             fill="none"
           >
             <g className="stroke-navy-900/45" {...SHIP_STROKE}>
-              <path d={`M-400 4560H1360Q1470 4560 1462 4700L1430 5300H-400`} />
-              <path d={`M-400 5190H${QUAY_X}`} strokeDasharray="40 30" />
-              <path d={`M${QUAY_X} ${GROUND.y}V5320`} />
+              <path d={`M-400 ${SHIP_DECK}H${SHIP_BOW - 90}Q${SHIP_BOW} ${SHIP_DECK} ${SHIP_BOW - 6} ${SHIP_DECK + 110}L${SHIP_BOW - 40} ${WATERLINE}`} />
+              <path d={`M-400 ${WATERLINE}H${QUAY_X}`} strokeDasharray="40 30" />
+              <path d={`M${QUAY_X} ${GROUND.y}V${WATERLINE + 60}`} />
               {[
-                [120, 3],
-                [560, 2],
-                [1000, 3],
+                [60, 3],
+                [480, 2],
+                [900, 3],
               ].map(([x, tiers]) => (
                 <g key={x}>
                   {Array.from({ length: tiers }, (_, t) => (
-                    <rect key={t} x={x} y={4560 - (t + 1) * 170} width={400} height={170} />
+                    <rect key={t} x={x} y={SHIP_DECK - (t + 1) * 170} width={380} height={170} />
                   ))}
                 </g>
               ))}
@@ -266,9 +285,10 @@ export function CraneLift() {
             className="absolute"
             style={{ left: TRUCK_IN_CRANE.x, top: TRUCK_IN_CRANE.y, width: TRUCK_IN_CRANE.w, height: TRUCK_IN_CRANE.h }}
           >
-            <SceneImage name="carreta-lado-vazia" alt="" sizes="(min-width: 768px) 90vw, 250vw" full className="h-full w-full mix-blend-multiply" />
+            <TruckShadow />
+            <SceneImage name="carreta-lado-vazia" alt="" sizes="(min-width: 768px) 90vw, 250vw" full className="relative h-full w-full" />
           </div>
-          <div data-set="" className="absolute inset-0">
+          <div data-set="" data-sharp="" className="absolute inset-0">
             {/* A soft contact shadow under the legs. */}
             <div
               className="absolute rounded-[50%] bg-[radial-gradient(closest-side,rgb(10_19_56/0.22),transparent)]"
@@ -306,6 +326,20 @@ export function CraneLift() {
               />
             </picture>
           </div>
+          {/* The crane out of focus (depth of field): the light layer, blurred once, a layer of its own. */}
+          <picture>
+            <source type="image/avif" srcSet={base(1200, "avif")} />
+            <img
+              data-blurred=""
+              src={base(1200, "webp")}
+              width={CRANE.width}
+              height={CRANE.height}
+              alt=""
+              decoding="async"
+              loading="lazy"
+              className="absolute inset-0 h-full w-full opacity-0 will-change-[opacity]"
+            />
+          </picture>
           {ROPES.map((r) => (
             <i
               key={r.x}

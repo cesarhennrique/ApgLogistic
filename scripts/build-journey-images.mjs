@@ -16,7 +16,8 @@ const WIDTHS_FOR = { "hero-porto": [800, 1200, 1920, 2560, 3840] };
 const AVIF_QUALITY_FOR = { "hero-porto-mobile": 48 };
 // Crops built as images of their own: the hero's phone framing, portrait, on the bow and the cranes (source px).
 const CROPS = { "hero-porto-mobile": { from: "hero-porto", left: 2690, top: 0, width: 760, height: 1645 } };
-const GENERATED = /-\d+$/;
+// A generated width has 3+ digits (carreta-alto-30 is a source).
+const GENERATED = /-\d{3,}$/;
 
 const sources = new Map();
 for (const dir of SOURCES) {

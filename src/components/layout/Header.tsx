@@ -74,6 +74,26 @@ export function Header() {
     };
   }, [overJourney]);
 
+  // Over the journey the header gets out of the scenes' way while scrolling down (its links would cross the crane)
+  // and comes back as soon as the scroll turns up. Written straight to the DOM.
+  useEffect(() => {
+    const header = headerRef.current!;
+    delete header.dataset.hidden;
+    if (!overJourney) return;
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > last + 2) header.dataset.hidden = "";
+      else if (y < last - 2) delete header.dataset.hidden;
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      delete header.dataset.hidden;
+    };
+  }, [overJourney]);
+
   const close = useCallback(() => {
     setOpen(false);
     buttonRef.current?.focus();
@@ -85,7 +105,8 @@ export function Header() {
         ref={headerRef}
         data-intro="header"
         data-tone="light"
-        className="group/header fixed inset-x-0 top-0 z-50 data-[tone=dark]:[--focus-ring:var(--color-navy-900)]"
+        // hidden (data-hidden) unless something in it has focus
+        className="group/header fixed inset-x-0 top-0 z-50 transition-transform duration-200 ease-out data-hidden:not-focus-within:-translate-y-full data-[tone=dark]:[--focus-ring:var(--color-navy-900)]"
         data-solid={solid || undefined}
       >
         {/* the solid state fades in on its own layer, so only opacity animates */}
@@ -97,6 +118,11 @@ export function Header() {
         <div
           aria-hidden="true"
           className={`pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-linear-to-b from-navy-900/40 to-transparent transition-opacity duration-200 ease-out group-data-[tone=dark]/header:opacity-0 ${overJourney ? "opacity-100" : "opacity-0"}`}
+        />
+        {/* Over the light scenes: a frosted white bar, so the navy links read over the crane's boom. */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-0 bg-[#fefefe]/85 opacity-0 backdrop-blur-md transition-opacity duration-200 ease-out ${overJourney ? "group-data-[tone=dark]/header:opacity-100" : ""}`}
         />
         <div className="site-container relative flex h-16 items-center justify-between gap-3 md:h-20">
           <TransitionLink

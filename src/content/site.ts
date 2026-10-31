@@ -24,7 +24,7 @@ export type Address = {
 
 // A journey scene after the hero (spec §3): its ContainerCode label and its line.
 export type JourneyScene = {
-  id: "chegada" | "porteiner" | "carga" | "estrada" | "terminal" | "distribuicao";
+  id: "chegada" | "porteiner" | "carga" | "estrada" | "distribuicao";
   code: string;
   text: string;
 };
@@ -203,14 +203,13 @@ export const site = {
     // confirmar com cliente: demais marcos (anos e eventos) não estão no spec
   ],
 
-  // Scenes 1–6 of the journey (spec §3); the hero is scene 0. Scene 1's line is its counter: 1.900 + text.
+  // Scenes 1–5 of the journey (spec §3); the hero is scene 0. Scene 1's line is its counter: 1.900 + text.
   journey: [
     { id: "chegada", code: "Chegada", text: "TEUs por mês" },
     { id: "porteiner", code: "Portêiner", text: "O braço rodoviário da cabotagem no Brasil" },
     // No line of its own (spec §3): the image carries it.
     { id: "carga", code: "Carga", text: "" },
-    { id: "estrada", code: "Frota", text: "Frota 100% própria e rastreada · 24h" },
-    { id: "terminal", code: "Terminal", text: "35.000 m² · 4.000 TEUs estáticos · 46 docas · 5.000 m² cobertos" },
+    { id: "estrada", code: "Estrada", text: "Frota 100% própria e rastreada · 24h" },
     { id: "distribuicao", code: "Distribuição", text: "500 entregas fracionadas por dia" },
   ] satisfies JourneyScene[],
   journeyScene: {
@@ -229,10 +228,45 @@ export const site = {
         { value: 24, unit: "h / operação" },
       ],
     },
-    // Scene 5's plan: its place names.
-    plan: { gate: "Portaria", warehouse: "Galpão", yard: "Pátio" },
-    // Scene 4's speedometer: the road and the unit around the speed.
-    road: { highway: "BR-101", unit: "KM/H" },
+    // Scene 4, "Estrada", side on: its speedometer (the road and the unit around the speed), the giant word behind
+    // the truck, the navy band's title and its cards, revealed as the truck passes them (the services, then the
+    // differentials).
+    road: {
+      highway: "BR-101",
+      unit: "KM/H",
+      word: "Frota própria",
+      title: "Do porto ao destino final.",
+      cards: [
+        { title: services[0].title, text: "Containers no Porto de Suape, integrados à cabotagem e ao terminal CONE." },
+        { title: services[1].title, text: "Containers na Bahia pela BR-324, com filial em Salvador." },
+        { title: services[2].title, text: "Armazenagem, cross-docking e entregas fracionadas a partir do terminal CONE." },
+        { title: "Frota 100% própria", text: "Caminhões e carretas da APG, sem terceirização." },
+        { title: "100% rastreada", text: "Todos os veículos rastreados, do porto à entrega." },
+        { title: "Atendimento 24h", text: "Equipe disponível 24 horas por dia, por telefone e WhatsApp." },
+        { title: "1.900 TEUs por mês", text: "A média que movimentamos entre o navio e o destino." },
+      ],
+    },
+    // Scene 4 from above: the track's title (its first line grey) and the history's chapters, one as the truck
+    // reaches each (a big mark, a title, one line).
+    track: { title: ["Confiança", "em cada", "quilômetro"] },
+    // confirmar com cliente: os textos dos capítulos (o único ano confirmado é 1996)
+    history: [
+      { mark: "1996", title: "A fundação", text: "Paulo Germano de Albuquerque Ramos funda a APG, em Pernambuco." },
+      { mark: "1.900", title: "O braço rodoviário da cabotagem", text: "Em média, 1.900 TEUs por mês levados do navio ao destino." },
+      { mark: "Suape", title: "Frota própria no porto", text: "Frota 100% própria e rastreada em Suape, com atendimento 24 h." },
+      { mark: "500", title: "Logística em Pernambuco", text: "Armazenagem, cross-docking, supply chain e 500 entregas fracionadas por dia." },
+      { mark: "Bahia", title: "BR-324 · Salvador", text: "A operação de containers chega à Bahia pela BR-324, com filial em Salvador." },
+    ],
+    // Scene 4's arrival: the CONE terminal's dock and its numbers, as a scoreboard.
+    dock: {
+      label: "Terminal CONE",
+      stats: [
+        { value: 35000, unit: "m²", label: "de pátio" },
+        { value: 4000, unit: "TEUs", label: "estáticos" },
+        { value: 46, unit: "", label: "docas" },
+        { value: 5000, unit: "m²", label: "cobertos" },
+      ],
+    },
     // Scene 1's notes on the photo, as on a technical drawing: the ship's heading at its bow, the APG containers
     // on the deck, the client's container at the close.
     notes: { heading: "CABOTAGEM · RUMO A SUAPE · PE", containers: "CONTAINERS APG", target: "SEU CONTAINER" },

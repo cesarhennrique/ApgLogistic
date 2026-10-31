@@ -7,7 +7,6 @@ export const HOME_SECTIONS = [
   "porteiner",
   "carga",
   "estrada",
-  "terminal",
   "distribuicao",
   "services",
   "differentials",

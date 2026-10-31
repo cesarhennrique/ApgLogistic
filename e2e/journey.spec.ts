@@ -137,7 +137,7 @@ test("the Home's container codes run 01, 02, 03… in order, without repeats", a
       for (const note of copy.querySelectorAll("[data-note]")) note.remove();
       return [...copy.textContent!.matchAll(/APGU 1996-(\d{2})/g)].map((m) => Number(m[1]));
     });
-  expect(codes.length).toBeGreaterThanOrEqual(10);
+  expect(codes.length).toBeGreaterThanOrEqual(9);
   expect(codes).toEqual(codes.map((_, i) => i + 1));
 });
 
@@ -313,8 +313,8 @@ test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) 
 });
 
 // Art-direction review: five points of scenes 2 and 3, saved for a human to look at (not diffed).
-test.describe("scenes 2 to 5 frames", () => {
-  for (const id of ["porteiner", "carga", "estrada", "terminal"]) {
+test.describe("scenes 2 and 3 frames", () => {
+  for (const id of ["porteiner", "carga"]) {
     // (scene 2 also at 0.4 and 0.6, round the middle of its pull-back)
     for (const p of id === "porteiner" ? [0, 0.25, 0.4, 0.5, 0.6, 0.75, 1] : [0, 0.25, 0.5, 0.75, 1]) {
       test(`${id} at ${p}`, async ({ page }, testInfo) => {
@@ -368,24 +368,66 @@ test("scene 4 takes over scene 3's truck without a pixel jump", async ({ page })
   expect(errors).toEqual([]);
 });
 
-test("scene 5's truck drives from the gate to its dock, the red line behind it", async ({ page }) => {
+// Scene 4's progress (0–1), from the moment it starts sliding in over scene 3 to its end.
+async function scrollToEstrada(page: Page, p: number) {
+  await page.evaluate((progress) => {
+    const scene = document.getElementById("estrada")!;
+    const top = scene.getBoundingClientRect().top + window.scrollY - window.innerHeight;
+    window.scrollTo({ top: top + progress * scene.offsetHeight, behavior: "instant" });
+  }, p);
+}
+
+// Scene 4 in one: the side view first, the view from above by the end of B, every chapter of the history shown as
+// the truck passes it along the track, the scoreboard full at the dock.
+test("scene 4 rises from the side view to the track and ends at the dock", async ({ page }) => {
+  test.setTimeout(120_000);
   const errors = collectErrors(page);
   await page.goto("/");
   await settle(page);
-  const truck = page.locator("#terminal [class*='aspect-[941/1672]']");
-  const centre = async (p: number) => {
-    await scrollToScene(page, "terminal", p);
-    await page.waitForTimeout(400);
-    const r = (await truck.boundingBox())!;
-    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-  };
-  const start = await centre(0.05);
-  const end = await centre(0.95);
-  // across the plan, from the gate to the dock (on phones the plan is turned: measured as a distance)
-  expect(Math.hypot(end.x - start.x, end.y - start.y)).toBeGreaterThan(100);
-  const dash = await page.locator("#terminal path.stroke-red-500").evaluate((el) => Number(getComputedStyle(el).strokeDashoffset.replace("px", "")));
-  expect(dash).toBeLessThan(0.01);
+  const views = () =>
+    page.locator("#estrada [data-rim]").first().evaluate((rim) => [...rim.parentElement!.parentElement!.children].map((v) => Number((v as HTMLElement).style.opacity)));
+  const isPhone = (await page.evaluate(() => innerWidth)) < 768;
+  // A: the slide (100vh) then A's 300vh (×0.75 on phones), of 1170 (902.5)
+  const total = isPhone ? 902.5 : 1170;
+  const k = isPhone ? 0.75 : 1;
+  await scrollToEstrada(page, (100 + 150 * k) / total);
+  await page.waitForTimeout(500);
+  expect(await views()).toEqual([1, 0, 0, 0]);
+  // C's start: from above alone
+  await scrollToEstrada(page, (100 + 460 * k) / total);
+  await page.waitForTimeout(500);
+  expect(await views()).toEqual([0, 0, 0, 1]);
+  // C: every chapter in, at some point
+  const shown = new Array(5).fill(0);
+  for (let i = 0; i <= 50; i++) {
+    await scrollToEstrada(page, (100 + (450 + (500 * i) / 50) * k) / total);
+    await page.waitForTimeout(120);
+    const o = await page.locator("#estrada [data-chapter]").evaluateAll((els) => els.map((e) => Number((e as HTMLElement).style.opacity)));
+    o.forEach((v, j) => (shown[j] = Math.max(shown[j], v)));
+  }
+  expect(shown.every((v) => v > 0.95)).toBe(true);
+  // D: the scoreboard, counted up
+  await scrollToEstrada(page, 1);
+  await page.waitForTimeout(800);
+  await expect(page.locator("#estrada [data-value]")).toHaveText(["35.000", "4.000", "46", "5.000"]);
   expect(errors).toEqual([]);
+});
+
+// Art-direction review: scene 4 at every tenth of its progress, saved for a human to look at (not diffed).
+test.describe("scene 4 frames", () => {
+  for (let i = 0; i <= 10; i++) {
+    const p = i / 10;
+    test(`estrada at ${p}`, async ({ page }, testInfo) => {
+      const errors = collectErrors(page);
+      await page.goto("/");
+      await settle(page);
+      await scrollToEstrada(page, p);
+      await page.waitForTimeout(1200);
+      await headerSettled(page);
+      await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-estrada-${p}.png` });
+      expect(errors).toEqual([]);
+    });
+  }
 });
 
 // The crane never leaves the frame: at ten points of scene 2 its light layer (always under the sharp one) is in and

@@ -88,11 +88,11 @@ A Home lê como uma história só: **o que a APG faz** (jornada) → **o que voc
 | NN | Seção |
 |---|---|
 | 01 | Hero (mapa) |
-| 02–07 | Jornada: Chegada · Portêiner · Carga · Frota · Terminal · Distribuição |
-| 08 | **Serviços:** três cards (Containers Suape · Operação Bahia · Logística e Armazenagem) |
-| 09 | **Por que a APG:** frota própria · terminal próprio integrado a Suape · rastreamento · atendimento 24h |
-| 10 | **Clientes:** carrossel de logos; oculto enquanto não houver logos autorizados (aí o CTA vira 10) |
-| 11 | **CTA final:** "Fale com um especialista", com cotação e WhatsApp |
+| 02–06 | Jornada: Chegada · Portêiner · Carga · Estrada · Distribuição (revisão 2026-10-31b) |
+| 07 | **Serviços:** três cards (Containers Suape · Operação Bahia · Logística e Armazenagem) |
+| 08 | **Por que a APG:** frota própria · terminal próprio integrado a Suape · rastreamento · atendimento 24h |
+| 09 | **Clientes:** carrossel de logos; oculto enquanto não houver logos autorizados (aí o CTA vira 09) |
+| 10 | **CTA final:** "Fale com um especialista", com cotação e WhatsApp |
 
 Saem da Home, porque repetiam a jornada: **Números** (os números já aparecem nas cenas; o único que faltava, 5.000 m² de cross-docking, vira cota do Terminal) e **Mapa de atuação** (a cena Distribuição já é esse mapa).
 
