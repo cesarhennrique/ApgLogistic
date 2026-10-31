@@ -1663,6 +1663,30 @@ Terminal.tsx, Load.tsx, homeSections.ts e site.ts. Use as skills
 animate, animation-performance, emil-design-eng,
 frontend-design:frontend-design e mobile-native.
 
+Parte 0 — Correções da cena 2 (prints do usuário após o J3b)
+0a. Close da cena 2: a perna e os truques amarelos do portêiner, ao
+   lado da carreta, ficam borrados e com artefatos de upscale. A
+   partir de ~60% do zoom, aplique profundidade de campo: portêiner,
+   cais e régua ganham blur progressivo (0 → 8px) e esmaecem até
+   ~25%, deixando nítidos só carreta, container e spreader. O blur só
+   na camada do portêiner (filter numa camada já rasterizada, sem
+   repintar a cada frame; confira no Performance que não cai de 60fps).
+0b. A sombra sob a carreta e o chão no close aparecem em blocos (borda
+   do recorte). Troque por uma sombra de contato desenhada (elipse com
+   radial-gradient, opacidade ~0.18) e limpe a borda do recorte da
+   carreta-lado-vazia e da carreta-lado (cutout-white com feather).
+0c. No quadro largo, o costado do navio fica cortado na base e cruza a
+   régua do cais. Assente o navio na linha d'água, à esquerda da régua,
+   sem cruzar a linha do cais, e deixe o casco inteiro em quadro
+   (ou saindo só pela esquerda).
+0d. Header sobre as cenas: os links passam por cima da lança e do
+   spreader e ficam ilegíveis. Em todas as cenas da jornada, o header
+   esconde ao rolar para baixo e volta ao rolar para cima (translateY,
+   200 ms), e quando visível sobre cena clara ganha fundo #FEFEFE/85
+   com backdrop-blur.
+0e. Mobile: a cota de altura da cena 3 fica fora da tela. Coloque-a do
+   lado de dentro do container (ou acima dele) sempre em quadro.
+
 As cenas 4 (Estrada) e 5 (Terminal) viram UMA cena contínua, a
 "Estrada", com a carreta sempre em quadro e a câmera subindo da vista
 lateral até a vista de cima. A planta baixa do terminal sai.
@@ -1721,7 +1745,7 @@ Fase D — Chegada ao terminal CONE (~120vh)
 7. A pista termina numa doca do terminal CONE vista de cima (galpão
    em traço, docas numeradas); a carreta encosta e os números entram
    como placar: 35.000 m² · 4.000 TEUs estáticos · 46 docas ·
-   5.000 m² (texto conforme site.ts). Depois, a cena 6.
+   5.000 m² (texto conforme site.ts). Depois, a Distribuição.
 
 Geral
 8. Remova a cena "terminal" de homeSections/journey e reajuste os
@@ -1735,7 +1759,7 @@ Geral
 10. Orçamento: as 4 imagens da carreta em AVIF/WebP responsivo;
     carregue alto-30/alto-60/cima só quando a fase A começar.
 11. Screenshots desktop e mobile em p 0, 0.1 … 1 da cena; vídeo da
-    cena 3 ao início da cena 6.
+    cena 3 ao início da Distribuição.
 
 Pronto quando: lint, typecheck, test e e2e passam, a carreta passa da
 vista lateral à de cima sem pulo, segue a pista sem sair dela, cada
