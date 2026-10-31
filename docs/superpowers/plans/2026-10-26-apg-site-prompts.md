@@ -1442,6 +1442,83 @@ como desenho técnico limpo com a foto da carreta por cima.
 Commit: "feat: cenas 4 e 5 (estrada e terminal)"
 ````
 
+## Prompt H1 — Hero cinematográfico e ajustes das cenas 2 e 5
+
+> Revisão 2026-10-31, depois do J3 (`589ba5f`). O hero de texto sobre navy ficou simples demais para a primeira impressão. Referência visual aprovada pelo usuário: foto de porto ao nascer do sol, mapa no céu, "DESDE 1996" em vermelho, menu aberto e faixa de pilares. Foto: `assets-src/ai/hero-porto.webp` (3840×1645, upscale 2×).
+
+````text
+Leia o CLAUDE.md, o spec (seção 3 e seção 5, "Loading e abertura do
+hero") e os componentes do hero (src/components/home/Hero.tsx e o que
+ele usa). Use as skills animate, animation-performance, emil-design-eng e
+frontend-design:frontend-design.
+
+Parte A — Hero cinematográfico
+1. Foto de fundo: assets-src/ai/hero-porto.webp (navio chegando ao porto
+   ao nascer do sol, portêineres à direita, mar e céu vazios à esquerda).
+   Inclua no npm run images (AVIF/WebP 800, 1200, 1920, 2560, 3840). É o
+   LCP: <link rel="preload"> com imagesrcset, fetchpriority="high", sem
+   lazy. Orçamento: ≤ 250 KB no desktop e ≤ 120 KB no mobile (AVIF).
+   - Tela cheia (cover), foco no navio (object-position ~68% 55%; no
+     mobile, enquadre a proa e os portêineres).
+   - Degradê navy-900 da esquerda (≈92% na borda até 0% em ~60% da
+     largura) e outro de baixo para cima sob a faixa de pilares. No
+     mobile, o degradê vem de baixo, sob o texto.
+   - Movimento: depois do loading, zoom lento de 1.08 → 1.0 em ~2.4 s
+     (ease-out), junto com a entrada dos textos; depois, paralaxe leve
+     com o mouse (foto ±8px, mapa ±14px), só em pointer: fine. Nada em
+     reduced motion.
+2. Título: "TRANSPORTANDO / CONFIANÇA / DESDE 1996", com "DESDE 1996" em
+   red-500 numa linha própria (texto grande: passa AA sobre o degradê).
+   Mantenha a entrada com SplitText.
+3. Mapa: menor, no céu, acima e à esquerda dos portêineres (sem cobrir o
+   navio), com Suape marcado por um ponto red-500 com brilho que pulsa
+   devagar (2.4 s; parado em reduced motion). Mantenha os rótulos
+   "SUAPE · PE" e "SALVADOR · BA" e as rotas.
+4. Header no desktop (≥ 1280px): links visíveis inline, vindos de
+   site.nav (sem inventar itens), mono pequeno com tracking, o ativo com
+   sublinhado red-500; "Serviços" abre o submenu que já existe. Abaixo
+   de 1280px continua o botão de menu.
+5. Faixa de baixo: troque o letreiro corrido por 4 pilares com ícone de
+   linha (lucide-react, se já estiver instalado; se não, SVG inline),
+   título mono e subtítulo:
+   CABOTAGEM · Suape → Nordeste | FROTA PRÓPRIA · 500 entregas/dia |
+   ATENDIMENTO 24H · desde 1996 | TERMINAL PRÓPRIO · Suape · PE.
+   Separadores em barra inclinada. No mobile: grade 2×2.
+6. Passagem para a cena 1: ao rolar, o mapa e os textos saem para cima,
+   a foto avança em direção ao convés do navio (scale 1 → ~1.35, foco no
+   convés) e escurece levemente; a cena 1 entra no enquadramento largo
+   como hoje. Sem rolagem morta (todo passo de 10vh muda algo) e sem
+   faixa entre os dois. Se o mergulho 3D do mapa não fizer mais sentido
+   sobre a foto, troque-o por essa saída e registre no relatório.
+7. Contraste: meça nos screenshots os pixels atrás de cada texto e
+   confirme AA (4.5:1 texto normal, 3:1 grande).
+
+Parte B — Correções das cenas
+8. Cena 2 no desktop: em p=0.5 o portêiner some e só o spreader aparece
+   (screenshot desktop-porteiner-0.5). Ache a causa (provável troca da
+   camada de alta resolução sem a base carregada) e garanta que nenhum
+   frame fique sem o guindaste. Teste e2e: em 10 pontos da cena, a
+   camada do portêiner está visível e carregada.
+9. Cena 5 (terminal):
+   - desktop: rótulos das cotas e do galpão com no mínimo 12px (hoje
+     ~9px) e a planta um pouco maior (até 80vw / 70svh);
+   - mobile: gire a planta 90° (retrato) para ela ocupar a altura da
+     tela, mantendo os textos na horizontal e as cotas legíveis; a
+     carreta e o caminho giram junto.
+
+Testes e entrega
+10. Screenshots do hero em 1440×900, 1920×1080 e 390×844, da passagem
+    hero → cena 1 (3 pontos), da cena 2 desktop (p 0.4, 0.5, 0.6) e da
+    cena 5 (desktop e mobile). Vídeo do topo até a cena 2. Lighthouse
+    mobile da Home: informe LCP e o peso da foto do hero.
+
+Pronto quando: lint, typecheck, test e e2e passam, o hero tem impacto de
+capa (foto, título com DESDE 1996 em vermelho, mapa no céu, pilares), o
+LCP fica < 2.5 s no Lighthouse mobile, o portêiner nunca some e a planta
+do terminal enche a tela no mobile.
+Commit: "feat: hero cinematográfico e ajustes das cenas 2 e 5"
+````
+
 ## Prompt J4 — Cena 6, transições, indicador e mobile
 
 ````text
