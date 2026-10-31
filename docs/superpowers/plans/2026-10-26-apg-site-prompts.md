@@ -1393,7 +1393,10 @@ frontend-design:frontend-design.
       cena 1 (um só transform translate3d + scale num wrapper, escala
       exponencial, a câmera segue o spreader). Hoje o guindaste fica
       pequeno, com muito branco em volta, e a cena parece parada.
-      Fonte em alta: assets-src/ai/porteiner-lado.png (upscale 4×).
+      Fonte em alta: assets-src/ai/porteiner-lado.webp, agora 4488×5608
+      (upscale 4×; a de 1122 px ficou em assets-src/reference/). No
+      spreader há pseudo-letras geradas pela IA: pinte por cima com o
+      amarelo vizinho antes do close, para nenhum texto falso aparecer.
       Refaça a partir dela o recorte (scripts/cutout-white.mjs, modo
       --global, limiar 244), as camadas porteiner-base e
       porteiner-spreader e as medidas de craneAnchors.ts (escale as
