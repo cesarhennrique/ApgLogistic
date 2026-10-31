@@ -16,7 +16,8 @@ export function Hero() {
   return (
     <section id="hero" data-intro-root="" data-header-theme="dark" className="relative bg-navy-900" style={{ height: `${HERO_VH}vh` }}>
       <HeroStage>
-        <div className="site-container mt-auto pt-24 pb-8 md:pb-14">
+        {/* Centred between the header and the strip below: the top padding is the header's height plus the bottom one. */}
+        <div className="site-container my-auto pt-22 pb-6 md:pt-26">
           {/* The map keeps out of this box (CameraRig fits it beside or above). */}
           <div id="hero-copy" className="w-fit max-w-full">
             <div data-intro="code">

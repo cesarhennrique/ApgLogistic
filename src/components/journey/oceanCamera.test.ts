@@ -1,37 +1,48 @@
 import { describe, expect, it } from "vitest";
-import { FOCUS, HULL_WIDTH, MAX_PIXEL_SCALE, SHIP, ZOOM, maxZoom, sampleOceanCamera } from "./oceanCamera";
+import {
+  APG_CONTAINERS,
+  BOW,
+  FOCUS,
+  HULL_WIDTH,
+  MAX_PIXEL_SCALE,
+  SHIP,
+  TARGET,
+  ZOOM,
+  cameraTransform,
+  maxZoom,
+  sampleOceanCamera,
+  toScreen,
+} from "./oceanCamera";
 
 const desktop = { width: 1920, height: 1080, dpr: 1 };
 const retina = { width: 1440, height: 900, dpr: 2 };
 const phone = { width: 390, height: 844, dpr: 3 };
 
-// Where a photo point lands on screen.
-const onScreen = (cam: { x: number; y: number; scale: number }, point: { x: number; y: number }) => ({
-  x: cam.x + cam.scale * point.x,
-  y: cam.y + cam.scale * point.y,
-});
-
 describe("oceanCamera", () => {
-  it("holds the wide framing until the zoom starts: the whole photo, the ship at the centre", () => {
-    for (const p of [0, ZOOM[0]]) {
-      const cam = sampleOceanCamera(p, desktop);
-      expect(cam.scale).toBeCloseTo(Math.max(1920 / 6688, 1080 / 3764), 6);
-      // 16:9, like the photo: it shows whole, edge to edge, so the ship sits as near the centre as that allows.
-      expect(cam.x).toBeLessThanOrEqual(0);
-      expect(cam.x + cam.scale * 6688).toBeGreaterThanOrEqual(1920);
-      const ship = onScreen(cam, SHIP);
-      expect(Math.abs(ship.x - 960)).toBeLessThan(6);
-      expect(Math.abs(ship.y - 540)).toBeLessThan(0.05 * 1080);
-    }
+  it("starts on the wide framing: the whole photo, the ship at the centre", () => {
+    const cam = sampleOceanCamera(0, desktop);
+    expect(cam.scale).toBeCloseTo(Math.max(1920 / 6688, 1080 / 3764), 6);
+    // 16:9, like the photo: it shows whole, edge to edge, so the ship sits as near the centre as that allows.
+    expect(cam.x).toBeLessThanOrEqual(0);
+    expect(cam.x + cam.scale * 6688).toBeGreaterThanOrEqual(1920);
+    const ship = toScreen(cam, SHIP);
+    expect(Math.abs(ship.x - 960)).toBeLessThan(6);
+    expect(Math.abs(ship.y - 540)).toBeLessThan(0.05 * 1080);
     // A phone crops the photo's sides: the ship exactly at the centre across (its height fills the screen, as above).
-    const ship = onScreen(sampleOceanCamera(0, phone), SHIP);
-    expect(ship.x).toBeCloseTo(195, 3);
+    expect(toScreen(sampleOceanCamera(0, phone), SHIP).x).toBeCloseTo(195, 3);
   });
 
-  it("puts the focus at the centre of the screen when the zoom ends, and holds it", () => {
+  it("zooms from the very start: no held stretch before it", () => {
+    expect(ZOOM[0]).toBe(0);
+    expect(sampleOceanCamera(0.02, desktop).scale).toBeGreaterThan(sampleOceanCamera(0, desktop).scale);
+  });
+
+  it("closes on the target container: its centre is the focus, at the centre of the screen, and holds", () => {
+    expect(FOCUS.x).toBeCloseTo(TARGET.x + TARGET.w / 2, 6);
+    expect(FOCUS.y).toBeCloseTo(TARGET.y + TARGET.h / 2, 6);
     for (const view of [desktop, retina, phone]) {
       for (const p of [ZOOM[1], 1]) {
-        const focus = onScreen(sampleOceanCamera(p, view), FOCUS);
+        const focus = toScreen(sampleOceanCamera(p, view), FOCUS);
         expect(focus.x).toBeCloseTo(view.width / 2, 3);
         expect(focus.y).toBeCloseTo(view.height / 2, 3);
       }
@@ -55,5 +66,40 @@ describe("oceanCamera", () => {
     const cam = sampleOceanCamera(1, desktop);
     expect(HULL_WIDTH * cam.scale).toBeCloseTo(0.9 * 1080, 3);
     expect(maxZoom(desktop)).toBeGreaterThan(4);
+  });
+
+  it("maps a photo point to the screen as the photo's transform does, at three scales", () => {
+    // The CSS transform (origin top left): translate, then scale.
+    const viaTransform = (t: string, p: { x: number; y: number }) => {
+      const [, tx, ty, s] = t.match(/translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\) scale\(([-\d.]+)\)/)!.map(Number);
+      return { x: tx + s * p.x, y: ty + s * p.y };
+    };
+    const corner = { x: TARGET.x, y: TARGET.y };
+    for (const p of [0, 0.4, 1]) {
+      const cam = sampleOceanCamera(p, desktop);
+      for (const point of [BOW, corner]) {
+        const a = toScreen(cam, point);
+        const b = viaTransform(cameraTransform(cam), point);
+        // the transform string rounds to 0.01 px and 1e-5 in scale
+        expect(Math.abs(a.x - b.x)).toBeLessThan(0.1);
+        expect(Math.abs(a.y - b.y)).toBeLessThan(0.1);
+      }
+      // the bow above the target by the photo distance times the scale
+      expect(toScreen(cam, corner).y - toScreen(cam, BOW).y).toBeCloseTo(cam.scale * (TARGET.y - BOW.y), 6);
+    }
+    // at the close, the target's corner where its centre minus half its size puts it
+    const close = sampleOceanCamera(1, desktop);
+    expect(toScreen(close, corner).x).toBeCloseTo(960 - (close.scale * TARGET.w) / 2, 3);
+    expect(toScreen(close, corner).y).toBeCloseTo(540 - (close.scale * TARGET.h) / 2, 3);
+  });
+
+  it("measures 5–8 navy containers with the red stripe, the target among them, all on the deck", () => {
+    expect(APG_CONTAINERS.length).toBeGreaterThanOrEqual(5);
+    expect(APG_CONTAINERS.length).toBeLessThanOrEqual(8);
+    expect(APG_CONTAINERS).toContain(TARGET);
+    for (const c of APG_CONTAINERS) {
+      expect(Math.abs(c.x + c.w / 2 - SHIP.x)).toBeLessThan(HULL_WIDTH / 2);
+      expect(c.y).toBeGreaterThan(BOW.y);
+    }
   });
 });

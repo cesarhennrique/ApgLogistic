@@ -217,8 +217,11 @@ export const site = {
     // Scene 1: the TEUs a month it counts up to, and its photo's alt text.
     arrivalTeus: 1900,
     shipAlt: "Navio porta-contêineres visto de cima, chegando a Suape",
-    // Small labels on the hero's map; Suape's also ends scene 1's red heading line.
+    // Small labels on the hero's map.
     mapLabels: { suape: "SUAPE · PE", salvador: "SALVADOR · BA" },
+    // Scene 1's notes on the photo, as on a technical drawing: the ship's heading at its bow, the APG containers
+    // on the deck, the client's container at the close.
+    notes: { heading: "CABOTAGEM · RUMO A SUAPE · PE", containers: "CONTAINERS APG", target: "SEU CONTAINER" },
     // Shown when the pointer is over Suape on the hero's map.
     suapeHover: "Terminal CONE · Cabo de Santo Agostinho",
   },

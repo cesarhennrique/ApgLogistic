@@ -4,8 +4,7 @@ import dynamic from "next/dynamic";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ScrollTrigger } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
-import { ArrivalPhoto, cameraTransform, viewOf } from "@/components/journey/ArrivalPhoto";
-import { sampleOceanCamera } from "@/components/journey/oceanCamera";
+import { ArrivalFrame } from "@/components/journey/ArrivalFrame";
 import { segment } from "@/components/journey/segment";
 import { GRAIN } from "@/components/ui/grain";
 import { readDebugParams } from "@/three/debug";
@@ -17,13 +16,13 @@ const HeroCanvas = dynamic(() => import("@/three/HeroCanvas"), { ssr: false });
 const COPY_OUT = [0, 0.2] as const;
 const OCEAN_IN = [0.7, 1] as const;
 
-// The hero's sticky stage: the 3D map (its canvas only, loaded after the page), the copy, and the photo the dive
-// lands in (scene 1's, in its wide framing). The dive runs from the top of the hero until scene 1 starts sliding in over it (the hero's bottom at
-// 200% of the viewport: scene 1 overlaps the hero's last screen).
+// The hero's sticky stage: the 3D map (its canvas only, loaded after the page), the copy, and the picture the dive
+// lands in (a copy of scene 1's, which scene 1 draws: its camera already moves while it slides in over this one).
+// The dive runs from the top of the hero until scene 1 starts sliding in over it (the hero's bottom at 200% of the
+// viewport: scene 1 overlaps the hero's last screen).
 export function HeroStage({ children }: { children: ReactNode }) {
   const copy = useRef<HTMLDivElement>(null);
   const ocean = useRef<HTMLDivElement>(null);
-  const photo = useRef<HTMLDivElement>(null);
   const [canvas, setCanvas] = useState(false);
   const reduced = useReducedMotion();
 
@@ -34,16 +33,6 @@ export function HeroStage({ children }: { children: ReactNode }) {
     const idle = () => ("requestIdleCallback" in window ? requestIdleCallback(go, { timeout: 1000 }) : setTimeout(go, 100));
     if (document.readyState === "complete") idle();
     else window.addEventListener("load", idle, { once: true });
-  }, []);
-
-  // Scene 1's wide framing, refitted to the stage.
-  useEffect(() => {
-    const stage = ocean.current!;
-    const place = () => (photo.current!.style.transform = cameraTransform(sampleOceanCamera(0, viewOf(stage))));
-    place();
-    const observer = new ResizeObserver(place);
-    observer.observe(stage);
-    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -76,7 +65,7 @@ export function HeroStage({ children }: { children: ReactNode }) {
         <div className="absolute inset-0 opacity-15 mix-blend-overlay" style={{ backgroundImage: GRAIN }} />
         {canvas && <HeroCanvas />}
         <div ref={ocean} className="absolute inset-0 overflow-hidden opacity-0">
-          <ArrivalPhoto photo={photo} alt="" />
+          <ArrivalFrame alt="" />
         </div>
       </div>
       <div ref={copy} className="flex h-full flex-col">
