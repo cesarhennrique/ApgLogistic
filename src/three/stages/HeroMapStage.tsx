@@ -126,7 +126,7 @@ function Northeast() {
 const ROUTE_POINTS = HERO_ROUTES.map((r) => r.getPoints(64));
 const ROUTE_LENGTHS = HERO_ROUTES.map((r) => r.getLength());
 // The glow: one dash a sixth of the route long, crossing it every 3.2 s, the routes out of step.
-const GLOW = { share: 0.16, period: 3.2 };
+const GLOW = { share: 0.16, period: 4 };
 
 // Suape's beat: a ring that grows and fades every 2.4 s, from the first route's arrival.
 const PULSE = 2.4;
@@ -139,6 +139,9 @@ const coreMaterial = new MeshBasicMaterial({ color: RED, transparent: true });
 const PARALLAX = MathUtils.degToRad(2);
 // The labels fade out as the dive begins.
 const DIVE_FADE = [0.05, 0.3] as const;
+// Suape's glow: in as the camera nears it, swelling to fill the screen (a 40 px disc, scaled).
+const GLOW_IN = [0.55, 0.9] as const;
+const GLOW_SCALE = 90;
 // The map itself fades before the camera gets close (its dots would fill the screen as huge squares), then the
 // routes and Suape, while the ocean of scene 1 fades in over the hero (Hero, from 0.7).
 const MAP_FADE = [0.4, 0.85] as const;
@@ -158,7 +161,7 @@ const LABELS = [
 ];
 // A navy shadow keeps them legible over the photo's bright sky.
 const LABEL_CLASS =
-  "pointer-events-none absolute top-0 left-0 font-mono text-[11px] tracking-[0.18em] whitespace-nowrap text-sand-50 [text-shadow:0_1px_2px_rgb(10_19_56/0.9),0_0_10px_rgb(10_19_56/0.8)]";
+  "pointer-events-none absolute top-0 left-0 font-mono text-sm tracking-[0.16em] whitespace-nowrap text-sand-50 [text-shadow:0_1px_2px_rgb(10_19_56/0.9),0_0_10px_rgb(10_19_56/0.8)]";
 const HOVER_CLASS =
   "pointer-events-none absolute top-0 left-0 border border-sand-50/15 bg-navy-900/85 px-3 py-2 font-mono text-[11px] tracking-[0.12em] whitespace-nowrap text-sand-50 opacity-0 transition-opacity duration-150 ease-out data-on:opacity-100";
 
@@ -174,6 +177,7 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
   const hoverLabel = useRef<HTMLDivElement | null>(null);
   // Suape's red dot, its glow breathing in CSS (globals.css, .suape-dot): over the photo the 3D core alone reads weak.
   const dot = useRef<HTMLDivElement | null>(null);
+  const glow = useRef<HTMLDivElement | null>(null);
   const pointer = useRef({ x: 0, y: 0, inside: false, fine: false });
   const pulseFrom = useRef<number | null>(null);
   const getState = useThree((s) => s.get);
@@ -202,10 +206,12 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
     const hover = make(site.journeyScene.suapeHover, HOVER_CLASS);
     hover.style.removeProperty("opacity");
     hoverLabel.current = hover;
-    dot.current = make("", "suape-dot pointer-events-none absolute top-0 left-0 size-2.5 rounded-full bg-red-500");
+    dot.current = make("", "suape-dot pointer-events-none absolute top-0 left-0 size-3 rounded-full bg-red-500");
+    // The dive's end: Suape's dot swells into a glow that the scene 1 photo opens out of (HeroStage).
+    glow.current = make("", "pointer-events-none absolute top-0 left-0 size-10 rounded-full bg-[radial-gradient(closest-side,rgb(255_214_200/0.95),rgb(227_30_36/0.75)_45%,transparent)]");
     return () => {
-      for (const el of [...labels.current, hover, dot.current!]) el.remove();
-      dot.current = null;
+      for (const el of [...labels.current, hover, dot.current!, glow.current!]) el.remove();
+      dot.current = glow.current = null;
       labels.current = [];
       hoverLabel.current = null;
     };
@@ -296,8 +302,14 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
       if (opacity > 0) place(label, LABELS[i].at, 0, "translateY(-50%)");
     });
     if (dot.current) {
-      dot.current.style.opacity = String(coreIn * dive);
+      // It stays through the dive (the camera dives into it) until its glow takes over.
+      dot.current.style.opacity = String(coreIn * (1 - MathUtils.smoothstep(p, ...GLOW_IN)));
       if (coreIn > 0) place(dot.current, ORIGIN, 0, "translate(-50%, -50%)");
+    }
+    if (glow.current) {
+      const swell = MathUtils.smoothstep(p, ...GLOW_IN);
+      glow.current.style.opacity = String(swell);
+      if (swell > 0) place(glow.current, ORIGIN, 0, `translate(-50%, -50%) scale(${(1 + GLOW_SCALE * swell * swell).toFixed(2)})`);
     }
 
     // Pointer: parallax tilt and the Suape hover, both only in the hero.

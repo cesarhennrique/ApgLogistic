@@ -51,9 +51,6 @@ async function imagesIn(page: Page) {
 }
 
 const photo = (page: Page) => page.locator("#chegada").getByRole("img", { name: /Navio porta-contêineres/ });
-// The camera's scale: the photo box's transform.
-const cameraScale = (page: Page) =>
-  photo(page).evaluate((img) => new DOMMatrix(getComputedStyle(img.closest("picture")!.parentElement!).transform).a);
 // How shown one of scene 1's notes is (heading, containers, target): its group's opacity.
 const noteOpacity = (page: Page, note: string) =>
   page.locator(`#chegada [data-note=${note}]`).evaluate((el) => Number(getComputedStyle(el).opacity));
@@ -70,22 +67,37 @@ test("scene 1 renders the photo, without foam canvas or console errors", async (
   expect(errors).toEqual([]);
 });
 
-test("no dead scroll: from the moment scene 1 slides in to the close, every 10vh of scroll changes the zoom", async ({ page }) => {
-  test.setTimeout(90_000);
+// What scene 1 shows, in one string: the camera, the HUD's position, the heading's dashes, the sonar, the outlines,
+// the sight and the count (every layer that moves with the scroll).
+const sceneOneState = (page: Page) =>
+  page.locator("#chegada").evaluate((scene) => {
+    const t = (el: Element | null) => (el ? `${getComputedStyle(el).transform}|${getComputedStyle(el).opacity}` : "");
+    return [
+      t(scene.querySelector("[data-photo]")),
+      scene.querySelector("[data-hud-coords]")?.textContent,
+      t(scene.querySelector("[data-hud]")),
+      ...[...scene.querySelectorAll("[data-route] i")].map((d) => getComputedStyle(d).transform),
+      ...[...scene.querySelectorAll("[data-sonar], [data-outline], [data-outline] i, [data-note], [data-note] [data-bar], [data-note] [data-label]")].map(t),
+      scene.querySelector(".tabular-nums")?.textContent,
+    ].join(";");
+  });
+
+test("no dead scroll: from the moment scene 1 slides in to the close, every 10vh of scroll changes what it shows", async ({ page }) => {
+  test.setTimeout(120_000);
   await page.goto("/");
   await settle(page);
-  // The close: the camera's progress at 0.8 (oceanCamera's ZOOM).
+  // To the card's arrival (0.93): after it the close holds.
   const step = await page.evaluate(() => (0.1 * window.innerHeight) / document.getElementById("chegada")!.offsetHeight);
-  let previous = 0;
-  for (let q = 0; q <= 0.8 + 1e-9; q += step) {
+  let previous = "";
+  for (let q = 0; q <= 0.93 + 1e-9; q += step) {
     await scrollToArrival(page, q);
     // (polled: under the test's load the scrubbed trigger can take a few frames to catch up)
-    await expect.poll(() => cameraScale(page), { message: `q = ${q.toFixed(3)}` }).toBeGreaterThan(previous);
-    previous = await cameraScale(page);
+    await expect.poll(() => sceneOneState(page), { message: `q = ${q.toFixed(3)}` }).not.toBe(previous);
+    previous = await sceneOneState(page);
   }
 });
 
-test("each note shows in its stretch only: the heading, the APG containers, the client's container", async ({ page }) => {
+test("each layer shows in its stretch only: the HUD, the heading, the APG containers, the client's container", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/");
   await settle(page);
@@ -93,15 +105,18 @@ test("each note shows in its stretch only: the heading, the APG containers, the 
     await scrollToArrival(page, q);
     await page.waitForTimeout(300);
     const [heading, containers, target] = await Promise.all(["heading", "containers", "target"].map((n) => noteOpacity(page, n)));
-    return { heading, containers, target };
+    const hud = await page.locator("#chegada [data-hud]").evaluate((el) => Number(getComputedStyle(el).opacity));
+    return { hud, heading, containers, target };
   };
-  // a. the whole ship, heading to Suape
-  expect(await shown(0.01)).toMatchObject({ heading: 1, containers: 0, target: 0 });
-  // b. the deck filling the screen
-  expect(await shown(0.5)).toMatchObject({ heading: 0, containers: 1, target: 0 });
-  // c. the close, held to the end
-  expect(await shown(0.85)).toMatchObject({ heading: 0, containers: 0, target: 1 });
-  expect(await shown(1)).toMatchObject({ heading: 0, containers: 0, target: 1 });
+  // 0–20%: the HUD over the whole ship
+  expect(await shown(0.1)).toMatchObject({ hud: 1, heading: 0, containers: 0, target: 0 });
+  // 20–45%: the heading at the bow
+  expect(await shown(0.33)).toMatchObject({ hud: 1, heading: 1, containers: 0, target: 0 });
+  // 45–75%: the APG containers
+  expect(await shown(0.6)).toMatchObject({ hud: 1, heading: 0, containers: 1, target: 0 });
+  // 75–100%: the client's container, held to the end
+  expect(await shown(0.95)).toMatchObject({ hud: 0, heading: 0, containers: 0, target: 1 });
+  expect(await shown(1)).toMatchObject({ hud: 0, heading: 0, containers: 0, target: 1 });
   expect(errors).toEqual([]);
 });
 
@@ -116,7 +131,12 @@ test("the Home's container codes run 01, 02, 03… in order, without repeats", a
   await page.goto("/");
   const codes = await page
     .locator("main")
-    .evaluate((main) => [...main.textContent!.matchAll(/APGU 1996-(\d{2})/g)].map((m) => Number(m[1])));
+    // (the sections' codes: not the container code on scene 1's card, a note on the photo)
+    .evaluate((main) => {
+      const copy = main.cloneNode(true) as HTMLElement;
+      for (const note of copy.querySelectorAll("[data-note]")) note.remove();
+      return [...copy.textContent!.matchAll(/APGU 1996-(\d{2})/g)].map((m) => Number(m[1]));
+    });
   expect(codes.length).toBeGreaterThanOrEqual(10);
   expect(codes).toEqual(codes.map((_, i) => i + 1));
 });
@@ -167,7 +187,7 @@ test("the hero's copy is centred below the header (at the bottom on phones)", as
 
 // Art-direction review: five points of scene 1, saved for a human to look at (not diffed).
 test.describe("scene 1 frames", () => {
-  for (const q of [0, 0.05, 0.25, 0.5, 0.75, 1]) {
+  for (const q of [0.1, 0.3, 0.6, 0.9]) {
     test(`chegada at ${q}`, async ({ page }, testInfo) => {
       const errors = collectErrors(page);
       await page.goto("/");

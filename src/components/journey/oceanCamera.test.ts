@@ -32,9 +32,10 @@ describe("oceanCamera", () => {
     expect(toScreen(sampleOceanCamera(0, phone), SHIP).x).toBeCloseTo(195, 3);
   });
 
-  it("zooms from the very start: no held stretch before it", () => {
-    expect(ZOOM[0]).toBe(0);
-    expect(sampleOceanCamera(0.02, desktop).scale).toBeGreaterThan(sampleOceanCamera(0, desktop).scale);
+  it("holds the wide framing while the HUD and the heading draw (0–15%), then zooms at once", () => {
+    expect(ZOOM[0]).toBe(0.15);
+    expect(sampleOceanCamera(0.1, desktop)).toEqual(sampleOceanCamera(0, desktop));
+    expect(sampleOceanCamera(0.17, desktop).scale).toBeGreaterThan(sampleOceanCamera(0.15, desktop).scale);
   });
 
   it("closes on the target container: its centre is the focus, at the centre of the screen, and holds", () => {
@@ -50,7 +51,7 @@ describe("oceanCamera", () => {
   });
 
   it("zooms exponentially: equal steps of progress multiply the scale by the same ratio", () => {
-    const steps = [0.1, 0.25, 0.4, 0.55, 0.7].map((p) => sampleOceanCamera(p, desktop).scale);
+    const steps = [0.2, 0.35, 0.5, 0.65, 0.8].map((p) => sampleOceanCamera(p, desktop).scale);
     const ratios = steps.slice(1).map((s, i) => s / steps[i]);
     for (const r of ratios) expect(r).toBeCloseTo(ratios[0], 9);
     expect(ratios[0]).toBeGreaterThan(1);

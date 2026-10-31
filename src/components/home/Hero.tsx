@@ -34,8 +34,8 @@ function HeroPhoto() {
         src={photo("hero-porto-1920", "webp")}
         alt={site.home.hero.photoAlt}
         fetchPriority="high"
-        // the ship in focus: its deck at the frame's right third
-        className="absolute inset-0 h-full w-full object-cover object-[68%_55%] max-md:object-center"
+        // the quay and its cranes at the right (the photo sits in the lower right of the hero, under the map)
+        className="absolute inset-0 h-full w-full object-cover object-[100%_10%] max-md:object-center"
       />
     </picture>
   );
@@ -58,7 +58,7 @@ export function Hero() {
     <section id="hero" data-intro-root="" data-header-theme="dark" className="relative bg-navy-900" style={{ height: `${HERO_VH}vh` }}>
       <HeroStage photo={<HeroPhoto />}>
         {/* Phones: at the bottom, over the photo's darker foot; wide screens: centred at the left, over the sea. */}
-        <div className="site-container flex flex-1 flex-col pt-20 pb-6 max-md:justify-end md:justify-center md:pt-24">
+        <div className="site-container flex flex-1 flex-col pt-20 pb-4 max-md:justify-end md:justify-center md:pt-24 md:pb-6">
           {/* The map keeps out of this box (CameraRig fits it in the sky). */}
           <div id="hero-copy" className="w-fit max-w-full">
             <div data-intro="code">
@@ -68,14 +68,14 @@ export function Hero() {
               as="h1"
               manual="title"
               lines={[...title.lines.map((text) => ({ text })), { text: title.accent, className: "text-red-500" }]}
-              className="font-condensed mt-4 text-[clamp(2.5rem,11vw,3.5rem)] leading-[0.88] font-bold tracking-[-0.01em] uppercase md:mt-5 md:text-[clamp(3rem,7vw,7rem)]"
+              className="font-condensed mt-3 text-[clamp(2.25rem,10vw,3.5rem)] leading-[0.88] font-bold tracking-[-0.01em] uppercase md:mt-5 md:text-[clamp(3rem,7vw,7rem)]"
             >
               {site.tagline}
             </RevealText>
-            <p data-intro="subtitle" className="mt-4 max-w-md text-base text-sand-50/85 md:mt-6 md:max-w-xl md:text-xl">
+            <p data-intro="subtitle" className="mt-3 max-w-md text-sm text-sand-50/85 md:mt-6 md:max-w-xl md:text-xl">
               {site.home.hero.subtitle}
             </p>
-            <div data-intro="actions" className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4 md:mt-10">
+            <div data-intro="actions" className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-10 md:gap-x-8 md:gap-y-4">
               <CtaButton href="/contato">{site.cta.quote}</CtaButton>
               <SeeOperationLink />
             </div>

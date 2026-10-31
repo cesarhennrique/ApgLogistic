@@ -77,9 +77,21 @@
   }
 }
 
-.intro-short:has([data-intro-root]) [data-intro]:not([data-intro-ready]) {
+.intro-short:has([data-intro-root]) [data-intro]:not([data-intro-ready]):not([data-intro="title"]) {
   opacity: 0;
   animation: reveal-failsafe 0s 3s forwards;
+}
+
+/* The title never at opacity 0 (it may be the LCP): its words wait below their line masks, by transform only. */
+.intro-short:has([data-intro-root]) [data-intro="title"]:not([data-intro-ready]) .reveal-word {
+  transform: translateY(125%);
+  animation: title-failsafe 0s 3s forwards;
+}
+
+@keyframes title-failsafe {
+  to {
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

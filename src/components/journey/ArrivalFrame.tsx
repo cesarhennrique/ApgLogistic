@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import images from "@/content/journeyImages.json";
+import { ContainerCode } from "@/components/ui/ContainerCode";
 import { site } from "@/content/site";
 import { APG_CONTAINERS, PHOTO, type View } from "./oceanCamera";
 
@@ -42,7 +43,15 @@ export type Frame = {
   heading: Note;
   containers: Note;
   target: Note;
+  // The navigation HUD in a corner (its position line updated as it runs), the dashed heading ahead of the bow (one
+  // short bar per dash), the sonar's two rings.
+  hud: { group: HTMLElement; coords: HTMLElement };
+  route: HTMLElement[];
+  sonar: HTMLElement[];
 };
+
+// The heading's dashes: enough to reach the top of a tall screen from the bow.
+export const ROUTE_DASHES = 72;
 
 export const frames = new Set<Frame>();
 let redraw: (() => void) | null = null;
@@ -72,7 +81,7 @@ const Label = ({ children }: { children: string }) => (
   <span
     data-label=""
     // navy at 80% under white mono text: AA over any part of the photo
-    className="absolute top-0 left-0 bg-navy-900/80 px-2 py-1 font-mono text-[11px] leading-none tracking-[0.12em] whitespace-nowrap text-sand-50 md:text-xs"
+    className="absolute top-0 left-0 bg-navy-900/80 px-2 py-1 font-mono text-xs leading-none tracking-[0.12em] whitespace-nowrap text-sand-50"
   >
     {children}
   </span>
@@ -110,13 +119,16 @@ export function ArrivalFrame({ alt }: { alt: string }) {
       heading: note(q("[data-note=heading]")),
       containers: note(q("[data-note=containers]")),
       target: note(q("[data-note=target]")),
+      hud: { group: q("[data-hud]"), coords: q("[data-hud-coords]") },
+      route: [...el.querySelectorAll<HTMLElement>("[data-route] i")],
+      sonar: [...el.querySelectorAll<HTMLElement>("[data-sonar]")],
     };
     frames.add(frame);
     redraw?.();
     return () => void frames.delete(frame);
   }, []);
 
-  const { notes } = site.journeyScene;
+  const { notes, hud, targetCard } = site.journeyScene;
   return (
     <div ref={root} className="absolute inset-0 overflow-hidden">
       {/* The photo in a box of its own pixel size, placed by the camera (oceanCamera). No will-change: the browser
@@ -170,7 +182,46 @@ export function ArrivalFrame({ alt }: { alt: string }) {
               <Bar key={i} />
             ))}
           </div>
-          <Label>{notes.target}</Label>
+          {/* Its card: the label, then the container's code, size and destination. */}
+          <span
+            data-label=""
+            className="absolute top-0 left-0 bg-navy-900/85 px-3 py-2 font-mono text-xs leading-snug tracking-[0.12em] whitespace-nowrap text-sand-50"
+          >
+            <span className="block">{notes.target}</span>
+            <span className="mt-1 block">
+              <ContainerCode index={targetCard.index} label={targetCard.label} tone="opacity-100" />
+            </span>
+          </span>
+        </div>
+
+        {/* The heading ahead of the bow, dash by dash. */}
+        <div data-route="">
+          {Array.from({ length: ROUTE_DASHES }, (_, i) => (
+            <i key={i} className="absolute top-0 left-0 h-2 w-0.5 origin-top-left bg-red-500" style={{ transform: "scale(0)" }} />
+          ))}
+        </div>
+        {/* The sonar: two faint rings out of the ship (40vmin across, scaled; their 1 px border never more than ~2). */}
+        {[0, 1].map((i) => (
+          <i
+            key={i}
+            data-sonar=""
+            className="absolute top-0 left-0 size-[40vmin] rounded-full border border-sand-50/70 opacity-0"
+          />
+        ))}
+
+        {/* The navigation HUD, top right. */}
+        <div
+          data-hud=""
+          className="absolute top-20 right-4 bg-navy-900/70 px-3 py-2 text-right font-mono text-xs leading-relaxed tracking-[0.12em] text-sand-50 uppercase opacity-0 md:top-24 md:right-8"
+        >
+          <span data-hud-coords="" className="block tabular-nums">
+            {hud.to.lat[0]}°{hud.to.lat[1]}′S {hud.to.lon[0]}°{hud.to.lon[1]}′W
+          </span>
+          <span className="block">{hud.destination}</span>
+          <span className="block">
+            <span aria-hidden="true" className="mr-2 inline-block h-0.5 w-3 bg-red-500 align-middle" />
+            {hud.mode}
+          </span>
         </div>
       </div>
     </div>

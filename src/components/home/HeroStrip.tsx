@@ -1,15 +1,15 @@
-import { Headset, type LucideIcon, Ship, Truck, Warehouse } from "lucide-react";
+import { Clock, Landmark, type LucideIcon, Ship, Truck } from "lucide-react";
 import { site } from "@/content/site";
 
 // One line icon per pillar, in site.home.hero.pillars' order.
-const ICONS: LucideIcon[] = [Ship, Truck, Headset, Warehouse];
+const ICONS: LucideIcon[] = [Ship, Truck, Clock, Landmark];
 
 // The hero's bottom band: the operation's four pillars, a slanted rule between them on wide screens, a 2×2 grid on
 // phones.
 export function HeroStrip() {
   return (
     <div data-intro="strip" className="border-t border-sand-50/10">
-      <ul className="site-container grid grid-cols-2 gap-x-4 gap-y-4 py-4 md:grid-cols-4 md:gap-x-0 md:py-5">
+      <ul className="site-container grid grid-cols-2 gap-x-4 gap-y-3 py-3 md:grid-cols-4 md:gap-y-4 md:py-4 md:gap-x-0 md:py-5">
         {site.home.hero.pillars.map((p, i) => {
           const Icon = ICONS[i];
           return (

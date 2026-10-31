@@ -17,7 +17,8 @@ const DebugSlider = lazy(() => import("./DebugTools").then((m) => ({ default: m.
 const DebugProbe = lazy(() => import("./DebugTools").then((m) => ({ default: m.DebugProbe })));
 
 // Client-only (next/dynamic ssr:false). The only canvas on the page: the hero's map, in the hero's sticky stage.
-export default function HeroCanvas() {
+// onReady: the first frame is drawn (the hero hides its static stand-in).
+export default function HeroCanvas({ onReady }: { onReady?: () => void }) {
   const reducedMotion = useReducedMotion();
   const [{ debug }] = useState(() => readDebugParams(window.location.search));
   const [ready, setReady] = useState(false);
@@ -58,8 +59,11 @@ export default function HeroCanvas() {
           // effects: they would flatten the alpha), so MSAA for the lines.
           flat
           gl={{ antialias: true, alpha: true }}
-          camera={{ fov: 35, near: 0.5, far: 1000, position: sampleHeroCamera(heroDive.value).position }}
-          onCreated={() => setReady(true)}
+          camera={{ fov: 35, near: 0.5, far: 5000, position: sampleHeroCamera(heroDive.value).position }}
+          onCreated={() => {
+            setReady(true);
+            onReady?.();
+          }}
         >
           <LoadProbe />
           <HeroMapStage reducedMotion={reducedMotion} />

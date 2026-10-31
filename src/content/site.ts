@@ -227,6 +227,15 @@ export const site = {
     // Scene 1's notes on the photo, as on a technical drawing: the ship's heading at its bow, the APG containers
     // on the deck, the client's container at the close.
     notes: { heading: "CABOTAGEM · RUMO A SUAPE · PE", containers: "CONTAINERS APG", target: "SEU CONTAINER" },
+    // Scene 1's navigation HUD: the position runs from the open sea to Suape's (degrees, minutes).
+    hud: {
+      from: { lat: [5, 40], lon: [32, 20] },
+      to: { lat: [8, 23], lon: [34, 57] },
+      destination: "Destino: Suape · PE",
+      mode: "Cabotagem",
+    },
+    // The target container's card at the close (its ContainerCode: number and label); the one scene 2 lowers.
+    targetCard: { index: 7, label: "40′ · Destino: Terminal CONE" },
     // Shown when the pointer is over Suape on the hero's map.
     suapeHover: "Terminal CONE · Cabo de Santo Agostinho",
   },

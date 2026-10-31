@@ -3,11 +3,11 @@ import { MathUtils, Vector3 } from "three";
 type V3 = [number, number, number];
 export type CameraKey = { position: V3; target: V3; fov: number };
 
-// The hero's dive: the Northeast map seen ~35° above its plane from the south (north up), aimed at its middle,
-// down onto Suape (the map's origin). At runtime the start is refitted to the viewport beside (or above) the copy
+// The hero's dive: the Northeast map seen from high above its plane (~60°, from the south, north up), aimed at its
+// middle, down onto Suape (the map's origin). At runtime the start is refitted to the viewport beside (or above) the copy
 // (CameraRig, heroFrame).
 export const HERO_KEYS = {
-  start: { position: [-30, 86, 129.4], target: [-30, 0, 6.5], fov: 35 },
+  start: { position: [-30, 120, 62], target: [-30, 0, 6.5], fov: 35 },
   mid: { position: [-12, 38, 56], target: [-6, 0, 3], fov: 37 },
   end: { position: [-4, 22, 18], target: [0, 0, 0], fov: 40 },
 } satisfies Record<string, CameraKey>;

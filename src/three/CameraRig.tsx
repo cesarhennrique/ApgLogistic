@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { MathUtils, type PerspectiveCamera, Vector3 } from "three";
 import { heroDive } from "./progress";
 import { HERO_KEYS, sampleHeroCamera } from "./stages/heroCamera";
-import { PHOTO_MARKS, photoToScreen } from "@/components/home/heroPhoto";
 import { fitHeroFrame, type Rect } from "./stages/heroFrame";
 
 // The hero's slow orbit: ±6° about the map's vertical axis, a 20 s cycle, fading out over the first third of the
@@ -14,12 +13,12 @@ const ORBIT = MathUtils.degToRad(6);
 const ORBIT_PERIOD = 20;
 const ORBIT_FADE = 0.3;
 const Y = new Vector3(0, 1, 0);
-// "SUAPE · PE" sits right of Suape, on the coast: room for it on a portrait screen.
-const SUAPE_LABEL = 80;
+// "SUAPE · PE" sits right of Suape, on the coast: room for it.
+const SUAPE_LABEL = 110;
 
-// The opening shot is refitted to the viewport (heroFrame): the map small, in the photo's sky: on landscape screens
-// right of the copy (#hero-copy) and left of the cranes, in the upper part; on portrait ones above the copy, short of
-// the room Suape's label needs at the right.
+// The opening shot is refitted to the viewport (heroFrame): the map is the hero's centrepiece, large: on landscape
+// screens right of the copy (#hero-copy), from ~12% to ~78% of the height; on portrait ones the width above the copy.
+// Short of the room Suape's label needs at the right.
 const HERO_START = HERO_KEYS.start;
 const START_POSITION = new Vector3(...HERO_START.position);
 const START_TARGET = new Vector3(...HERO_START.target);
@@ -32,15 +31,13 @@ function freeRegion(width: number, height: number): Rect {
   const margin = MathUtils.clamp(width * 0.04, 16, 64);
   const copy = document.getElementById("hero-copy")?.getBoundingClientRect();
   if (width >= height) {
-    // The sky: above the ship's bridge, left of the cranes, where the photo's cover fit puts them.
-    const left = (copy?.right ?? 0.4 * width) + 32;
-    const right = photoToScreen(width, height, PHOTO_MARKS.cranesLeft, 0).x - 16;
-    const bottom = photoToScreen(width, height, 0, PHOTO_MARKS.bridgeTop).y - 8;
-    return { left, right: Math.max(right, left + 160), top: header + 16, bottom: Math.max(bottom, header + 136) };
+    const left = Math.max((copy?.right ?? 0) + 40, 0.42 * width);
+    return { left, right: width - margin - SUAPE_LABEL, top: Math.max(0.12 * height, header + 8), bottom: 0.78 * height };
   }
   // The hero sits at the top of the page: its layout box, as at scroll 0.
   const top = copy ? copy.top + window.scrollY : height / 2;
-  return { left: margin, right: width - margin - SUAPE_LABEL, top: header + 8, bottom: Math.min(top - 24, 0.34 * height) };
+  // (never less than 22% of the screen: on a short phone the copy fills most of it)
+  return { left: margin, right: width - margin - SUAPE_LABEL, top: header + 8, bottom: Math.max(Math.min(top - 16, 0.4 * height), header + 0.22 * height) };
 }
 
 const pose = sampleHeroCamera(0);

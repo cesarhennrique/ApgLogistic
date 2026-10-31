@@ -22,9 +22,9 @@ export const APG_CONTAINERS: Rect[] = [
 export const TARGET = APG_CONTAINERS[3];
 export const FOCUS = { x: TARGET.x + TARGET.w / 2, y: TARGET.y + TARGET.h / 2 };
 
-// The zoom runs from the start of the scene's progress (the photo already covers the screen) to the close, which
-// then holds.
-export const ZOOM = [0, 0.8] as const;
+// The zoom runs over this stretch of the scene's progress: before it the wide framing holds while the HUD and the
+// heading draw (OceanArrival), after it the close holds.
+export const ZOOM = [0.15, 0.85] as const;
 // The close: the hull this share of the screen's height (or the screen's full width, on a narrow screen)...
 export const HULL_FILL = 0.9;
 // ...unless that magnifies a pixel of the original past this many device pixels: then the zoom stops there.

@@ -1,35 +1,52 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { Counter } from "@/components/motion/Counter";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
 import { ArrivalFrame, type Frame, frames, loadSharp, setRedraw, viewOf } from "./ArrivalFrame";
-import { APG_CONTAINERS, BOW, type Rect, TARGET, type View, ZOOM, cameraTransform, sampleOceanCamera, toScreen } from "./oceanCamera";
+import { APG_CONTAINERS, BOW, type Rect, SHIP, TARGET, type View, ZOOM, cameraTransform, sampleOceanCamera, toScreen } from "./oceanCamera";
 import { Scene, segment } from "./Scene";
 
 const scene = site.journey.find((s) => s.id === "chegada")!;
 const HEIGHT_VH = 320;
+const TEUS = new Intl.NumberFormat("pt-BR");
 
-// The script (spec §3, revision 2026-10-30c), over the scene's progress (q). The camera zooms from the first pixel
-// of scroll (oceanCamera's ZOOM, 0–0.8) and holds the close after; its first 100vh slide the scene in over the
-// hero, which shows the same picture.
-// a. The heading at the bow, until the bow leaves the screen.
-// b. The APG containers outlined one by one, a note on the first, the counter at the left.
-const OUTLINE_IN = 0.3;
-const OUTLINE_STAGGER = 0.03;
-const OUTLINE_FADE = 0.04;
-const COPY_IN = [0.34, 0.4] as const;
-const COPY_OUT = [0.58, 0.64] as const;
-const OUTLINE_OUT = [0.62, 0.68] as const;
-// c. The client's container: corner marks and its label, held through the close.
-const TARGET_IN = [0.66, 0.74] as const;
+// The script (spec §3, revisions 2026-10-30c and 2026-10-31), over the scene's progress (q): the photo stays still,
+// the camera zooms (oceanCamera's ZOOM) and over every stretch a layer of its own moves, pinned to the photo. The
+// first 100vh slide the scene in over the hero, which shows the same picture (and the same layers).
+// 0–20%: the navigation HUD in a corner, its position running to Suape's; the dashed heading drawn on the water
+// ahead of the bow, out of the top of the frame.
+const HUD_IN = [0, 0.04] as const;
+const HUD_RUN = [0, 0.2] as const;
+const HUD_OUT = [0.74, 0.8] as const;
+const ROUTE_DRAW = [0.02, 0.2] as const;
+// 20–45%: the sonar's two rings out of the ship; the heading's label at the bow.
+const SONAR = [
+  [0.2, 0.36],
+  [0.29, 0.45],
+] as const;
+const HEADING_IN = [0.2, 0.26] as const;
+const HEADING_OUT = [0.42, 0.46] as const;
+// 45–75%: the APG containers outlined one by one (drawn round), the counter climbing with them, the note on the first.
+const OUTLINE_IN = 0.45;
+const OUTLINE_STAGGER = 0.045;
+const OUTLINE_DRAW = 0.05;
+const OUTLINE_OUT = [0.76, 0.82] as const;
+const COPY_IN = [0.45, 0.5] as const;
+const COUNT = [0.45, 0.72] as const;
+const COPY_OUT = [0.76, 0.8] as const;
+// 75–100%: the sight closes in on the client's container, from wide to tight, and locks (a short snap, ~120 ms of an
+// ordinary scroll); its card comes in.
+const TARGET_IN = [0.75, 0.8] as const;
+const CLOSE_IN = [0.75, 0.88] as const;
+const LOCK = [0.88, 0.9] as const;
+const CARD_IN = [0.88, 0.93] as const;
 // The original photo (desktop) crossfades over the 1920 one before the zoom gets close.
 const SHARP_IN = [0.12, 0.26] as const;
-// Reduced motion: the camera still in the middle of the zoom, the outlines, their note and the counter shown.
-const REDUCED_Q = 0.5;
+// Reduced motion: the end state, still: the camera mid-zoom, the HUD, the outlines, the counter and the card.
+const REDUCED_Q = 0.6;
 
 // Outlined in this order: first the one the note points at (right of the deck's centre line, so the note sits on
 // the water beside the hull), then the target, then outwards.
@@ -39,17 +56,13 @@ const LINE = 2;
 const HALO = 2;
 // Outlines sit this far outside each container: on the dark gaps between them, not on the red and navy paint.
 const OUTSET = 4;
-// The target's corner marks: heavier than the outlines, this far outside its box, each arm 28% of its shorter side.
-const MARK = { line: 3, gap: 10, arm: 0.28 };
+// The target's corner marks: heavier than the outlines, closing from this far outside its box to 10 px; each arm
+// 28% of its shorter side.
+const MARK = { line: 3, gap: 10, from: 120, snap: 5, arm: 0.28 };
+// The heading's dashes: 8 px long, every 16 px.
+const DASH = { length: 8, every: 16, gap: 12 };
 
-// Where the counter starts: a scroll position inside the scene (the number never scrolls itself, it sits on the
-// sticky stage).
-const counterStart = () => {
-  const el = document.getElementById("chegada")!;
-  const top = el.getBoundingClientRect().top + window.scrollY - window.innerHeight;
-  return top + COPY_IN[0] * el.offsetHeight;
-};
-
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
 const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
 const place = (el: HTMLElement, x: number, y: number, w = 1, h = 1) =>
   (el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${w.toFixed(2)}, ${h.toFixed(2)})`);
@@ -61,14 +74,22 @@ const guide = (n: { leader: HTMLElement | null; leaderHalo: HTMLElement | null }
   leader(n.leaderHalo!, ax, ay, bx, by, 1 + 2 * HALO);
   leader(n.leader!, ax, ay, bx, by);
 };
-// A rectangle's four edges, t px thick, inside it.
-const edges = (bars: HTMLElement[], r: { x: number; y: number; w: number; h: number }, t: number) => {
+// A rectangle's four edges, t px thick, inside it, drawn round from its top left, clockwise, as far as f (0–1): each
+// edge a 1 px box stretched (transform only, so the stroke never thickens).
+const edges = (bars: HTMLElement[], r: { x: number; y: number; w: number; h: number }, t: number, f = 1) => {
   const [top, bottom, left, right] = bars;
-  place(top, r.x, r.y, r.w, t);
-  place(bottom, r.x, r.y + r.h - t, r.w, t);
-  place(left, r.x, r.y, t, r.h);
-  place(right, r.x + r.w - t, r.y, t, r.h);
+  const s = (k: number) => clamp01(f * 4 - k);
+  place(top, r.x, r.y, r.w * s(0), t);
+  place(right, r.x + r.w - t, r.y, t, r.h * s(1));
+  place(bottom, r.x + r.w * (1 - s(2)), r.y + r.h - t, r.w * s(2), t);
+  place(left, r.x, r.y + r.h * (1 - s(3)), t, r.h * s(3));
 };
+// The HUD's position: degrees and minutes, from the open sea to Suape's.
+const { hud } = site.journeyScene;
+const minutes = ([d, m]: readonly number[]) => d * 60 + m;
+const dm = (total: number) => `${String(Math.floor(total / 60)).padStart(2, "0")}°${String(Math.round(total % 60) % 60).padStart(2, "0")}′`;
+const position = (t: number) =>
+  `${dm(minutes(hud.from.lat) + (minutes(hud.to.lat) - minutes(hud.from.lat)) * t)}S ${dm(minutes(hud.from.lon) + (minutes(hud.to.lon) - minutes(hud.from.lon)) * t)}W`;
 
 function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const cam = sampleOceanCamera(q, view);
@@ -80,28 +101,47 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   };
   const md = view.width >= 768;
   const header = md ? 80 : 64;
-
-  // a. The heading: a label off the bow, a leader from the bow's tip to it; gone as the bow leaves the screen.
   const bow = toScreen(cam, BOW);
+
+  // 0–20%: the HUD (its position running), the heading drawn dash by dash from the bow up and out of the frame.
+  frame.hud.group.style.opacity = String(reduced ? 1 : segment(q, ...HUD_IN) * (1 - segment(q, ...HUD_OUT)));
+  frame.hud.coords.textContent = position(reduced ? 1 : easeOut(segment(q, ...HUD_RUN)));
+  const reach = (reduced ? 1 : segment(q, ...ROUTE_DRAW)) * Math.max(bow.y - DASH.gap, 0);
+  frame.route.forEach((dash, i) => {
+    const y = bow.y - DASH.gap - DASH.length - i * DASH.every;
+    const on = i * DASH.every < reach && y > -DASH.length;
+    place(dash, bow.x - 1, y, on ? 1 : 0, on ? 1 : 0);
+  });
+
+  // 20–45%: the sonar's rings out of the ship's centre; the heading's label off the bow, a leader to it.
+  const ship = toScreen(cam, SHIP);
+  frame.sonar.forEach((ring, i) => {
+    const t = reduced ? 0 : segment(q, SONAR[i][0], SONAR[i][1]);
+    const size = ring.offsetWidth;
+    place(ring, ship.x - size / 2, ship.y - size / 2, 0.35 + 1.9 * t, 0.35 + 1.9 * t);
+    ring.style.opacity = String(t > 0 && t < 1 ? 0.75 * (1 - t) : 0);
+  });
   const h = frame.heading;
   const hw = h.label.offsetWidth;
   const hx = Math.min(Math.max(bow.x + (md ? 96 : 40), 16), view.width - hw - 16);
   const hy = Math.max(bow.y + 28, header + 8);
   place(h.label, hx, hy);
   guide(h, bow.x, bow.y, Math.min(Math.max(bow.x, hx), hx + hw), hy);
-  h.group.style.opacity = String(reduced ? 0 : clamp01(bow.y / 40));
+  // (held at the top once the bow has gone off it, its leader pointing where the bow went)
+  h.group.style.opacity = String(reduced ? 0 : segment(q, ...HEADING_IN) * (1 - segment(q, ...HEADING_OUT)));
 
-  // b. The outlines, one at a time; all leave for the close.
+  // 45–75%: the outlines, drawn round one after the other; all leave for the close.
   const out = reduced ? 0 : segment(q, ...OUTLINE_OUT);
   ORDER.forEach((i, n) => {
     const o = frame.outlines[i];
     const b = box(APG_CONTAINERS[i]);
     const r = { x: b.x - OUTSET, y: b.y - OUTSET, w: b.w + 2 * OUTSET, h: b.h + 2 * OUTSET };
-    edges(o.bars, r, LINE);
-    // the halo: HALO px outside the red, and under it
-    edges(o.halos, { x: r.x - HALO, y: r.y - HALO, w: r.w + 2 * HALO, h: r.h + 2 * HALO }, LINE + HALO);
     const start = OUTLINE_IN + n * OUTLINE_STAGGER;
-    o.group.style.opacity = String((reduced ? 1 : segment(q, start, start + OUTLINE_FADE)) * (1 - out));
+    const f = reduced ? 1 : segment(q, start, start + OUTLINE_DRAW);
+    edges(o.bars, r, LINE, f);
+    // the halo: HALO px outside the red, and under it
+    edges(o.halos, { x: r.x - HALO, y: r.y - HALO, w: r.w + 2 * HALO, h: r.h + 2 * HALO }, LINE + HALO, f);
+    o.group.style.opacity = String(f > 0 ? 1 - out : 0);
   });
   // The note on the first one: beside the hull, a leader from the container's right edge.
   const first = box(APG_CONTAINERS[ORDER[0]]);
@@ -112,11 +152,13 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const cy = first.y + first.h / 2 - ch / 2;
   place(c.label, cx, cy);
   guide(c, first.x + first.w + OUTSET + HALO, first.y + first.h / 2, cx, cy + ch / 2);
-  c.group.style.opacity = String((reduced ? 1 : segment(q, OUTLINE_IN, OUTLINE_IN + OUTLINE_FADE)) * (1 - out));
+  c.group.style.opacity = String((reduced ? 1 : segment(q, OUTLINE_IN, OUTLINE_IN + OUTLINE_DRAW)) * (1 - out));
 
-  // c. The client's container: four L-shaped corner marks, like a sight, and its label.
+  // 75–100%: the sight closes in from wide to tight and locks (a snap in, and back); then the card.
   const t = box(TARGET);
-  const { gap, line: L } = MARK;
+  const close = reduced ? 1 : easeOut(segment(q, ...CLOSE_IN));
+  const gap = MARK.gap + (1 - close) * MARK.from - (reduced ? 0 : MARK.snap * Math.sin(Math.PI * segment(q, ...LOCK)));
+  const L = MARK.line;
   const arm = MARK.arm * Math.min(t.w, t.h);
   const [x0, y0, x1, y1] = [t.x - gap, t.y - gap, t.x + t.w + gap, t.y + t.h + gap];
   const m = frame.target.bars;
@@ -128,9 +170,14 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   place(m[5], x0, y1 - arm, L, arm);
   place(m[6], x1 - arm, y1 - L, arm, L);
   place(m[7], x1 - L, y1 - arm, L, arm);
-  const tw = frame.target.label.offsetWidth;
-  place(frame.target.label, Math.min(x1 + 12, view.width - tw - 16), y0);
-  frame.target.group.style.opacity = String(reduced ? 0 : segment(q, ...TARGET_IN));
+  const card = frame.target.label;
+  const tw = card.offsetWidth;
+  // beside it, on the right where there is room, else below it
+  const right = t.x + t.w + MARK.gap + 12;
+  const fits = right + tw <= view.width - 16;
+  place(card, fits ? right : Math.max(16, Math.min(t.x, view.width - tw - 16)), fits ? t.y : t.y + t.h + MARK.gap + 12);
+  card.style.opacity = String(reduced ? 1 : segment(q, ...CARD_IN));
+  frame.target.group.style.opacity = String(reduced ? 1 : segment(q, ...TARGET_IN));
   // held at the close: the sight pulses (CSS, off with reduced motion)
   const held = !reduced && q >= ZOOM[1];
   if (held !== (frame.target.group.dataset.held === "")) frame.target.group.toggleAttribute("data-held", held);
@@ -142,6 +189,7 @@ export function OceanArrival() {
   const stage = useRef<HTMLDivElement>(null);
   const copy = useRef<HTMLDivElement>(null);
   const scrim = useRef<HTMLDivElement>(null);
+  const count = useRef<HTMLSpanElement>(null);
   const reduced = useReducedMotion();
   const raw = useRef(0);
 
@@ -160,6 +208,8 @@ export function OceanArrival() {
     scrim.current!.style.opacity = String(copyIn);
     copy.current!.style.transform = `translate3d(0, ${((1 - copyIn) * 16).toFixed(1)}px, 0)`;
     copy.current!.style.visibility = copyIn <= 0 ? "hidden" : "";
+    // the count climbs with the outlines
+    count.current!.textContent = TEUS.format(Math.round(site.journeyScene.arrivalTeus * (reduced ? 1 : segment(q, ...COUNT))));
   }, [reduced]);
 
   const onProgress = useCallback(
@@ -226,7 +276,10 @@ export function OceanArrival() {
         <div className="max-w-[24rem] max-md:rounded-sm max-md:bg-navy-900/70 max-md:p-4 max-md:backdrop-blur-sm">
           <ContainerCode index={homeCode("chegada")} label={scene.code} />
           <p className="font-condensed mt-4 text-[clamp(2.5rem,6vw,5rem)] leading-[0.92] font-bold uppercase">
-            <Counter value={site.journeyScene.arrivalTeus} start={counterStart} className="tabular-nums" />
+            <span className="sr-only">{TEUS.format(site.journeyScene.arrivalTeus)}</span>
+            <span ref={count} aria-hidden="true" className="tabular-nums">
+              {TEUS.format(site.journeyScene.arrivalTeus)}
+            </span>
             <span className="block">{scene.text}</span>
           </p>
         </div>
