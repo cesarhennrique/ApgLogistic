@@ -1767,6 +1767,80 @@ cartão e capítulo aparece quando ela passa e a cena termina na doca.
 Commit: "feat: estrada contínua da vista lateral à pista com a história"
 ````
 
+## Prompt J3d — Ajustes da cena 2, do encaixe e da estrada
+
+````text
+Leia o CLAUDE.md, o spec (seção 3, "Revisão 2026-10-31b") e
+CraneLift.tsx, Load.tsx, Estrada.tsx e estradaScript.ts. Use as skills
+animate, animation-performance, emil-design-eng e
+frontend-design:frontend-design.
+
+1. Cena 2: tire o costado do navio em traço e as pilhas de containers
+   desenhadas (com a linha d'água tracejada). Ficou estranho (avaliação
+   do usuário). Mantenha o cais, a régua, a carreta esperando, "SUAPE"
+   e as cotas.
+
+2. Encaixe 2 → 3 sem trava: hoje o usuário precisa rolar duas vezes
+   sem nada acontecer antes do container encaixar. Ache a causa (a
+   cena 3 deslizando transparente sobre o close? trecho final da cena
+   2 parado?) e garanta que a descida continue sem parar: o container
+   segue descendo em todo passo de 10vh até encaixar na carreta, e o
+   encaixe acontece logo no início da cena 3. Teste e2e: do fim da
+   cena 2 ao encaixe, cada 5vh muda a altura do container (a cota em
+   metros diminui).
+
+3. Fase B mais natural (lateral → de cima). Hoje a carreta muda de
+   tamanho aos saltos (grande → média → pequena) e as vistas trocam
+   cedo. Refaça como um movimento de câmera contínuo:
+   - Uma única variável de ângulo θ de 0° a 90° ao longo da fase. A
+     escala da carreta e o zoom de câmera derivam de θ por uma curva
+     suave (sem degraus); a carreta mantém o centro fixo na tela.
+   - O chão é um plano em 3D: a faixa navy é um plano com
+     perspective + rotateX = 90° − θ, então de lado ela é uma linha
+     fina sob as rodas e vai se abrindo em pista conforme a câmera
+     sobe; as faixas tracejadas ficam no plano e ganham perspectiva.
+   - Cross-fades sobrepostos e longos (~20% da fase cada), centrados
+     em θ = 30° e 60°, alinhados pelo ponto de contato das rodas
+     traseiras e pela frente da cabine (calcule os encaixes por imagem
+     medindo os bboxes; não a olho).
+   - A carreta continua andando para a esquerda (o asfalto passa) e a
+     sombra acompanha o ângulo.
+   Antes do código, grave um vídeo só da fase B em câmera lenta e
+   confira quadro a quadro que não há salto de tamanho nem de posição.
+
+4. Fase A: no print, a faixa navy sob a carreta aparece vazia e a
+   palavra "FROTA PRÓPRIA" quase não aparece. Garanta que pelo menos um
+   cartão esteja visível em toda a fase A e que a palavra tenha
+   contraste perceptível (contorno 1.5px #D9D6CF ou preenchimento
+   #EDEBE6).
+
+5. Fase C — capítulos com vida. Hoje são texto solto em fundo branco.
+   Para cada capítulo:
+   - um marco na pista: pino red-500 com o número/ano, que acende e
+     pulsa quando a carreta passa, ligado ao cartão por uma linha de
+     chamada que se desenha (stroke-dashoffset);
+   - número grande com contador (1996 rola de 1990; 1.900 sobe de 0;
+     500 sobe de 0), título com SplitText linha a linha, ícone de
+     linha animado (lucide ou SVG: navio, carreta, guindaste, galpão,
+     mapa da BA) que se desenha ao entrar;
+   - código do capítulo com o ContainerCode ("APGU 1996-05 · 01/05")
+     e uma barra de progresso dos capítulos;
+   - saída: o cartão anterior sai deslizando e esmaecendo quando o
+     próximo entra.
+   Tire o bloco cinza atrás do título "CONFIANÇA / EM CADA /
+   QUILÔMETRO": se o título cruza a pista, mude a posição da pista ou
+   do título para não se cruzarem (ou título sobre placa sand-50
+   sólida com borda fina, nunca o cinza translúcido atual).
+
+6. Screenshots desktop e mobile: cena 2 (p 0, 0.5, 1), passagem 2 → 3
+   em 5 pontos, Estrada em p 0, 0.1 … 1, e um vídeo só da fase B.
+
+Pronto quando: lint, typecheck, test e e2e passam, não há trecho morto
+no encaixe, a câmera sobe da lateral à vista de cima sem salto, e cada
+capítulo entra com marco, contador e ícone animados.
+Commit: "fix: encaixe contínuo, câmera da estrada e capítulos animados"
+````
+
 ## Prompt J4 — Cena 6, transições, indicador e mobile
 
 ````text
