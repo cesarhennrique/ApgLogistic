@@ -1145,6 +1145,100 @@ plano de drone real do navio chegando a Suape.
 Commit: "feat: cenas da jornada por imagens e cena 1 (chegada)"
 ````
 
+## Prompt J1b — Cena 1 por zoom de câmera e ordem da Home
+
+> Revisão 2026-10-30b, depois do J1 (`0aa66ce`). O navio e a espuma animados separadamente não pareceram reais. Rode só depois que `assets-src/ai/navio-mar.png` existir e tiver sido aprovada.
+
+````text
+Leia o CLAUDE.md, o spec (seção 3, linha da cena 1, e seção 4 "Ordem da
+Home", ambas revisadas em 2026-10-30b) e
+src/components/journey/OceanArrival.tsx. Use as skills animate,
+animation-performance e superpowers:test-driven-development.
+
+Parte A — Cena 1: foto parada, câmera em zoom
+O navio animado sobre o oceano, com espuma em canvas, não ficou real.
+Agora a cena é UMA foto (assets-src/ai/navio-mar.png: navio no oceano,
+visto de cima, com a espuma e o rastro reais da própria foto). A foto
+não se mexe; só a câmera desce, como num drone.
+
+1. Pipeline: inclua navio-mar no npm run images (WebP/AVIF 800, 1200,
+   1920 e original). Não recorte: a foto ocupa a tela toda.
+2. Meça na foto e registre em src/components/journey/oceanCamera.ts (px
+   da imagem original): o centro do navio e o centro de um container
+   navy com faixa vermelha perto do meio do convés (o FOCO), e a largura
+   desse container. Confira medindo num recorte salvo com sharp.
+3. OceanArrival (cena 1, 280vh), no lugar do navio, do oceano e da
+   espuma:
+   - a foto em tela cheia (cover). No começo da cena, o enquadramento é
+     largo: o navio pequeno no meio do oceano;
+   - 0–0.08: segura parado (é a imagem em que o mergulho do hero
+     termina);
+   - 0.08–0.85: zoom contínuo até o FOCO ficar no centro da tela e o
+     container ocupar ~60% da largura. Escala exponencial
+     (scale = Zmax^t), para a descida ter velocidade constante (zoom
+     linear acelera no fim e parece falso). A translação leva o centro
+     da tela do centro do navio até o FOCO junto com a escala, sem
+     desviar. Tudo num só transform (translate3d + scale) num wrapper,
+     escrito no onUpdate, sem re-render;
+   - 0.85–1: segura no close do container (é onde a cena 2 começa);
+   - Zmax: limite para que no fim cada pixel da foto original não seja
+     ampliado mais que 1,5× na tela (considere o devicePixelRatio). Se o
+     container não chegar a ~60% da largura com esse limite, pare no
+     limite e registre no relatório o tamanho que chegou;
+   - nitidez: a camada inicial usa a largura do srcset; uma segunda
+     camada com a original carrega quando a cena se aproxima
+     (IntersectionObserver com rootMargin) e entra em crossfade antes
+     de p=0.3. Sem salto de posição entre as duas;
+   - linha vermelha tracejada (SVG em coordenadas da foto, dentro do
+     wrapper que dá zoom) saindo à frente da proa até a borda superior,
+     com vector-effect="non-scaling-stroke" para o traço continuar fino;
+     o rótulo "SUAPE · PE" fica fora do wrapper, preso ao topo da tela,
+     e some antes do close;
+   - texto à esquerda: código da cena + "1.900 TEUs por mês" (Counter),
+     entra quando o navio enche a tela (~0.35) e sai antes de 0.75;
+   - mobile: mesma foto e mesma câmera, cover centrado no navio;
+   - reduced motion: foto parada no enquadramento do meio (navio
+     enchendo a tela), texto visível, sem zoom;
+   - zero movimento próprio na foto: nada de deriva, balanço ou
+     partículas.
+4. Apague o que ficou sem uso: foam.ts, foam.test.ts, Ocean.tsx (se só a
+   cena 1 usava), navio-cima e oceano-cima em public/images/journey/ (se
+   nenhum lugar usar; o mergulho do hero passa a terminar na foto
+   navio-mar no enquadramento largo).
+5. Teste unitário de oceanCamera: em p=0.08 a câmera está no
+   enquadramento largo; em p=0.85 o FOCO está no centro da tela; a escala
+   é exponencial (a razão entre passos iguais de p é constante); Zmax
+   respeita o limite de 1,5×.
+
+Parte B — Ordem da Home
+6. Home: Hero → cenas 1–6 → Serviços → Por que a APG → Clientes → CTA
+   final. Tire Números (Stats) e Mapa de atuação (CoverageMap) da Home;
+   se o componente não for usado em nenhuma outra página, apague o
+   componente, o teste e o conteúdo em site.ts.
+7. Códigos APGU 1996-NN: uma única lista ordenada das seções da Home
+   gera os números (01 Hero, 02–07 cenas, 08 Serviços, 09 Por que a APG,
+   10 Clientes, 11 CTA). Seção oculta (Clientes sem logos) não consome
+   número. Nenhum index escrito à mão nos componentes. Teste unitário:
+   sem número repetido e sem buraco, com e sem Clientes.
+8. O placeholder do Terminal passa a dizer "35.000 m² · 4.000 TEUs
+   estáticos · 46 docas · 5.000 m² cobertos".
+
+Testes e entrega
+9. e2e: a cena 1 renderiza a foto, o zoom muda o transform ao rolar, não
+   há canvas de espuma, não há erros de console, e os códigos da Home
+   aparecem em ordem crescente sem repetição. Screenshots de 5 pontos da
+   cena 1 (p = 0, 0.3, 0.5, 0.75, 1) em desktop e mobile, em
+   e2e/__screenshots__/journey/. Vídeo do scroll do hero até o fim da
+   cena 1 (fora do git).
+10. No relatório: Zmax atingido no desktop e no mobile, peso das imagens
+    da cena 1 baixadas (desktop e mobile) e se o close final está nítido.
+
+Pronto quando: lint, typecheck, test e e2e passam, a foto não se move
+por conta própria, o close final do container está nítido e os códigos
+da Home seguem 01 a 11 sem repetição.
+Commit: "feat: cena 1 por zoom de câmera e ordem da Home"
+````
+
 ## Prompt J2 — Cenas 2 e 3 (Portêiner e Carga)
 
 ````text
@@ -1220,7 +1314,7 @@ frontend-design:frontend-design.
      acompanhar a tangente do caminho (getPointAtLength); a linha
      vermelha é o próprio caminho, revelado atrás dela;
    - cotas de planta (linhas de cota + texto mono) entram uma a uma:
-     "35.000 m²", "4.000 TEUs", "46 docas";
+     "35.000 m²", "4.000 TEUs", "46 docas", "5.000 m² cobertos";
    - a carreta tem tamanho coerente com a planta (largura de uma via).
 3. Screenshots de 5 pontos de cada cena (desktop e mobile) e vídeo.
 
@@ -1243,8 +1337,9 @@ emil-design-eng e mobile-native.
    "500 entregas fracionadas por dia". No fim, fade para a seção
    Serviços. O canvas para de renderizar fora da tela.
 2. Transições entre cenas sem cortes secos: cada cena termina num
-   estado que conversa com o começo da próxima (oceano → branco: o
-   navio sai pelo topo e um wipe branco sobe; estrada → terminal: a
+   estado que conversa com o começo da próxima (oceano → branco: do
+   close no container do convés, um wipe branco sobe e o mesmo container
+   aparece preso ao spreader do portêiner; estrada → terminal: a
    carreta sai pela esquerda e a planta sand entra; terminal →
    distribuição: zoom out e escurecimento).
 3. Indicador lateral: 7 marcas (hero + 6 cenas), a ativa em red-500,

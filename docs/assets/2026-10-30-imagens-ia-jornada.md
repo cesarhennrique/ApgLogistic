@@ -67,6 +67,12 @@ Photorealistic aerial top-down photograph of deep blue tropical ocean water, cam
 Photorealistic aerial top-down view, camera pointing straight down, of a white cab-over semi truck pulling a 40-foot shipping container painted deep navy blue (#1A2350) with one red stripe (#E31E24) across the roof, truck pointing up, no logos, no text, no license plate. Isolated on a pure white background with a very subtle soft shadow, soft even studio lighting, ultra sharp, vertical 9:16.
 ```
 
+**8. Navio no mar (revisão 2026-10-30b; substitui o navio e o oceano separados na cena 1).** Exceção às regras de fundo branco: aqui o oceano faz parte da foto. Salve como `navio-mar.png`, na **maior resolução que o gerador entregar** (a cena dá zoom de até ~2,5× nela).
+
+```text
+Photorealistic aerial drone photograph taken from high altitude, camera pointing straight down, of a medium coastal container ship sailing on deep blue tropical ocean. Bow pointing straight up, ship perfectly centered in the frame and occupying about one third of the frame height. Deck fully loaded with neatly stacked shipping containers in muted colors (rust red, ocean blue, teal, ochre, white, grey), with several deep navy blue containers with one red stripe near the middle of the deck. White superstructure at the stern. Natural white bow wave and a long turbulent foamy wake trailing behind the stern toward the bottom of the frame. Fine natural wave texture and subtle sun glints on the water. No land, no other boats, no logos, no text, no names on the hull. Natural midday light, ultra sharp, highest resolution, 16:9.
+```
+
 ## Depois de gerar
 
 Me avise quando os arquivos estiverem na pasta. Eu reviso a consistência entre eles (cor, luz, escala), recorto o fundo onde for preciso e reescrevo a jornada no novo padrão.

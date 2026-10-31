@@ -55,11 +55,11 @@ A jornada é uma sequência de **cenas** fixadas (sticky), cada uma com o seu pr
 | # | Cena | Fundo | O que acontece | Texto |
 |---|---|---|---|---|
 | 0 | Hero | navy-900 | Mapa do Nordeste com as rotas vermelhas chegando em Suape (inalterado, com o loading do Prompt 13e). No fim, a câmera mergulha em Suape e o mar do mapa vira o oceano da cena 1 | "Transportando confiança desde 1996" |
-| 1 | Chegada | oceano (foto de cima, tela cheia) | O navio, visto de cima, sobe pela tela com espuma na proa e rastro atrás; uma linha vermelha tracejada à frente aponta para "SUAPE" | "1.900 TEUs por mês" (contador) |
+| 1 | Chegada | foto única `navio-mar` (navio no oceano, de cima, com espuma e rastro reais) | **A foto fica parada; só a câmera se move** (revisão 2026-10-30b: navio e espuma animados separadamente não pareceram reais). Começa alta, com o navio pequeno no oceano, e desce em zoom contínuo até um container APG do convés encher a tela; esse container é o que o portêiner iça na cena 2. Uma linha vermelha tracejada à frente da proa aponta para "SUAPE · PE" e acompanha o zoom | "1.900 TEUs por mês" (contador) |
 | 2 | Portêiner | branco #FEFEFE | O portêiner inteiro. O spreader com o container APG sobe de baixo (porão do navio, fora do quadro) e trava no carrinho; os cabos encurtam | "O braço rodoviário da cabotagem no Brasil" |
 | 3 | Carga | branco | Close: o container desce do alto (cabos saindo do quadro) e encaixa na carreta vazia; no encaixe, 4 pontos red-500 nas travas e a imagem troca para a carreta carregada | — |
 | 4 | Estrada | branco | A carreta com o logo sai rodando para a esquerda (rodas girando, faixas, linha vermelha, velocímetro) — a prova `/dev/prova` promovida | "Frota 100% própria e rastreada · 24h" |
-| 5 | Terminal | sand-50 | Planta do terminal CONE em traço fino (SVG). A carreta vista de cima segue a linha vermelha e encosta numa doca; números entram como cotas | "35.000 m² · 4.000 TEUs estáticos · 46 docas" |
+| 5 | Terminal | sand-50 | Planta do terminal CONE em traço fino (SVG). A carreta vista de cima segue a linha vermelha e encosta numa doca; números entram como cotas | "35.000 m² · 4.000 TEUs estáticos · 46 docas · 5.000 m² cobertos" |
 | 6 | Distribuição | navy-900 | Zoom out até o mapa do hero; a linha vermelha ramifica em 24 rotas por PE e BA. Depois, a seção Serviços | "500 entregas fracionadas por dia" |
 
 - **Assinatura:** a linha vermelha da seta do logo atravessa todas as cenas: rotas do hero → rumo do navio → rastro da carreta → caminho no terminal → ramificação final.
@@ -68,14 +68,20 @@ A jornada é uma sequência de **cenas** fixadas (sticky), cada uma com o seu pr
 
 ## 4. Estrutura do site
 
-### Home, depois da jornada
+### Ordem da Home (revisão 2026-10-30b)
 
-1. **Serviços:** três cards (Containers Suape · Operação Bahia · Logística e Armazenagem). No hover, uma miniatura 3D da operação gira.
-2. **Números:** faixa escura com contadores: 1996 · 1.900 TEUs/mês · 35.000 m² · 4.000 TEUs · 500 entregas/dia · 24h.
-3. **Por que a APG:** frota própria · terminal próprio integrado a Suape · rastreamento · atendimento 24h.
-4. **Clientes:** carrossel de logos. Fica oculto enquanto não houver logos autorizados.
-5. **Mapa de atuação:** mapa estilizado do Nordeste, com linhas vermelhas animadas saindo de Suape e de Salvador.
-6. **CTA final:** "Fale com um especialista", com cotação e WhatsApp.
+A Home lê como uma história só: **o que a APG faz** (jornada) → **o que você contrata** (serviços) → **por que confiar** (diferenciais, clientes) → **fale conosco**. Os códigos `APGU 1996-NN` seguem essa ordem, sem número repetido nem buraco (seção oculta não consome número).
+
+| NN | Seção |
+|---|---|
+| 01 | Hero (mapa) |
+| 02–07 | Jornada: Chegada · Portêiner · Carga · Frota · Terminal · Distribuição |
+| 08 | **Serviços:** três cards (Containers Suape · Operação Bahia · Logística e Armazenagem) |
+| 09 | **Por que a APG:** frota própria · terminal próprio integrado a Suape · rastreamento · atendimento 24h |
+| 10 | **Clientes:** carrossel de logos; oculto enquanto não houver logos autorizados (aí o CTA vira 10) |
+| 11 | **CTA final:** "Fale com um especialista", com cotação e WhatsApp |
+
+Saem da Home, porque repetiam a jornada: **Números** (os números já aparecem nas cenas; o único que faltava, 5.000 m² de cross-docking, vira cota do Terminal) e **Mapa de atuação** (a cena Distribuição já é esse mapa).
 
 ### Páginas
 
