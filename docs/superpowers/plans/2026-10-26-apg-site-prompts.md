@@ -1603,6 +1603,11 @@ Leia o CLAUDE.md, o spec (seção 3, "Revisão 2026-10-31") e os
 componentes CraneLift.tsx, craneAnchors.ts e Load.tsx. Use as skills
 animate, animation-performance e emil-design-eng.
 
+0. Cena 1, correção (screenshot desktop-chegada-0.9 do H2): a ficha
+   "SEU CONTAINER · APGU 1996-07 …" está translúcida e ilegível sobre
+   os containers. Em p ≥ 0.85 ela fica 100% opaca, em placa navy-900
+   sólida, mono ≥ 13px, com linha de chamada até a mira; a mira em
+   stroke 2px red-500 com halo. Confira o contraste no screenshot.
 1. A cena 2 abre com o container APG já preso ao spreader, no alto,
    junto ao carrinho do portêiner, em close. Ao rolar, o container
    DESCE (cabos alongando, presos ao carrinho e ao spreader) e a câmera
