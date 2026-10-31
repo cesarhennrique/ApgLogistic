@@ -1841,37 +1841,46 @@ capítulo entra com marco, contador e ícone animados.
 Commit: "fix: encaixe contínuo, câmera da estrada e capítulos animados"
 ````
 
-## Prompt J4 — Cena 6, transições, indicador e mobile
+## Prompt J4 — Distribuição, transições, indicador e mobile
 
 ````text
-Leia o CLAUDE.md e o spec (seção 3). Use as skills animate,
-emil-design-eng e mobile-native.
+Leia o CLAUDE.md, o spec (seção 3, revisões 2026-10-31 e 2026-10-31b)
+e homeSections.ts, Estrada.tsx, HeroMapStage.tsx e DistributionStage.
+Use as skills animate, animation-performance, emil-design-eng e
+mobile-native.
 
-1. Distribution.tsx (cena 6, fundo navy-900): reaproveite o
-   DistributionStage (mapa 3D do hero) num canvas próprio desta cena.
-   Começa com zoom no ponto do terminal CONE e se afasta até PE e BA; a
-   linha vermelha ramifica em 24 rotas com destinos que acendem. Texto
-   "500 entregas fracionadas por dia". No fim, fade para a seção
-   Serviços. O canvas para de renderizar fora da tela.
-2. Transições entre cenas sem cortes secos: cada cena termina num
-   estado que conversa com o começo da próxima (oceano → branco: do
-   close no container do convés, um wipe branco sobe e o mesmo container
-   aparece preso ao spreader do portêiner; estrada → distribuição:
-   a carreta encosta na doca e a câmera se afasta; a doca escurece até o mapa).
-3. Indicador lateral: 7 marcas (hero + 6 cenas), a ativa em red-500,
-   clicáveis (lenis.scrollTo), aria-label por cena.
-4. Mobile (< 768px): alturas de scroll menores (×0.75); textos embaixo
-   e imagens em cima; navio e portêiner verticais aproveitam a tela; a
-   carreta lateral ocupa 100vw com margem mínima; nada de texto sobre
-   imagem sem contraste AA.
-5. Reduced motion: cada cena mostra o estado final estático, com o
+A jornada hoje: Hero (mapa) → Chegada → Portêiner → Carga → Estrada
+(termina na doca do terminal CONE) → Distribuição (falta).
+
+1. Distribuição (última cena da jornada, fundo navy-900): reaproveite o
+   mapa do hero (mesmo estilo pontilhado e rotas). Começa com zoom no
+   ponto do terminal CONE e se afasta até PE e BA; a linha vermelha
+   ramifica em 24 rotas com destinos que acendem em sequência. Texto
+   "500 entregas fracionadas por dia" com contador. No fim, passagem
+   para a seção Serviços. O canvas só monta perto da cena e para de
+   renderizar fora da tela.
+2. Estrada → Distribuição sem corte: a carreta encosta na doca, a
+   câmera se afasta, o fundo sand escurece para navy e a doca vira o
+   ponto vermelho do terminal no mapa (mesma posição na tela).
+3. Revise todas as passagens (hero → 1, 1 → 2, 2 → 3, 3 → Estrada,
+   Estrada → Distribuição → Serviços): sem faixa entre cenas, sem
+   salto de pixel e sem trecho morto. Um e2e por passagem.
+4. Indicador lateral: 6 marcas (hero + 5 cenas), a ativa em red-500,
+   clicáveis (lenis.scrollTo), aria-label por cena, escondido no
+   mobile.
+5. Mobile (< 768px): confira cada cena em 390×844 e 375×667; nenhum
+   texto sobre imagem sem AA, nenhum texto cortado, alturas de scroll
+   ×0.75.
+6. Reduced motion: cada cena mostra o estado final estático com o
    texto, sem scrub.
-6. Orçamento: meça o total de imagens baixadas na jornada (desktop e
-   mobile) e garanta ≤ 2 MB e ≤ 1 MB; pré-carregue a próxima cena.
-7. Screenshots finais e vídeo do scroll completo, desktop e mobile.
+7. Orçamento: meça o total de imagens baixadas na Home (desktop e
+   mobile) e garanta ≤ 2 MB e ≤ 1 MB; pré-carregue só a próxima cena.
+   Informe o peso por cena.
+8. Screenshots finais e vídeo do scroll completo, do hero ao rodapé,
+   desktop e mobile.
 
 Pronto quando: lint, typecheck, test e e2e passam e o vídeo mostra a
-jornada inteira contínua, do mapa ao Serviços, sem cortes secos.
+Home inteira contínua, do mapa ao rodapé, sem cortes secos.
 Commit: "feat: distribuição, transições e mobile da jornada"
 ````
 
