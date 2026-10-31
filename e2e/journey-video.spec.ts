@@ -2,21 +2,21 @@ import { test } from "@playwright/test";
 
 test.use({ video: "on" });
 
-// For review, not an assertion: the hero to the end of scene 3 (the truck loaded), scrolled down, as
+// For review, not an assertion: the hero to the end of scene 5 (the truck at its dock), scrolled down, as
 // e2e/__videos__/journey-<project>.webm (git-ignored).
 // The intro is marked as seen, so the loader doesn't take the first seconds.
 test("records the full scroll", async ({ page }, testInfo) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await page.addInitScript(() => sessionStorage.setItem("apg-intro", "1"));
   await page.goto("/");
   await page.waitForLoadState("load");
   await page.waitForTimeout(3_000);
   const end = await page.evaluate(() => {
-    const scene = document.getElementById("carga")!;
+    const scene = document.getElementById("terminal")!;
     return scene.getBoundingClientRect().top + window.scrollY + scene.offsetHeight - window.innerHeight;
   });
-  // ~24 s from the top to the loaded truck, in small steps (Lenis smooths between them).
-  const steps = 240;
+  // ~36 s from the top to the dock, in small steps (Lenis smooths between them).
+  const steps = 360;
   for (let i = 1; i <= steps; i++) {
     await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), (end * i) / steps);
     await page.waitForTimeout(100);

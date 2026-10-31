@@ -54,26 +54,30 @@
     ]
   },
   "porteiner-base": {
-    "width": 1122,
-    "height": 1402,
+    "width": 4488,
+    "height": 5608,
     "widths": [
       800,
-      1122
+      1200,
+      1920,
+      4488
     ]
   },
   "porteiner-lado": {
-    "width": 1122,
-    "height": 1402,
+    "width": 4488,
+    "height": 5608,
     "widths": [
       800,
-      1122
+      1200,
+      1920,
+      4488
     ]
   },
   "porteiner-spreader": {
-    "width": 194,
-    "height": 84,
+    "width": 776,
+    "height": 336,
     "widths": [
-      194
+      776
     ]
   }
 }

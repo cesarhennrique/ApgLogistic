@@ -135,3 +135,36 @@ body {
     animation: none;
   }
 }
+
+/* Scene 5's plan draws itself in as the scene comes in (data-drawn, set once by Terminal): every stroke from
+   nothing (pathLength 1), its names and numbers after. Without JS, or with reduced motion, it is simply there. */
+.js .plan-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.8s var(--ease-out);
+}
+
+.js .plan-text {
+  opacity: 0;
+  transition: opacity 0.6s ease-out 0.9s;
+}
+
+.js [data-drawn] .plan-stroke {
+  stroke-dashoffset: 0;
+}
+
+.js [data-drawn] .plan-text {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .plan-stroke {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+
+  .js .plan-text {
+    opacity: 1;
+    transition: none;
+  }
+}

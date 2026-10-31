@@ -52,8 +52,11 @@ export function Scene({ id, heightVh, background, headerTheme, onProgress, from 
       ref={section}
       id={id}
       data-header-theme={headerTheme}
-      className={`relative ${className}`}
-      style={{ height: `${heightVh}vh`, background }}
+      // Over the scene before it (z-10, in document order). A pinned scene bleeds 1 px of its background upwards:
+      // where two scenes meet on a fractional pixel, the previous one's edge never shows as a line across the top (a
+      // sliding scene must not: its picture continues the one under it).
+      className={`relative z-10 ${className}`}
+      style={{ height: `${heightVh}vh`, background, boxShadow: from === "pin" ? `0 -1px 0 ${background}` : undefined }}
     >
       <div className="sticky top-0 h-svh overflow-hidden">{children}</div>
     </section>

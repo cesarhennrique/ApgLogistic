@@ -29,6 +29,14 @@ async function settle(page: Page) {
   await page.waitForTimeout(1500);
 }
 
+// The header's tone has finished its fade (after a jump from the hero to a light scene it changes, over 200 ms; under
+// the test's load that can take a while): a frame taken mid-fade shows a grey band behind it.
+async function headerSettled(page: Page) {
+  await expect
+    .poll(() => page.locator("header > div").nth(1).evaluate((el) => getComputedStyle(el).opacity))
+    .toMatch(/^(0|1)$/);
+}
+
 // Every image of scene 1 that has a source in, the close's original included (desktop only).
 async function imagesIn(page: Page) {
   await expect
@@ -185,17 +193,26 @@ async function scrollToScene(page: Page, id: string, p: number) {
   );
 }
 
-test("scene 2 lifts the container to the trolley: it ends higher than it starts", async ({ page }) => {
+// The camera follows the load, so it is measured in the crane's picture (its offset under the trolley), and the
+// camera's scale shows the pull-back to the whole crane.
+test("scene 2 lifts the container to the trolley while the camera pulls back", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/");
   await settle(page);
-  const loadTop = () => page.locator("#porteiner [data-load]").first().evaluate((el) => el.getBoundingClientRect().top);
-  await scrollToScene(page, "porteiner", 0.1);
+  const read = () =>
+    page.locator("#porteiner [data-load]").evaluate((el) => ({
+      drop: new DOMMatrix(getComputedStyle(el).transform).f,
+      scale: new DOMMatrix(getComputedStyle(el.parentElement!).transform).a,
+    }));
+  await scrollToScene(page, "porteiner", 0.05);
   await page.waitForTimeout(300);
-  const low = await loadTop();
+  const close = await read();
   await scrollToScene(page, "porteiner", 1);
   await page.waitForTimeout(300);
-  expect(await loadTop()).toBeLessThan(low - 50);
+  const wide = await read();
+  expect(close.drop).toBeGreaterThan(500);
+  expect(Math.abs(wide.drop)).toBeLessThan(1);
+  expect(wide.scale).toBeLessThan(close.scale / 2);
   await expect(page.getByText("O braço rodoviário da cabotagem no Brasil")).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -214,8 +231,8 @@ test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) 
     await page.waitForTimeout(1500);
     return page.screenshot({ clip: (await truck.boundingBox())! });
   };
-  // seated (the set-down ends at 0.6), not yet swapped (from 0.62); then swapped
-  const [before, after] = [await shot(0.615), await shot(0.65)];
+  // seated (the set-down ends at 0.6 of its script, 0.327 of its scroll), not yet swapped (from 0.338); then swapped
+  const [before, after] = [await shot(0.335), await shot(0.355)];
   const sharp = (await import("sharp")).default;
   const [a, b] = await Promise.all([before, after].map((s) => sharp(s).raw().toBuffer({ resolveWithObject: true })));
   expect(b.info.width).toBe(a.info.width);
@@ -229,18 +246,77 @@ test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) 
 });
 
 // Art-direction review: five points of scenes 2 and 3, saved for a human to look at (not diffed).
-test.describe("scenes 2 and 3 frames", () => {
-  for (const id of ["porteiner", "carga"]) {
-    for (const p of [0, 0.3, 0.6, 0.75, 1]) {
+test.describe("scenes 2 to 5 frames", () => {
+  for (const id of ["porteiner", "carga", "estrada", "terminal"]) {
+    for (const p of [0, 0.25, 0.5, 0.75, 1]) {
       test(`${id} at ${p}`, async ({ page }, testInfo) => {
         const errors = collectErrors(page);
         await page.goto("/");
         await settle(page);
         await scrollToScene(page, id, p);
         await page.waitForTimeout(1000);
+        await headerSettled(page);
         await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-${id}-${p}.png` });
         expect(errors).toEqual([]);
       });
     }
   }
+});
+
+// Scene 4 slides in over scene 3's last screen: the truck must not move by a pixel, neither while it slides nor once
+// it is pinned (compared in the truck's band, below the copy and above the road, which come in on purpose).
+test("scene 4 takes over scene 3's truck without a pixel jump", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await settle(page);
+  // k: how far scene 4's top is above the viewport's bottom, in screens (1 = not in yet, 0 = pinned)
+  const shot = async (k: number) => {
+    await page.evaluate((k) => {
+      const s = document.getElementById("estrada")!;
+      window.scrollTo({ top: s.getBoundingClientRect().top + window.scrollY - window.innerHeight * k, behavior: "instant" });
+    }, k);
+    await page.waitForTimeout(1500);
+    return page.screenshot();
+  };
+  const shots = [await shot(1), await shot(0.5), await shot(0)];
+  const band = await page.evaluate(() => {
+    const truck = document.querySelector("#estrada [data-rim]")!.parentElement!.parentElement!.getBoundingClientRect();
+    const copy = document.querySelector("#estrada .site-container")!.getBoundingClientRect();
+    return { y0: Math.max(truck.top, copy.bottom + 2), y1: truck.top + (truck.height * 690) / 941, dpr: devicePixelRatio };
+  });
+  const sharp = (await import("sharp")).default;
+  const [a, ...rest] = await Promise.all(shots.map((s) => sharp(s).raw().toBuffer({ resolveWithObject: true })));
+  for (const b of rest) {
+    let off = 0;
+    for (let y = Math.ceil(band.y0 * band.dpr); y < Math.floor(band.y1 * band.dpr); y++) {
+      for (let x = 0; x < a.info.width; x++) {
+        const i = (y * a.info.width + x) * a.info.channels;
+        // (16 levels: below what an eye can tell, above the odd antialiasing wobble of a busy test machine)
+        if (Math.max(...[0, 1, 2].map((c) => Math.abs(a.data[i + c] - b.data[i + c]))) > 16) off++;
+      }
+    }
+    expect(off).toBe(0);
+  }
+  expect(errors).toEqual([]);
+});
+
+test("scene 5's truck drives from the gate to its dock, the red line behind it", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await settle(page);
+  const truck = page.locator("#terminal [class*='aspect-[941/1672]']");
+  const centre = async (p: number) => {
+    await scrollToScene(page, "terminal", p);
+    await page.waitForTimeout(400);
+    const r = (await truck.boundingBox())!;
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  };
+  const start = await centre(0.05);
+  const end = await centre(0.95);
+  // in from the bottom left (the gate), parked up and to the right (the dock)
+  expect(end.x).toBeGreaterThan(start.x + 100);
+  expect(end.y).toBeLessThan(start.y);
+  const dash = await page.locator("#terminal path.stroke-red-500").evaluate((el) => Number(getComputedStyle(el).strokeDashoffset.replace("px", "")));
+  expect(dash).toBeLessThan(0.01);
+  expect(errors).toEqual([]);
 });

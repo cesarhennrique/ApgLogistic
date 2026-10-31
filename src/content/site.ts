@@ -217,8 +217,13 @@ export const site = {
     // Scene 1: the TEUs a month it counts up to, and its photo's alt text.
     arrivalTeus: 1900,
     shipAlt: "Navio porta-contêineres visto de cima, chegando a Suape",
+    truckAlt: "Carreta APG com container de 40 pés",
     // Small labels on the hero's map.
     mapLabels: { suape: "SUAPE · PE", salvador: "SALVADOR · BA" },
+    // Scene 5's plan: its place names.
+    plan: { gate: "Portaria", warehouse: "Galpão", yard: "Pátio" },
+    // Scene 4's speedometer: the road and the unit around the speed.
+    road: { highway: "BR-101", unit: "KM/H" },
     // Scene 1's notes on the photo, as on a technical drawing: the ship's heading at its bow, the APG containers
     // on the deck, the client's container at the close.
     notes: { heading: "CABOTAGEM · RUMO A SUAPE · PE", containers: "CONTAINERS APG", target: "SEU CONTAINER" },

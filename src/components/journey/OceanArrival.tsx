@@ -206,7 +206,7 @@ export function OceanArrival() {
       from="slide"
       onProgress={onProgress}
       // Over the hero's last screen: it slides in on top of the hero's copy of the picture.
-      className="z-10 -mt-[100svh]"
+      className="-mt-[100svh]"
     >
       <div ref={stage} className="absolute inset-0">
         <ArrivalFrame alt={site.journeyScene.shipAlt} />
