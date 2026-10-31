@@ -6,30 +6,37 @@ import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
-import { CONTAINER_BOX, TRUCK, TWIST_LOCKS } from "./craneAnchors";
+import { viewOf } from "./ArrivalFrame";
+import { CONTAINER_BOX, ROPES, ROPE_WIDTH, SPREADER_BOX, TRUCK, TWIST_LOCKS } from "./craneAnchors";
+import { CONTAINER, HANDOFF_GAP, PX_PER_M, TRUCK_SCALE, craneHandoff } from "./craneCamera";
 import { Scene, segment } from "./Scene";
 import { SceneImage } from "./SceneImage";
 
 const scene = site.journey.find((s) => s.id === "carga")!;
-// 320vh: 220 of scroll; scene 4 slides in over its last 100vh, showing the same truck (Road), so the script
-// below runs over the first 120vh (its progress, c) and the end holds under the slide.
+// 320vh: its first 100vh slide it in over scene 2's last screen (the same truck, the same container: this stage
+// stays see-through and empty until it pins), then 120 of script (its progress, c), then the end holds while scene 4
+// slides in over it.
 const HEIGHT_VH = 320;
-const SCRIPT_END = 120 / (HEIGHT_VH - 100);
+const SLIDE_END = 100 / HEIGHT_VH;
+const SCRIPT = [SLIDE_END, SLIDE_END + 120 / HEIGHT_VH] as const;
+const BACKGROUND = "#fefefe";
 
-// The script (spec §3), over the scene's progress: the container comes down from above the frame on four ropes
-// and sets down on the chassis, slowing to it; at the set-down the twist locks light up and the empty truck swaps
-// for the loaded one (over about 120 ms of an ordinary scroll); the ropes rise away; the locks fade, leaving the
-// loaded truck as scene 4 (the road) opens on it.
-const LOWER = [0.06, 0.6] as const;
-const LOCKS_IN = [0.6, 0.63] as const;
-const SWAP = [0.62, 0.64] as const;
-const ROPES_OUT = [0.66, 0.82] as const;
-const LOCKS_OUT = [0.86, 0.96] as const;
+// The script (spec §3), over c: it opens on scene 2's last picture (the container on its spreader, just above the
+// truck; craneHandoff) and the camera eases to its own framing while the container sets down, slowing to it; at the
+// set-down the twist locks light up and the empty truck swaps for the loaded one (over about 120 ms of an ordinary
+// scroll); the spreader lets go and rises away on its ropes; the locks fade, leaving the loaded truck as scene 4
+// opens on it.
+const LOWER = [0, 0.35] as const;
+const COTA_OUT = [0.36, 0.42] as const;
+const LOCKS_IN = [0.35, 0.4] as const;
+const SWAP = [0.38, 0.41] as const;
+const LIFT_OFF = [0.42, 0.62] as const;
+const LOCKS_OUT = [0.75, 0.9] as const;
 const lowerEase = gsap.parseEase("power2.out");
-// Phones: a closer camera, the container (and the chassis under it) ~140% of the screen's width, centred on it;
-// after the set-down it pulls back, exponentially, to the whole truck (TRUCK_FRAME).
+// Phones: seated, the camera is close (the container ~140% of the screen's width, centred), then pulls back,
+// exponentially, to the whole truck (TRUCK_FRAME).
 const CLOSE_SHARE = 1.4;
-const RECEDE = [0.68, 0.92] as const;
+const RECEDE = [0.45, 0.75] as const;
 
 // The truck's framing: ~90vw wide, a little below the middle. Scene 4 opens on the same box.
 export const TRUCK_FRAME = "absolute left-1/2 top-[54%] aspect-[1672/941] w-[90vw] -translate-x-1/2 -translate-y-1/2";
@@ -40,58 +47,96 @@ const pctY = (y: number) => `${(y / TRUCK.height) * 100}%`;
 // The container's box in the truck, as a clip, with 10 px of white above it and 8 px right of it (white in both
 // trucks there, so the clip's antialiased edge falls on white). Scene 4 draws its truck the same way.
 export const CONTAINER_CLIP = `inset(${pctY(CONTAINER_BOX.y - 10)} ${pctX(TRUCK.width - CONTAINER_BOX.x - CONTAINER_BOX.w - 8)} ${pctY(TRUCK.height - CONTAINER_BOX.y - CONTAINER_BOX.h)} ${pctX(CONTAINER_BOX.x)})`;
-// Where the four ropes hold the container, as a share of its length.
-const ROPE_AT = [0.1, 0.36, 0.64, 0.9];
+// Scene 2's spreader and ropes, carried over in truck px (the crane's px over TRUCK_SCALE), placed from the container.
+const toTruck = (crane: number) => crane / TRUCK_SCALE;
+const SPREADER_IN_TRUCK = {
+  x: CONTAINER_BOX.x + toTruck(SPREADER_BOX.x - CONTAINER.x),
+  y: CONTAINER_BOX.y + toTruck(SPREADER_BOX.y - CONTAINER.top),
+  w: toTruck(SPREADER_BOX.w),
+};
+const ROPES_IN_TRUCK = ROPES.map((r) => CONTAINER_BOX.x + toTruck(r.x - CONTAINER.x));
+const GAP = toTruck(HANDOFF_GAP);
+const metres = (truckPx: number) => `${((truckPx * TRUCK_SCALE) / PX_PER_M).toFixed(1).replace(".", ",")} m`;
 
-// Scene 3: a close on the empty truck; the APG container set down on it.
+type Framing = { z: number; x: number; y: number };
+// From one framing to another (the truck's zoom and its centre on screen), exponentially, about a fixed point.
+const between = (a: Framing, b: Framing, u: number): Framing => {
+  const z = a.z * (b.z / a.z) ** u;
+  const k = a.z !== b.z ? (1 - a.z / z) / (1 - a.z / b.z) : u;
+  return { z, x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+};
+
+// Scene 3: the APG container set down on the empty truck.
 export function Load() {
   const stage = useRef<HTMLDivElement>(null);
   const truck = useRef<HTMLDivElement>(null);
   const container = useRef<HTMLDivElement>(null);
-  const ropes = useRef<HTMLDivElement>(null);
+  const lift = useRef<HTMLDivElement>(null);
+  const cota = useRef<HTMLDivElement>(null);
   const loaded = useRef<HTMLDivElement>(null);
   const locks = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const raw = useRef(0);
 
   const apply = useCallback(() => {
-    const W = stage.current!.clientWidth;
-    const H = stage.current!.clientHeight;
-    const p = reduced ? 1 : Math.min(raw.current / SCRIPT_END, 1);
-    // The truck's box (its layout, TRUCK_FRAME) and the container's centre in it, in stage px.
+    const el = stage.current!;
+    // Sliding in over scene 2: see-through and empty, held still on screen (scene 2's own close shows under it).
+    const stageTop = reduced ? 0 : Math.max(el.parentElement!.getBoundingClientRect().top, 0);
+    const sliding = stageTop > 0;
+    el.style.transform = sliding ? `translate(0, ${-stageTop}px)` : "";
+    el.style.background = sliding ? "" : BACKGROUND;
+    el.style.visibility = sliding ? "hidden" : "";
+
+    const W = el.clientWidth;
+    const H = el.clientHeight;
+    const c = reduced ? 1 : segment(raw.current, ...SCRIPT);
+    // The truck's box (its layout, TRUCK_FRAME) and its centre and the container's, in stage px.
     const bw = FRAME.width * W;
     const s = bw / TRUCK.width;
     const top = FRAME.top * H - (TRUCK.height * s) / 2;
-    const cx = (W - bw) / 2 + (CONTAINER_BOX.x + CONTAINER_BOX.w / 2) * s;
-    const cy = top + (CONTAINER_BOX.y + CONTAINER_BOX.h / 2) * s;
+    const left = (W - bw) / 2;
+    const centre = { x: left + bw / 2, y: top + (TRUCK.height * s) / 2 };
+    const box = { x: left + (CONTAINER_BOX.x + CONTAINER_BOX.w / 2) * s, y: top + (CONTAINER_BOX.y + CONTAINER_BOX.h / 2) * s };
 
-    // The camera (phones): scale z about the stage's top left, the container at the screen's centre while close,
-    // back to the plain frame (z = 1, no shift) as it pulls back, in step with the scale.
-    const z0 = W < 768 ? Math.max((CLOSE_SHARE * W) / (CONTAINER_BOX.w * s), 1) : 1;
-    const z = z0 ** (1 - segment(p, ...RECEDE));
-    const k = z0 > 1 ? (1 - z0 / z) / (1 - z0) : 1;
-    const tx = W / 2 + (cx - W / 2) * k - z * cx;
-    const ty = H / 2 + (cy - H / 2) * k - z * cy;
+    // The camera: from scene 2's last framing, to the seated one (phones: close on the container), then (phones)
+    // back to the plain frame.
+    const hand = craneHandoff(viewOf(el)).truck;
+    const handoff = { z: hand.w / bw, x: hand.x + hand.w / 2, y: hand.y + hand.h / 2 };
+    const plain = { z: 1, x: centre.x, y: centre.y };
+    const zClose = Math.max((CLOSE_SHARE * W) / (CONTAINER_BOX.w * s), 1);
+    const seated = W < 768 ? { z: zClose, x: W / 2 + zClose * (centre.x - box.x), y: H / 2 + zClose * (centre.y - box.y) } : plain;
+    const recede = segment(c, ...RECEDE);
+    const f = recede > 0 ? between(seated, plain, recede) : between(handoff, seated, segment(c, ...LOWER));
+    const [tx, ty] = [f.x - f.z * centre.x, f.y - f.z * centre.y];
+    // the plain frame: no transform at all, so it rasterises as scene 4's truck does
     truck.current!.parentElement!.style.transform =
-      // back at the plain frame: no transform at all, so it rasterises as scene 4's truck does
-      z0 > 1 && z > 1 ? `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) scale(${z.toFixed(4)})` : "";
+      Math.abs(f.z - 1) > 1e-4 || Math.abs(tx) > 0.05 || Math.abs(ty) > 0.05 ? `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${f.z.toFixed(5)})` : "";
 
-    // Above the frame at the start: the container's bottom over the screen's top edge.
-    const above = ty / z + top + (CONTAINER_BOX.y + CONTAINER_BOX.h) * s + 12 / z;
-    const dy = -(1 - lowerEase(segment(p, ...LOWER))) * above;
+    // The container (with its spreader) from scene 2's gap above its seat down to it.
+    const dy = -(1 - lowerEase(segment(c, ...LOWER))) * GAP * s;
     // Seated: no transform at all, so it rasterises exactly as the loaded truck over it does.
-    container.current!.style.transform = dy < 0 ? `translate3d(0, ${dy.toFixed(1)}px, 0)` : "none";
-    // The ropes come down with it, then rise away from it.
-    const rise = segment(p, ...ROPES_OUT);
-    ropes.current!.style.transform = `translate3d(0, ${(dy - (rise * H) / z).toFixed(1)}px, 0)`;
-    ropes.current!.style.opacity = String(reduced ? 0 : 1 - rise);
-    const swap = segment(p, ...SWAP);
+    container.current!.style.transform = dy < 0 ? `translate3d(0, ${dy.toFixed(2)}px, 0)` : "none";
+    // The spreader lets go and rises on its ropes, away out of the frame.
+    const off = segment(c, ...LIFT_OFF);
+    lift.current!.style.transform = `translate3d(0, ${(dy - (off * H) / f.z).toFixed(1)}px, 0)`;
+    lift.current!.style.opacity = String(reduced ? 0 : 1 - off);
+    // The container's height above its seat (scene 2's dimension, down to 0).
+    const [line, mark, label] = cota.current!.children as HTMLCollectionOf<HTMLElement>;
+    cota.current!.style.transform = `translate3d(0, ${dy.toFixed(1)}px, 0)`;
+    line.style.transform = `scaleY(${(-dy).toFixed(1)})`;
+    mark.style.transform = `translate3d(0, ${(-dy).toFixed(1)}px, 0)`;
+    label.textContent = metres(-dy / s);
+    // halfway down the line, as scene 2 sets it
+    label.style.transform = `translate3d(0, ${(-dy / 2).toFixed(1)}px, 0) translateY(-50%)`;
+    cota.current!.style.opacity = String(reduced ? 0 : 1 - segment(c, ...COTA_OUT));
+
+    const swap = segment(c, ...SWAP);
     loaded.current!.style.opacity = String(swap);
     // Swapped: the loaded truck alone over the empty one, as the container was: the very same picture (two
     // identical layers would blend their antialiased clip edge twice).
     container.current!.style.visibility = swap >= 1 ? "hidden" : "";
-    const lockIn = segment(p, ...LOCKS_IN);
-    locks.current!.style.opacity = String(reduced ? 1 : lockIn * (1 - segment(p, ...LOCKS_OUT)));
+    const lockIn = segment(c, ...LOCKS_IN);
+    locks.current!.style.opacity = String(reduced ? 1 : lockIn * (1 - segment(c, ...LOCKS_OUT)));
     for (const dot of locks.current!.children as HTMLCollectionOf<HTMLElement>) {
       dot.style.transform = `translate(-50%, -50%) scale(${(0.6 + 0.4 * lockIn).toFixed(3)})`;
     }
@@ -113,9 +158,19 @@ export function Load() {
   }, [apply]);
 
   return (
-    <Scene id="carga" heightVh={HEIGHT_VH} background="#fefefe" headerTheme="light" onProgress={onProgress}>
-      <div ref={stage} aria-hidden="true" className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 origin-top-left">
+    <Scene
+      id="carga"
+      heightVh={HEIGHT_VH}
+      // see-through while it slides in (the stage paints its own background once pinned)
+      background="transparent"
+      headerTheme="light"
+      from="slide"
+      onProgress={onProgress}
+      // Over scene 2's last screen: it slides in on top of the same picture.
+      className="-mt-[100svh]"
+    >
+      <div ref={stage} className="absolute inset-0 overflow-hidden">
+        <div aria-hidden="true" className="absolute inset-0 origin-top-left">
           <div ref={truck} className={TRUCK_FRAME}>
             <SceneImage name="carreta-lado-vazia" alt="" sizes="(min-width: 768px) 90vw, 250vw" full className="absolute inset-0 h-full w-full" />
             {/* The container: the loaded truck itself, clipped to the container's box (container-apg-lado is that
@@ -129,19 +184,29 @@ export function Load() {
             <div ref={loaded} className="absolute inset-0 opacity-0" style={{ clipPath: CONTAINER_CLIP }}>
               <SceneImage name="carreta-lado" alt="" sizes="(min-width: 768px) 90vw, 250vw" full className="h-full w-full" />
             </div>
-            {/* The ropes up out of the frame, from the container's top. */}
-            <div
-              ref={ropes}
-              className="absolute"
-              style={{ left: pctX(CONTAINER_BOX.x), top: pctY(CONTAINER_BOX.y), width: pctX(CONTAINER_BOX.w) }}
-            >
-              {ROPE_AT.map((at) => (
+            {/* Scene 2's spreader on the container, and its ropes up out of the frame. */}
+            <div ref={lift} data-lift="" className="absolute inset-0">
+              {ROPES_IN_TRUCK.map((x) => (
                 <i
-                  key={at}
-                  className="absolute bottom-0 h-[150vh] w-[2px] -translate-x-1/2 bg-[#3a3d42] max-md:w-px"
-                  style={{ left: `${at * 100}%` }}
+                  key={x}
+                  className="absolute h-[150vh] -translate-x-1/2 -translate-y-full bg-[#3a3d42]"
+                  style={{ left: pctX(x), top: pctY(SPREADER_IN_TRUCK.y), width: pctX(toTruck(ROPE_WIDTH)) }}
                 />
               ))}
+              <div className="absolute" style={{ left: pctX(SPREADER_IN_TRUCK.x), top: pctY(SPREADER_IN_TRUCK.y), width: pctX(SPREADER_IN_TRUCK.w) }}>
+                <SceneImage name="porteiner-spreader" alt="" sizes="(min-width: 768px) 75vw, 150vw" className="block h-auto w-full" />
+              </div>
+            </div>
+            {/* The container's height above its seat, down to 0 (scene 2's dimension, carried on). */}
+            <div
+              ref={cota}
+              data-cota=""
+              className="absolute"
+              style={{ left: `calc(${pctX(CONTAINER_BOX.x + CONTAINER_BOX.w)} + 14px)`, top: pctY(CONTAINER_BOX.y + CONTAINER_BOX.h) }}
+            >
+              <i className="absolute top-0 left-0 h-px w-[1.5px] origin-top bg-red-500" />
+              <i className="absolute top-0 -left-1.5 h-[1.5px] w-[13px] bg-red-500" />
+              <span className="absolute top-0 left-2.5 bg-[#fefefe] px-1.5 font-mono text-xs text-red-500 tabular-nums" />
             </div>
             <div ref={locks} className="absolute inset-0 opacity-0">
               {TWIST_LOCKS.map((l) => (
@@ -154,10 +219,10 @@ export function Load() {
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="site-container absolute inset-x-0 top-[13svh] text-navy-900">
-        <ContainerCode index={homeCode("carga")} label={scene.code} />
+        <div className="site-container absolute inset-x-0 top-[13svh] text-navy-900">
+          <ContainerCode index={homeCode("carga")} label={scene.code} />
+        </div>
       </div>
     </Scene>
   );

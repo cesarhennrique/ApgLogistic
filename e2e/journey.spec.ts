@@ -215,7 +215,13 @@ async function scrollToScene(page: Page, id: string, p: number) {
 
 // The camera follows the load, so it is measured in the crane's picture (its offset under the trolley), and the
 // camera's scale shows the pull-back to the whole crane.
-test("scene 2 lifts the container to the trolley while the camera pulls back", async ({ page }) => {
+// Scene 2's script runs over its first 160vh of 260 (then scene 3 slides in over its close): its progress c is
+// the scroll's p over SCENE2_SCRIPT.
+const SCENE2_SCRIPT = 160 / 260;
+
+// The camera follows the load, so it is measured in the crane's picture (its offset under the trolley), and the
+// camera's scale shows the zoom in.
+test("scene 2 lowers the container to the truck while the camera zooms in", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/");
   await settle(page);
@@ -224,16 +230,56 @@ test("scene 2 lifts the container to the trolley while the camera pulls back", a
       drop: new DOMMatrix(getComputedStyle(el).transform).f,
       scale: new DOMMatrix(getComputedStyle(el.parentElement!).transform).a,
     }));
-  await scrollToScene(page, "porteiner", 0.05);
+  await scrollToScene(page, "porteiner", 0);
   await page.waitForTimeout(300);
-  const close = await read();
-  await scrollToScene(page, "porteiner", 1);
+  const high = await read();
+  await scrollToScene(page, "porteiner", SCENE2_SCRIPT);
   await page.waitForTimeout(300);
-  const wide = await read();
-  expect(close.drop).toBeGreaterThan(500);
-  expect(Math.abs(wide.drop)).toBeLessThan(1);
-  expect(wide.scale).toBeLessThan(close.scale / 2);
+  const low = await read();
+  expect(Math.abs(high.drop)).toBeLessThan(1);
+  expect(low.drop).toBeGreaterThan(1000);
+  expect(low.scale).toBeGreaterThan(high.scale * 2);
+  await scrollToScene(page, "porteiner", 0.55 * SCENE2_SCRIPT);
   await expect(page.getByText("O braço rodoviário da cabotagem no Brasil")).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+// Scene 3 opens on scene 2's last picture: across the slide, the truck and the container do not move (the best
+// match between the two is no shift at all, within a device pixel).
+test("scene 3 takes over scene 2's close without a jump", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await settle(page);
+  const shot = async (k: number) => {
+    await page.evaluate((k) => {
+      const s = document.getElementById("carga")!;
+      window.scrollTo({ top: s.getBoundingClientRect().top + window.scrollY - window.innerHeight * k, behavior: "instant" });
+    }, k);
+    await page.waitForTimeout(1500);
+    return page.screenshot();
+  };
+  const [before, pinned] = [await shot(1), await shot(0)];
+  const sharp = (await import("sharp")).default;
+  const grey = (b: Buffer) => sharp(b).greyscale().raw().toBuffer({ resolveWithObject: true });
+  const [a, c] = await Promise.all([grey(before), grey(pinned)]);
+  const { width: W, height: H } = a.info;
+  let best = { sad: Infinity, dx: 0, dy: 0 };
+  for (let dy = -3; dy <= 3; dy++) {
+    for (let dx = -3; dx <= 3; dx++) {
+      let sad = 0;
+      for (let y = Math.floor(H * 0.35); y < Math.floor(H * 0.75); y += 2) {
+        for (let x = 20; x < W - 20; x += 2) sad += Math.abs(a.data[y * W + x] - c.data[(y + dy) * W + x + dx]);
+      }
+      if (sad < best.sad) best = { sad, dx, dy };
+    }
+  }
+  expect(Math.abs(best.dx)).toBeLessThanOrEqual(1);
+  expect(Math.abs(best.dy)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: `e2e/__screenshots__/journey/${test.info().project.name}-scene2to3-pinned.png` });
+  await shot(1);
+  await page.screenshot({ path: `e2e/__screenshots__/journey/${test.info().project.name}-scene2to3-before.png` });
+  await shot(0.5);
+  await page.screenshot({ path: `e2e/__screenshots__/journey/${test.info().project.name}-scene2to3-mid.png` });
   expect(errors).toEqual([]);
 });
 
@@ -243,7 +289,7 @@ test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) 
   const errors = collectErrors(page);
   await page.goto("/");
   await settle(page);
-  await page.addStyleTag({ content: "#carga i { visibility: hidden !important }" });
+  await page.addStyleTag({ content: "#carga i, #carga [data-cota] { visibility: hidden !important }" });
   const truck = page.locator("#carga [aria-hidden=true]").first();
   const shot = async (p: number) => {
     await scrollToScene(page, "carga", p);
@@ -252,7 +298,8 @@ test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) 
     return page.screenshot({ clip: (await truck.boundingBox())! });
   };
   // seated (the set-down ends at 0.6 of its script, 0.327 of its scroll), not yet swapped (from 0.338); then swapped
-  const [before, after] = [await shot(0.335), await shot(0.355)];
+  // c 0.36 (seated, not yet swapped) and 0.415 (swapped, the spreader not yet lifting): p = c × 120/220
+  const [before, after] = [await shot((0.36 * 120) / 220), await shot((0.415 * 120) / 220)];
   const sharp = (await import("sharp")).default;
   const [a, b] = await Promise.all([before, after].map((s) => sharp(s).raw().toBuffer({ resolveWithObject: true })));
   expect(b.info.width).toBe(a.info.width);
@@ -348,8 +395,9 @@ test("scene 2 always shows the crane", async ({ page }) => {
   await page.goto("/");
   await settle(page);
   const crane = page.locator("#porteiner img[data-crane]");
+  // ten points of the script, up to where the set leaves the close to the truck (c 0.9: scene 3 takes over)
   for (let i = 0; i < 10; i++) {
-    await scrollToScene(page, "porteiner", i / 9);
+    await scrollToScene(page, "porteiner", ((0.88 * i) / 9) * SCENE2_SCRIPT);
     await expect
       .poll(() => crane.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0 && getComputedStyle(img).opacity === "1"), {
         message: `p = ${(i / 9).toFixed(2)}`,

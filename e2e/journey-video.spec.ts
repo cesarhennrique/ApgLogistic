@@ -2,8 +2,8 @@ import { test } from "@playwright/test";
 
 test.use({ video: "on" });
 
-// For review, not an assertion: the hero to the end of scene 1 (the client's container), scrolled down, as
-// e2e/__videos__/journey-<project>.webm (git-ignored).
+// For review, not an assertion: scene 1 (from the moment it slides in over the hero) to the end of scene 3's script
+// (the loaded truck), scrolled down, as e2e/__videos__/journey-<project>.webm (git-ignored).
 // The intro is marked as seen, so the loader doesn't take the first seconds.
 test("records the full scroll", async ({ page }, testInfo) => {
   test.setTimeout(180_000);
@@ -11,14 +11,17 @@ test("records the full scroll", async ({ page }, testInfo) => {
   await page.goto("/");
   await page.waitForLoadState("load");
   await page.waitForTimeout(3_000);
-  const end = await page.evaluate(() => {
-    const scene = document.getElementById("chegada")!;
-    return scene.getBoundingClientRect().top + window.scrollY + scene.offsetHeight - window.innerHeight;
+  const [start, end] = await page.evaluate(() => {
+    const top = (id: string) => document.getElementById(id)!.getBoundingClientRect().top + window.scrollY;
+    // scene 3's script ends 120vh after it pins
+    return [top("chegada") - window.innerHeight, top("carga") + 1.2 * window.innerHeight];
   });
-  // ~24 s from the top to the close, in small steps (Lenis smooths between them).
-  const steps = 240;
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), start);
+  await page.waitForTimeout(1_500);
+  // ~36 s, in small steps (Lenis smooths between them).
+  const steps = 360;
   for (let i = 1; i <= steps; i++) {
-    await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), (end * i) / steps);
+    await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), start + ((end - start) * i) / steps);
     await page.waitForTimeout(100);
   }
   await page.waitForTimeout(1_000);

@@ -24,6 +24,10 @@ export const GROUND = { y: 5068, x0: 2512, x1: 4248 };
 // Scene 3's trucks (carreta-lado and carreta-lado-vazia, 1672×941, aligned to the pixel by the same script), and the
 // container cut from the loaded one: its box in the truck image.
 export const TRUCK = { width: 1672, height: 941 };
+// The tyres' contact line (the road), in the truck image.
+export const TRUCK_ROAD_Y = 700;
+// The top of scene 2's boom (its walkway), for the crane's height (crane px).
+export const BOOM_TOP = 1768;
 export const CONTAINER_BOX = { x: 370, y: 265, w: 1266, h: 293 };
 // The twist locks the container sits on: four along its bottom rail.
 export const TWIST_LOCKS = [404, 691, 1126, 1579].map((x) => ({ x, y: 552 }));

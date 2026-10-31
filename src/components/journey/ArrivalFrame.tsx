@@ -179,13 +179,20 @@ export function ArrivalFrame({ alt }: { alt: string }) {
           {/* The sight pulses slowly once the camera holds the close (data-held, see globals.css). */}
           <div className="mira absolute inset-0">
             {Array.from({ length: 8 }, (_, i) => (
+              <Halo key={i} />
+            ))}
+            {Array.from({ length: 8 }, (_, i) => (
               <Bar key={i} />
             ))}
           </div>
+          {/* the card's leader, from the sight */}
+          <Halo leader />
+          <i data-leader="" className="absolute top-0 left-0 size-px origin-top-left bg-sand-50/85" />
           {/* Its card: the label, then the container's code, size and destination. */}
           <span
             data-label=""
-            className="absolute top-0 left-0 bg-navy-900/85 px-3 py-2 font-mono text-xs leading-snug tracking-[0.12em] whitespace-nowrap text-sand-50"
+            // solid navy: it sits over the containers' paint, it must read at once
+            className="absolute top-0 left-0 bg-navy-900 px-3 py-2 font-mono text-[13px] leading-snug tracking-[0.1em] whitespace-nowrap text-sand-50"
           >
             <span className="block">{notes.target}</span>
             <span className="mt-1 block">

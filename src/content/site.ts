@@ -220,6 +220,15 @@ export const site = {
     truckAlt: "Carreta APG com container de 40 pés",
     // Small labels on the hero's map.
     mapLabels: { suape: "SUAPE · PE", salvador: "SALVADOR · BA" },
+    // Scene 2: the callouts on the crane, the giant word behind it, its two numbers under the line.
+    crane: {
+      callouts: { trolley: "Carrinho", spreader: "Spreader · twistlocks", container: "Container 40′" },
+      word: "Suape",
+      stats: [
+        { value: 1900, unit: "TEUs / mês" },
+        { value: 24, unit: "h / operação" },
+      ],
+    },
     // Scene 5's plan: its place names.
     plan: { gate: "Portaria", warehouse: "Galpão", yard: "Pátio" },
     // Scene 4's speedometer: the road and the unit around the speed.

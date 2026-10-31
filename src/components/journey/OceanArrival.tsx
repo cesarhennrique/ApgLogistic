@@ -7,6 +7,7 @@ import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
 import { ArrivalFrame, type Frame, frames, loadSharp, setRedraw, viewOf } from "./ArrivalFrame";
 import { APG_CONTAINERS, BOW, type Rect, SHIP, TARGET, type View, ZOOM, cameraTransform, sampleOceanCamera, toScreen } from "./oceanCamera";
+import { edges, guide, place } from "./marks";
 import { Scene, segment } from "./Scene";
 
 const scene = site.journey.find((s) => s.id === "chegada")!;
@@ -37,12 +38,13 @@ const OUTLINE_OUT = [0.76, 0.82] as const;
 const COPY_IN = [0.45, 0.5] as const;
 const COUNT = [0.45, 0.72] as const;
 const COPY_OUT = [0.76, 0.8] as const;
-// 75–100%: the sight closes in on the client's container, from wide to tight, and locks (a short snap, ~120 ms of an
-// ordinary scroll); its card comes in.
+// 75–100%: the sight closes in on the client's container, from wide to tight, and locks (a snap in and back, spread
+// over enough scroll that no 10vh step of it goes by unseen); its card comes in, solid by 0.85.
 const TARGET_IN = [0.75, 0.8] as const;
-const CLOSE_IN = [0.75, 0.88] as const;
-const LOCK = [0.88, 0.9] as const;
-const CARD_IN = [0.88, 0.93] as const;
+const CLOSE_IN = [0.75, 0.86] as const;
+const LOCK = [0.86, 0.92] as const;
+// (fully in by 0.85: the close holds from there)
+const CARD_IN = [0.8, 0.85] as const;
 // The original photo (desktop) crossfades over the 1920 one before the zoom gets close.
 const SHARP_IN = [0.12, 0.26] as const;
 // Reduced motion: the end state, still: the camera mid-zoom, the HUD, the outlines, the counter and the card.
@@ -58,32 +60,11 @@ const HALO = 2;
 const OUTSET = 4;
 // The target's corner marks: heavier than the outlines, closing from this far outside its box to 10 px; each arm
 // 28% of its shorter side.
-const MARK = { line: 3, gap: 10, from: 120, snap: 5, arm: 0.28 };
+const MARK = { line: 2, gap: 10, from: 120, snap: 5, arm: 0.28 };
 // The heading's dashes: 8 px long, every 16 px.
 const DASH = { length: 8, every: 16, gap: 12 };
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
-const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
-const place = (el: HTMLElement, x: number, y: number, w = 1, h = 1) =>
-  (el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${w.toFixed(2)}, ${h.toFixed(2)})`);
-// A line t px thick from a to b, centred on it: a 1 px box rotated and stretched.
-const leader = (el: HTMLElement, ax: number, ay: number, bx: number, by: number, t = 1) =>
-  (el.style.transform = `translate3d(${ax.toFixed(1)}px, ${ay.toFixed(1)}px, 0) rotate(${Math.atan2(by - ay, bx - ax).toFixed(4)}rad) translate3d(0, ${(-t / 2).toFixed(1)}px, 0) scale(${Math.hypot(bx - ax, by - ay).toFixed(1)}, ${t})`);
-// A leader, white over its halo.
-const guide = (n: { leader: HTMLElement | null; leaderHalo: HTMLElement | null }, ax: number, ay: number, bx: number, by: number) => {
-  leader(n.leaderHalo!, ax, ay, bx, by, 1 + 2 * HALO);
-  leader(n.leader!, ax, ay, bx, by);
-};
-// A rectangle's four edges, t px thick, inside it, drawn round from its top left, clockwise, as far as f (0–1): each
-// edge a 1 px box stretched (transform only, so the stroke never thickens).
-const edges = (bars: HTMLElement[], r: { x: number; y: number; w: number; h: number }, t: number, f = 1) => {
-  const [top, bottom, left, right] = bars;
-  const s = (k: number) => clamp01(f * 4 - k);
-  place(top, r.x, r.y, r.w * s(0), t);
-  place(right, r.x + r.w - t, r.y, t, r.h * s(1));
-  place(bottom, r.x + r.w * (1 - s(2)), r.y + r.h - t, r.w * s(2), t);
-  place(left, r.x, r.y + r.h * (1 - s(3)), t, r.h * s(3));
-};
 // The HUD's position: degrees and minutes, from the open sea to Suape's.
 const { hud } = site.journeyScene;
 const minutes = ([d, m]: readonly number[]) => d * 60 + m;
@@ -161,21 +142,31 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const L = MARK.line;
   const arm = MARK.arm * Math.min(t.w, t.h);
   const [x0, y0, x1, y1] = [t.x - gap, t.y - gap, t.x + t.w + gap, t.y + t.h + gap];
-  const m = frame.target.bars;
-  place(m[0], x0, y0, arm, L);
-  place(m[1], x0, y0, L, arm);
-  place(m[2], x1 - arm, y0, arm, L);
-  place(m[3], x1 - L, y0, L, arm);
-  place(m[4], x0, y1 - L, arm, L);
-  place(m[5], x0, y1 - arm, L, arm);
-  place(m[6], x1 - arm, y1 - L, arm, L);
-  place(m[7], x1 - L, y1 - arm, L, arm);
+  // The corners, red over their dark halo (HALO px round each arm).
+  const corners = (bars: HTMLElement[], o: number) => {
+    const [a, l] = [arm + 2 * o, L + 2 * o];
+    const [X0, Y0, X1, Y1] = [x0 - o, y0 - o, x1 + o, y1 + o];
+    place(bars[0], X0, Y0, a, l);
+    place(bars[1], X0, Y0, l, a);
+    place(bars[2], X1 - a, Y0, a, l);
+    place(bars[3], X1 - l, Y0, l, a);
+    place(bars[4], X0, Y1 - l, a, l);
+    place(bars[5], X0, Y1 - a, l, a);
+    place(bars[6], X1 - a, Y1 - l, a, l);
+    place(bars[7], X1 - l, Y1 - a, l, a);
+  };
+  corners(frame.target.halos, HALO);
+  corners(frame.target.bars, 0);
   const card = frame.target.label;
   const tw = card.offsetWidth;
   // beside it, on the right where there is room, else below it
   const right = t.x + t.w + MARK.gap + 12;
   const fits = right + tw <= view.width - 16;
-  place(card, fits ? right : Math.max(16, Math.min(t.x, view.width - tw - 16)), fits ? t.y : t.y + t.h + MARK.gap + 12);
+  // beside the sight, a little off it, with a leader from its corner
+  const [kx, ky] = fits ? [right + 24, t.y] : [Math.max(16, Math.min(t.x, view.width - tw - 16)), y1 + 32];
+  place(card, kx, ky);
+  if (fits) guide(frame.target, x1, y0 + 8, kx, ky + card.offsetHeight / 2);
+  else guide(frame.target, x0 + 8, y1, kx + 16, ky);
   card.style.opacity = String(reduced ? 1 : segment(q, ...CARD_IN));
   frame.target.group.style.opacity = String(reduced ? 1 : segment(q, ...TARGET_IN));
   // held at the close: the sight pulses (CSS, off with reduced motion)
