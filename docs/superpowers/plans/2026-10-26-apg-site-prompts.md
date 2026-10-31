@@ -1244,6 +1244,73 @@ da Home seguem 01 a 11 sem repetição.
 Commit: "feat: cena 1 por zoom de câmera e ordem da Home"
 ````
 
+## Prompt J1c — Roteiro da cena 1 e correções do hero
+
+> Revisão 2026-10-30c, depois do J1b (`d81f01d`). O zoom ficou real, mas sem roteiro: texto ao lado sem relação com a imagem, duas roladas sem nada mudar e a linha "SUAPE" invisível.
+
+````text
+Leia o CLAUDE.md, o spec (seção 3, linha da cena 1, revisada em
+2026-10-30c), src/components/journey/OceanArrival.tsx e
+src/components/journey/oceanCamera.ts. Use as skills animate,
+animation-performance e superpowers:test-driven-development.
+
+Objetivo: o zoom da cena 1 passa a ter um motivo. A câmera desce para
+ACHAR O CONTAINER DA APG dentro do navio. Cada texto aponta para algo na
+foto, como anotações de desenho técnico. A foto continua parada; só a
+câmera se move.
+
+1. Hero: o bloco de textos está abaixo do centro. Centralize na vertical
+   pela área visível abaixo do header (não pela tela toda). Confira com
+   screenshot em 1440×900, 1920×1080 e 390×844.
+2. Sem rolagem morta: hoje o usuário rola duas vezes e nada muda (o
+   deslize por cima do hero mais a pausa de 0–0.08). O zoom começa no
+   instante em que a foto cobre a tela; tire a pausa inicial e ajuste a
+   altura da cena para não sobrar trecho parado. Teste: entre o fim do
+   deslize e o close, todo passo de 10vh de scroll muda a escala.
+3. Medições em oceanCamera.ts (px da foto original, conferidas em
+   recortes salvos com sharp): a ponta da proa; os retângulos de 5 a 8
+   containers navy com faixa vermelha espalhados pelo convés; e o
+   CONTAINER-ALVO, um navy perto do centro do convés. O FOCO do close
+   passa a ser o centro do container-alvo.
+4. Anotações, desenhadas em coordenadas de tela (traço fino de 1px que
+   não engorda com o zoom) e presas à foto pela câmera: a cada frame,
+   converta o ponto da foto para a tela com a mesma matemática do
+   transform. Só transform e opacity; nada de re-render.
+   a. Começo (navio inteiro): rótulo mono branco "CABOTAGEM · RUMO A
+      SUAPE · PE", com uma linha guia fina saindo da ponta da proa até o
+      rótulo. Some quando a proa sai da tela.
+   b. Meio (convés enche a tela): os containers navy medidos ganham um
+      contorno red-500 de 1.5px, um por vez (stagger pelo progresso), e
+      uma nota mono "CONTAINERS APG" com linha guia até o primeiro deles.
+      Junto entra o contador "1.900 TEUs por mês" (ContainerCode da cena
+      + Counter), à esquerda.
+   c. Close: os outros contornos somem; o container-alvo fica no centro
+      com marcadores de canto vermelhos (4 cantos em L, como mira) e o
+      rótulo mono "SEU CONTAINER". O texto do contador sai antes.
+   d. Fim: segura o close parado (é onde a cena 2 começa: este container
+      é o que o portêiner iça).
+5. Remova a linha vermelha tracejada e o rótulo "SUAPE · PE" do header;
+   o rumo agora está na anotação (a).
+6. Contraste: os rótulos sobre a foto usam fundo navy-900 a 70% com
+   padding pequeno (ou sombra de texto forte) e passam AA. No mobile, o
+   contador fica embaixo, sobre o fundo translúcido que já existe, sem
+   cobrir o container-alvo.
+7. Reduced motion: foto parada no meio do zoom, com os contornos, a nota
+   e o contador visíveis, sem stagger.
+8. Testes: unitário da conversão foto→tela (um ponto medido cai no
+   lugar certo em 3 escalas). e2e: as anotações a, b e c ficam visíveis
+   cada uma no seu trecho e somem fora dele; não há erros de console.
+   Screenshots da cena 1 em p = 0, 0.25, 0.5, 0.75, 1 (desktop e mobile)
+   e do hero (3 tamanhos) em e2e/__screenshots__/. Vídeo do hero até o
+   close (fora do git).
+
+Pronto quando: lint, typecheck, test e e2e passam, o hero está
+centralizado, nenhum trecho do scroll fica sem mudança e, no vídeo, dá
+para entender sem ler o código: o navio chega a Suape, mostramos os
+containers da APG e a câmera para no container do cliente.
+Commit: "feat: roteiro da cena 1 e hero centralizado"
+````
+
 ## Prompt J2 — Cenas 2 e 3 (Portêiner e Carga)
 
 ````text
