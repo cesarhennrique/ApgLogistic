@@ -2056,6 +2056,21 @@ imagem + transform.
    corrida com fontes ou com o cache; não só aumente o timeout). Os
    rastreadores do mapa de PE podem continuar com animateMotion, mas
    param no tier 'low' e em reduced motion.
+0c. Distribuição chega sem mapa (print do usuário: só "SUAPE · PE",
+   "SALVADOR · BA", o ponto vermelho e o contador em navy vazio; o mapa
+   aparece depois). Causa: Distribution.tsx só monta o canvas com
+   rootMargin "100% 0px", e o chunk do three.js + a geometria levam
+   mais que uma tela de scroll. Corrija:
+   - pré-carregue o chunk (import() do DistributionCanvas) quando a
+     Estrada entrar na tela, e monte o canvas parado (sem renderizar)
+     quando a fase C da Estrada começar;
+   - até o primeiro frame do canvas, mostre por baixo o mapa estático
+     (o mesmo SVG pontilhado do placeholder do hero, no enquadramento
+     inicial da Distribuição) e troque por opacidade quando o canvas
+     pintar o primeiro frame (onCreated + 1 frame);
+   - e2e com rede lenta (Fast 3G) e CPU 4x: rolando da Estrada para a
+     Distribuição em velocidade normal, o mapa (estático ou canvas)
+     está visível em todo quadro da Distribuição.
 
 1. src/lib/quality.ts: pickTier({ webgl, reducedMotion, saveData,
    lowMemory }) → 'static' | 'low' | 'high'. Sem WebGL ou com reduced
