@@ -2030,6 +2030,22 @@ bugada")
    - na fase C os cartões dos capítulos cobrem a pista e a carreta;
    - no placar da doca os números aparecem no meio do contador
      (3.999, 4.844) no fim da cena.
+7b. Vídeo do usuário (iPhone 14 Pro, gravado por extensão de mockup do
+   Chrome, 46 s): a página fica TODOS os 46 s no hero, sem rolar, e o
+   título "TRANSPORTANDO / CONFIANÇA / DESDE 1996" não aparece (só o
+   código, o subtítulo e os botões). Numa emulação comum do Chrome o
+   título aparece e a página rola. Hipótese: dentro de iframe (ou com
+   "Disable cache" ligado) a abertura do hero/IntroTimeline não
+   termina, o título fica escondido e o scroll fica travado (Lenis
+   parado). Garanta que: (a) o título nunca dependa do fim da intro
+   para ficar visível; (b) a rolagem nunca fique travada mais que
+   ~3 s, com um timeout de segurança que libera tudo; (c) funcione
+   dentro de iframe. Teste e2e: a Home dentro de um <iframe> 390×844,
+   com cache desligado, mostra o título e rola em ≤ 3 s.
+7c. Na passagem Carga → Estrada no celular, a faixa navy sobe
+   translúcida e aparece cinza sobre o branco, e o código ainda diz
+   "CARGA". A faixa entra opaca (deslizando, sem fade) e o código troca
+   para "ESTRADA" quando ela entra.
 8. Causas prováveis a checar: a barra de endereço do celular mudando
    a altura (use svh/lvh fixos e ScrollTrigger.config({
    ignoreMobileResize: true })), refresh do ScrollTrigger no resize,
