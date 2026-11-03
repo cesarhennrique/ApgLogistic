@@ -2050,6 +2050,12 @@ imagem + transform.
    com blur e o logo navy-900 100%. Em operacao-bahia o texto do hero
    passa por cima do "BAHIA" gigante; afaste a palavra para baixo do
    texto (como em containers-suape).
+0b. Do H3: rode o e2e inteiro (não rodou de novo depois da correção do
+   teste dos códigos APGU) e estabilize o teste de tempo da intro que
+   falhou uma vez na rodada completa (ache a causa: espera fixa,
+   corrida com fontes ou com o cache; não só aumente o timeout). Os
+   rastreadores do mapa de PE podem continuar com animateMotion, mas
+   param no tier 'low' e em reduced motion.
 
 1. src/lib/quality.ts: pickTier({ webgl, reducedMotion, saveData,
    lowMemory }) → 'static' | 'low' | 'high'. Sem WebGL ou com reduced
