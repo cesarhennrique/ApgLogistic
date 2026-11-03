@@ -1964,12 +1964,11 @@ header.
 Commit: "fix: heros dos serviços em fundo claro"
 ````
 
-## Prompt H3 — Serviços, Por que a APG e CTA no padrão da jornada; carreta no celular
+## Prompt H3 — Serviços, Por que a APG e CTA no padrão da jornada
 
 ````text
 Leia o CLAUDE.md, o spec (seções 3, 4 e 5), Services.tsx,
-Differentials.tsx, FinalCta.tsx, ServiceHero.tsx, Estrada.tsx e
-estradaScript.ts. Use as skills animate, animation-performance,
+Differentials.tsx, FinalCta.tsx e ServiceHero.tsx. Use as skills animate, animation-performance,
 emil-design-eng, frontend-design:frontend-design e mobile-native.
 
 O usuário achou Serviços, Por que a APG e o CTA final genéricos para o
@@ -2017,54 +2016,15 @@ Parte C — CTA final (APGU 1996-09)
 6. Mobile: o container fica acima do texto, menor, e as portas abrem
    quando ele entra na tela.
 
-Parte D — Carreta no celular (o usuário relata a animação "muito
-bugada")
-7. Reproduza em emulação de iPhone (390×844 e 375×667) com rolagem por
-   toque (page.touchscreen / mouse.wheel não basta: use eventos de
-   touch ou CDP Input.dispatchTouchEvent) e grave um vídeo da cena 3
-   ao fim da Estrada. Liste cada problema que aparecer. Pelos
-   screenshots atuais já se vê:
-   - a carreta lateral encosta nas bordas da tela (sem margem);
-   - na fase B a carreta fica minúscula numa faixa fina e o resto da
-     tela fica vazio;
-   - na fase C os cartões dos capítulos cobrem a pista e a carreta;
-   - no placar da doca os números aparecem no meio do contador
-     (3.999, 4.844) no fim da cena.
-7b. Vídeo do usuário (iPhone 14 Pro, gravado por extensão de mockup do
-   Chrome, 46 s, sem tentar rolar): nos 46 s o título "TRANSPORTANDO / CONFIANÇA / DESDE 1996" não aparece (só o
-   código, o subtítulo e os botões). Numa emulação comum do Chrome o
-   título aparece e a página rola. Hipótese: dentro de iframe (ou com
-   "Disable cache" ligado) a abertura do hero/IntroTimeline não
-   termina e o título fica escondido (o travamento da rolagem não foi
-   confirmado, mas proteja contra ele também). Garanta que: (a) o título nunca dependa do fim da intro
-   para ficar visível; (b) a rolagem nunca fique travada mais que
-   ~3 s, com um timeout de segurança que libera tudo; (c) funcione
-   dentro de iframe. Teste e2e: a Home dentro de um <iframe> 390×844,
-   com cache desligado, mostra o título e rola em ≤ 3 s.
-7c. Na passagem Carga → Estrada no celular, a faixa navy sobe
-   translúcida e aparece cinza sobre o branco, e o código ainda diz
-   "CARGA". A faixa entra opaca (deslizando, sem fade) e o código troca
-   para "ESTRADA" quando ela entra.
-8. Causas prováveis a checar: a barra de endereço do celular mudando
-   a altura (use svh/lvh fixos e ScrollTrigger.config({
-   ignoreMobileResize: true })), refresh do ScrollTrigger no resize,
-   Lenis com suavização no toque (desligue no touch), e trabalho de
-   layout por frame. Corrija a causa, não o sintoma.
-9. Mobile da Estrada: carreta lateral com 16px de margem em cada lado;
-   na fase B a escala final no celular deixa a carreta com ~70% da
-   largura; na fase C os cartões ficam numa faixa fixa embaixo
-   (bottom sheet de ~30% da altura) e a pista com a carreta acima
-   dela; os contadores terminam no valor exato antes do fim da cena.
-
 Testes e entrega
-10. Screenshots desktop e mobile das 3 seções em 3 pontos cada; vídeo
-    no celular (toque) da cena 3 ao CTA. Informe a lista do item 7 e o
-    que corrigiu em cada um.
+7. Reduced motion: cada seção no estado final, parada. Nada de texto
+   sobre imagem sem AA.
+8. Screenshots desktop e mobile das 3 seções em 3 pontos cada; vídeo
+   do desktop e do celular da seção Serviços ao rodapé.
 
 Pronto quando: lint, typecheck, test e e2e passam, as três seções têm
-movimento e linguagem da jornada, e o vídeo no celular mostra a
-carreta da cena 3 ao fim da Estrada sem saltos nem tremores.
-Commit: "feat: serviços, diferenciais e CTA no padrão da jornada; carreta no celular"
+movimento e linguagem da jornada.
+Commit: "feat: serviços, diferenciais e CTA no padrão da jornada"
 ````
 
 > **Checkpoint Marco 2:** gravar um vídeo da Home completa (desktop e celular) e mandar ao cliente.
