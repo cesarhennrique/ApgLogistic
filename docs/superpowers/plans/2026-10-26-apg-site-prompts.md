@@ -1981,6 +1981,13 @@ pickTier.
 O WebGL só existe nos dois mapas (hero e Distribuição); o resto é
 imagem + transform.
 
+0. Ajustes do 14b (screenshots desktop de /servicos/*): sobre os heros
+   claros o header ganha uma barra cinza-lilás e, em operacao-bahia, o
+   logo fica desbotado. Sobre fundo #FEFEFE a barra deve ser #FEFEFE/85
+   com blur e o logo navy-900 100%. Em operacao-bahia o texto do hero
+   passa por cima do "BAHIA" gigante; afaste a palavra para baixo do
+   texto (como em containers-suape).
+
 1. src/lib/quality.ts: pickTier({ webgl, reducedMotion, saveData,
    lowMemory }) → 'static' | 'low' | 'high'. Sem WebGL ou com reduced
    motion: 'static'; saveData ou deviceMemory ≤ 4: 'low'. Testes para
