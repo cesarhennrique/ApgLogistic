@@ -1,4 +1,13 @@
 {
+  "armazem-docas": {
+    "width": 3344,
+    "height": 1882,
+    "widths": [
+      800,
+      1200,
+      1920
+    ]
+  },
   "carreta-alto-30": {
     "width": 1915,
     "height": 821,
@@ -121,6 +130,33 @@
     "height": 336,
     "widths": [
       776
+    ]
+  },
+  "servico-containers-suape": {
+    "width": 1360,
+    "height": 1700,
+    "widths": [
+      800,
+      1200,
+      1360
+    ]
+  },
+  "terminal-aereo": {
+    "width": 3840,
+    "height": 2161,
+    "widths": [
+      800,
+      1200,
+      1920,
+      2560
+    ]
+  },
+  "terminal-aereo-mobile": {
+    "width": 1215,
+    "height": 2161,
+    "widths": [
+      800,
+      1215
     ]
   }
 }

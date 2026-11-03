@@ -351,6 +351,23 @@ export const site = {
     },
   },
 
+  // The internal pages' heros and their sections (spec §4, "Páginas").
+  pages: {
+    about: {
+      title: "Desde 1996, do porto ao destino",
+      text: "Fundada em Pernambuco por Paulo Germano de Albuquerque Ramos, a APG é o braço rodoviário da cabotagem em Suape.",
+      photoAlt: "Porto de Suape à noite, com portêineres no cais",
+      missionTitle: "Missão",
+      valuesTitle: "Valores",
+    },
+    structure: {
+      title: "Terminal CONE",
+      text: "35.000 m² de pátio às margens da BR-101, em Cabo de Santo Agostinho, a poucos quilômetros do Porto de Suape.",
+      photoAlt: "Vista aérea do terminal CONE, com carretas APG nas docas e containers no pátio",
+    },
+    service: { includes: "O que inclui", faq: "Perguntas frequentes", others: "Outros serviços" },
+  },
+
   nav,
 
   legal: { privacy: { href: "/privacidade", label: "Política de Privacidade" } },

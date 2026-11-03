@@ -17,14 +17,21 @@ const WIDTHS_FOR = {
   "porteiner-base": [800, 1200, 1920, 2560],
   "navio-mar": [800, 1200, 1920],
   "navio-mar-close": [2600],
+  // the internal pages' heros: never wider than a wide screen needs
+  "armazem-docas": [800, 1200, 1920],
+  "terminal-aereo": [800, 1200, 1920, 2560],
+  "terminal-aereo-mobile": [800, 1215],
 };
 // AVIF quality where the default (55) is more than the eye needs: the phone's LCP, 72 KB instead of 92.
 const AVIF_QUALITY_FOR = { "hero-porto-mobile": 48 };
 // Crops built as images of their own (source px): the hero's phone framing, portrait, on the bow and the cranes;
-// scene 1's close, the original's full resolution round the client's container (keep in step with ArrivalFrame).
+// scene 1's close, the original's full resolution round the client's container (keep in step with ArrivalFrame);
+// /estrutura's phone hero.
 const CROPS = {
   "hero-porto-mobile": { from: "hero-porto", left: 2690, top: 0, width: 760, height: 1645 },
   "navio-mar-close": { from: "navio-mar", left: 1990, top: 912, width: 2600, height: 1800 },
+  // portrait, on the warehouse and its docked trucks
+  "terminal-aereo-mobile": { from: "terminal-aereo", left: 1890, top: 0, width: 1215, height: 2161 },
 };
 // A generated width has 3+ digits (carreta-alto-30 is a source).
 const GENERATED = /-\d{3,}$/;

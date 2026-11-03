@@ -1,39 +1,35 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { Container, Truck, Warehouse, type LucideIcon } from "lucide-react";
-import Image from "next/image";
+import { SceneImage, type SceneImageName } from "@/components/journey/SceneImage";
 import { TransitionLink } from "@/components/layout/TransitionLink";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site, type Service } from "@/content/site";
 
-const icons: Record<Service["slug"], LucideIcon> = {
-  "containers-suape": Container,
-  "operacao-bahia": Truck,
-  "logistica-armazenagem": Warehouse,
+// Each service's cut-out, in the journey's pattern (journeyImages, AVIF then WebP): the crane's spreader with the
+// container (scripts/build-service-images.mjs), the loaded truck, the warehouse and its docks. Its box: 4:3 on
+// phones, 4:5 from md; the portrait crop fills it, the landscape ones sit whole in it.
+export const SERVICE_IMAGES: Record<Service["slug"], { name: SceneImageName; fill: boolean }> = {
+  "containers-suape": { name: "servico-containers-suape", fill: true },
+  "operacao-bahia": { name: "carreta-lado", fill: false },
+  "logistica-armazenagem": { name: "armazem-docas", fill: false },
 };
 
-// Runs at build time (SSG): a photo replaces the icon block as soon as the file lands in public/.
-const imageFor = (slug: string) =>
-  existsSync(join(process.cwd(), "public/images/services", `${slug}.webp`)) ? `/images/services/${slug}.webp` : null;
+// Hover, with a fine pointer only and not with reduced motion: the picture lifts 6 px and grows 3%.
+const LIFT =
+  "transition-transform duration-240 ease-out motion-safe:pointer-fine:group-hover:-translate-y-1.5 motion-safe:pointer-fine:group-hover:scale-[1.03]";
 
-const ZOOM = "transition-transform duration-300 ease-out group-hover:scale-[1.04] motion-reduce:transition-none";
-
-function ServiceCard({ service }: { service: Service }) {
-  const image = imageFor(service.slug);
-  const Icon = icons[service.slug];
+export function ServiceCard({ service }: { service: Service }) {
+  const image = SERVICE_IMAGES[service.slug];
   return (
     <article className="group relative flex h-full flex-col">
-      <div className="relative aspect-[4/3] overflow-hidden bg-blue-600 md:aspect-[4/5]">
-        {image ? (
-          <Image src={image} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className={`object-cover ${ZOOM}`} />
-        ) : (
-          <div className={`grid h-full place-items-center text-sand-50 ${ZOOM}`}>
-            <Icon aria-hidden="true" strokeWidth={1} className="size-28 md:size-32" />
-          </div>
-        )}
-        {/* Marco 2: 3D miniature of the operation */}
-        <div data-mini3d={service.slug} aria-hidden="true" className="absolute inset-0" />
+      <div className="relative aspect-[4/3] overflow-hidden bg-[#fefefe] md:aspect-[4/5]">
+        <div className={`absolute inset-0 ${LIFT} ${image.fill ? "" : "grid place-items-center px-5"}`}>
+          <SceneImage
+            name={image.name}
+            alt=""
+            sizes="(min-width: 1440px) 440px, (min-width: 768px) 31vw, 92vw"
+            className={image.fill ? "h-full w-full object-cover" : "h-auto w-full"}
+          />
+        </div>
       </div>
       <h3 className="font-condensed mt-6 text-4xl leading-none font-bold uppercase">
         {/* stretched link: the whole card is the target */}

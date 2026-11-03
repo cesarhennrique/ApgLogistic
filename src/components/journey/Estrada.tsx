@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { gsap, SplitText } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { ContainerCode } from "@/components/ui/ContainerCode";
+import { History } from "@/components/ui/History";
+import { Scoreboard } from "@/components/ui/Scoreboard";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
 import { TRUCK } from "./craneAnchors";
@@ -806,37 +808,10 @@ function EstradaStill() {
         </div>
       </div>
       <div className="site-container py-[12svh]">
-        <p className="font-condensed text-[clamp(2.4rem,5vw,4.5rem)] leading-[0.9] font-bold uppercase">
-          {trackText.title.map((line, i) => (
-            <span key={line} className={`block ${i === 0 ? "text-steel-400" : ""}`}>
-              {line}
-            </span>
-          ))}
-        </p>
-        <ol className="mt-10 grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-          {history.map((ch) => (
-            <li key={ch.title} className="border-l-2 border-red-500 pl-4">
-              <p className="font-condensed text-[clamp(2rem,3.4vw,3rem)] leading-none font-bold uppercase">{ch.mark}</p>
-              <p className="mt-2 font-mono text-xs tracking-[0.12em] text-red-500 uppercase">{ch.title}</p>
-              <p className="mt-1.5 text-[0.9375rem] leading-snug text-navy-900/80">{ch.text}</p>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-[10svh] font-mono text-xs tracking-[0.12em] text-navy-900/75 uppercase">{dock.label}</p>
-        <dl className="mt-3 grid grid-cols-2 gap-px bg-navy-900/20 md:grid-cols-4">
-          {dock.stats.map((stat) => (
-            <div key={stat.label} className="bg-navy-900 px-5 py-4 text-sand-50">
-              <dt className="sr-only">
-                {stat.unit} {stat.label}
-              </dt>
-              <dd className="font-mono-tabular text-[clamp(1.5rem,3vw,2.4rem)] leading-none font-bold">
-                {count.format(stat.value)}
-                {stat.unit && <span className="ml-1.5 text-sm font-normal">{stat.unit}</span>}
-              </dd>
-              <dd className="mt-1 font-mono text-xs tracking-[0.1em] text-sand-50/75 uppercase">{stat.label}</dd>
-            </div>
-          ))}
-        </dl>
+        <History />
+        <div className="mt-[10svh]">
+          <Scoreboard />
+        </div>
       </div>
     </section>
   );

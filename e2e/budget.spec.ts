@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { PAGES } from "./pages";
 
 // In Chromium on every project (the phone one keeps its screen, its dpr and its user agent): Playwright's WebKit on
 // Windows decodes no AVIF and falls back to the WebP, which phones' Safari (iOS 16+) does not need.
@@ -29,3 +30,24 @@ test("the Home's images stay within budget over a full scroll", async ({ page },
   for (const i of list.slice(0, 8)) console.log(`  ${Math.round(i.bytes / 1024)} KB ${new URL(i.url).pathname}`);
   expect(total).toBeLessThanOrEqual((testInfo.project.name === "mobile" ? 1 : 2) * 1024 * 1024);
 });
+
+// Each internal page's images, scrolled through: ≤ 600 KB on desktop, ≤ 350 KB on phones.
+for (const { path } of PAGES) {
+  test(`${path}: its images within budget`, async ({ page }, testInfo) => {
+    const images: number[] = [];
+    page.on("requestfinished", async (request) => {
+      if (request.resourceType() === "image") images.push((await request.sizes()).responseBodySize);
+    });
+    await page.goto(path);
+    await page.waitForLoadState("load");
+    const end = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+    for (let y = 0; y <= end; y += 300) {
+      await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), y);
+      await page.waitForTimeout(60);
+    }
+    await page.waitForTimeout(1500);
+    const total = images.reduce((a, b) => a + b, 0);
+    console.log(`${testInfo.project.name} ${path}: ${Math.round(total / 1024)} KB of images`);
+    expect(total).toBeLessThanOrEqual((testInfo.project.name === "mobile" ? 350 : 600) * 1024);
+  });
+}
