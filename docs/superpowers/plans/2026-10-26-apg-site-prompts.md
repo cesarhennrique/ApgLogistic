@@ -1964,6 +1964,94 @@ header.
 Commit: "fix: heros dos serviços em fundo claro"
 ````
 
+## Prompt H3 — Serviços, Por que a APG e CTA no padrão da jornada; carreta no celular
+
+````text
+Leia o CLAUDE.md, o spec (seções 3, 4 e 5), Services.tsx,
+Differentials.tsx, FinalCta.tsx, ServiceHero.tsx, Estrada.tsx e
+estradaScript.ts. Use as skills animate, animation-performance,
+emil-design-eng, frontend-design:frontend-design e mobile-native.
+
+O usuário achou Serviços, Por que a APG e o CTA final genéricos para o
+padrão do projeto (cards brancos, 4 números soltos, título sozinho com
+meia tela vazia). As três seções passam a ter a mesma linguagem da
+jornada: fotos recortadas, traço técnico, cotas red-500, código APGU,
+palavra gigante ao fundo e movimento atrelado ao scroll.
+
+Parte A — Serviços (APGU 1996-07)
+1. Troque a grade de 3 cards por um trecho fixado com rolagem
+   horizontal: 3 painéis de tela cheia, um por serviço, cada um na
+   composição do ServiceHero (fundo #FEFEFE, palavra gigante SUAPE /
+   BAHIA / CROSS-DOCKING, objeto inteiro na linha de chão com sombra,
+   cota red-500), com título, 1 frase, 3 itens do que inclui e "Ver
+   serviço →". Ao passar de um painel ao outro, o objeto entra pela
+   direita andando sobre a linha de chão (a carreta com as rodas
+   girando; grua e armazém deslizando), e a palavra gigante corre mais
+   devagar (paralaxe). Contador "01/03" e barra de progresso.
+2. Mobile: sem rolagem horizontal fixada; os 3 painéis empilhados, com
+   o objeto entrando lateralmente ao aparecer.
+
+Parte B — Por que a APG (APGU 1996-08)
+3. Mantenha o fundo navy-900 e os 4 números, mas cada um ganha uma
+   micro-visualização animada ao entrar (scrub ou disparo único):
+   - Frota 100% própria: fileira de 10 carretas-ícone em traço que se
+     acendem uma a uma até 100%;
+   - 35.000 m² / 4.000 TEUs: grade de containers vista de cima que vai
+     se preenchendo (navy com faixa red-500), com a cota do pátio;
+   - 100% rastreada: mini mapa pontilhado de PE com 5 pontos que se
+     movem devagar por rotas, cada um com o pulso de GPS;
+   - 24h: mostrador de relógio em traço com o ponteiro dando a volta e
+     o horário real de Recife (America/Recife) em mono.
+   Números com contador, título mono, frase. Layout em 2×2 grande no
+   desktop (não 4 colunas estreitas), com linhas de grade técnicas.
+4. Ao fundo, a palavra "CONFIANÇA" gigante em navy-800, deslizando.
+
+Parte C — CTA final (APGU 1996-09)
+5. "FALE COM UM ESPECIALISTA" passa para dentro de um container: um
+   container APG de frente (portas fechadas, travas e código APGU
+   1996-09) ocupa a metade direita; ao rolar, as duas portas abrem em
+   3D (rotateY, perspective) e de dentro saem, em sequência, os
+   contatos: botão Solicitar cotação, WhatsApp (se configurado),
+   telefone 24 h (81) 3202-1800 e o endereço do terminal com a
+   coordenada 08°23′S 34°57′W. O texto atual fica à esquerda.
+6. Mobile: o container fica acima do texto, menor, e as portas abrem
+   quando ele entra na tela.
+
+Parte D — Carreta no celular (o usuário relata a animação "muito
+bugada")
+7. Reproduza em emulação de iPhone (390×844 e 375×667) com rolagem por
+   toque (page.touchscreen / mouse.wheel não basta: use eventos de
+   touch ou CDP Input.dispatchTouchEvent) e grave um vídeo da cena 3
+   ao fim da Estrada. Liste cada problema que aparecer. Pelos
+   screenshots atuais já se vê:
+   - a carreta lateral encosta nas bordas da tela (sem margem);
+   - na fase B a carreta fica minúscula numa faixa fina e o resto da
+     tela fica vazio;
+   - na fase C os cartões dos capítulos cobrem a pista e a carreta;
+   - no placar da doca os números aparecem no meio do contador
+     (3.999, 4.844) no fim da cena.
+8. Causas prováveis a checar: a barra de endereço do celular mudando
+   a altura (use svh/lvh fixos e ScrollTrigger.config({
+   ignoreMobileResize: true })), refresh do ScrollTrigger no resize,
+   Lenis com suavização no toque (desligue no touch), e trabalho de
+   layout por frame. Corrija a causa, não o sintoma.
+9. Mobile da Estrada: carreta lateral com 16px de margem em cada lado;
+   na fase B a escala final no celular deixa a carreta com ~70% da
+   largura; na fase C os cartões ficam numa faixa fixa embaixo
+   (bottom sheet de ~30% da altura) e a pista com a carreta acima
+   dela; os contadores terminam no valor exato antes do fim da cena.
+
+Testes e entrega
+10. Screenshots desktop e mobile das 3 seções em 3 pontos cada; vídeo
+    no celular (toque) da cena 3 ao CTA. Informe a lista do item 7 e o
+    que corrigiu em cada um.
+
+Pronto quando: lint, typecheck, test e e2e passam, as três seções têm
+movimento e linguagem da jornada, e o vídeo no celular mostra a
+carreta da cena 3 ao fim da Estrada sem saltos nem tremores.
+Commit: "feat: serviços, diferenciais e CTA no padrão da jornada; carreta no celular"
+````
+
 > **Checkpoint Marco 2:** gravar um vídeo da Home completa (desktop e celular) e mandar ao cliente.
 
 ---
