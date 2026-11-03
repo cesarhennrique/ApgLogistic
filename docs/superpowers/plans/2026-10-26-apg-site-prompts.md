@@ -1886,7 +1886,7 @@ Commit: "feat: distribuição, transições e mobile da jornada"
 
 ## Prompt 14 — Imagens dos serviços e heros internos (revisão 2026-11-03: fotorrealista, sem 3D)
 
-> Substitui a versão 3D. Precisa de `armazem-docas.png` e `terminal-aereo.png` em `assets-src/ai/` (prompts 11 e 12 em `docs/assets/2026-10-30-imagens-ia-jornada.md`).
+> Substitui a versão 3D. Usa `assets-src/ai/armazem-docas.webp` (3344×1882) e `terminal-aereo.webp` (3840×2161), ampliadas 4× com Upscayl em 2026-11-03; originais em `assets-src/reference/`.
 
 ````text
 Leia o CLAUDE.md, o spec (seções 3 e 4) e Services.tsx e as páginas
