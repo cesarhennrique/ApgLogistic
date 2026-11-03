@@ -20,7 +20,7 @@ type Shape = {
   cota: { x: number; w: number; y: number; above: boolean };
   fade?: boolean;
 };
-const SHAPES: Record<Service["slug"], Shape> = {
+export const SHAPES: Record<Service["slug"], Shape> = {
   // porteiner-servico (scripts/build-service-images.mjs): its legs on the bottom edge; the container under the
   // spreader, 40 ft
   "containers-suape": {
@@ -68,13 +68,16 @@ function Cota({ x, w, y, above, label }: Shape["cota"] & { label: string }) {
   );
 }
 
-// A service page's hero (spec §4), light like the journey's scenes, where its cut-out belongs: the service's code,
-// the title rising line by line (navy), its line (navy/70); behind, the giant word sliding slowly with the scroll; the
-// object standing on a navy ground line, its contact shadow and its dimension drawn. The header goes navy over it.
-export function ServiceHero({ service }: { service: Service }) {
+// The service's object in its box, its ground on the ground line (a translate by the share under its ground), its
+// contact shadow and its dimension: the page hero's and the Home's service panels'. rims: the truck's wheels as
+// discs of its own picture (data-rim) that can turn, as scene 4's do.
+const RIM_IMG = `image-set(url(/images/journey/carreta-lado-1672.avif) type("image/avif"), url(/images/journey/carreta-lado-1672.webp) type("image/webp"))`;
+const WHEELS = [172, 578, 1216, 1357, 1498];
+const RIM = { y: 639, r: 54 };
+const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+export function ServiceObject({ service, eager = false, rims = false }: { service: Service; eager?: boolean; rims?: boolean }) {
   const shape = SHAPES[service.slug];
-  // the object's box, its ground on the ground line (a translate by the share under its ground)
-  const box = (
+  return (
     <div
       className={`relative ${shape.tall ? "h-full" : "w-full"}`}
       style={{ aspectRatio: shape.aspect, transform: `translateY(${((1 - shape.ground) * 100).toFixed(2)}%)` }}
@@ -83,13 +86,38 @@ export function ServiceHero({ service }: { service: Service }) {
       <SceneImage
         name={shape.name}
         alt=""
-        eager
+        eager={eager}
         sizes={shape.tall ? "(min-width: 768px) 46vh, 40vh" : "(min-width: 768px) 50vw, 92vw"}
         className={`relative h-full w-full ${shape.fade ? "mask-[linear-gradient(to_bottom,black_85%,transparent)]" : ""}`}
       />
+      {rims &&
+        shape.name === "carreta-lado" &&
+        WHEELS.map((x) => (
+          <i
+            key={x}
+            data-rim=""
+            aria-hidden="true"
+            className="absolute aspect-square rounded-full"
+            style={{
+              left: pct(x - RIM.r, 1672),
+              top: pct(RIM.y - RIM.r, 941),
+              width: pct(2 * RIM.r, 1672),
+              backgroundImage: RIM_IMG,
+              backgroundSize: `${(1672 / (2 * RIM.r)) * 100}% auto`,
+              backgroundPosition: `${pct(x - RIM.r, 1672 - 2 * RIM.r)} ${pct(RIM.y - RIM.r, 941 - 2 * RIM.r)}`,
+            }}
+          />
+        ))}
       <Cota {...shape.cota} label={service.cota} />
     </div>
   );
+}
+
+// A service page's hero (spec §4), light like the journey's scenes, where its cut-out belongs: the service's code,
+// the title rising line by line (navy), its line (navy/70); behind, the giant word sliding slowly with the scroll; the
+// object standing on a navy ground line, its contact shadow and its dimension drawn. The header goes navy over it.
+export function ServiceHero({ service }: { service: Service }) {
+  const shape = SHAPES[service.slug];
   return (
     <section
       data-header-theme="light"
@@ -114,7 +142,9 @@ export function ServiceHero({ service }: { service: Service }) {
       </div>
       {/* The object on the ground line (phones: under the copy, the rest of the screen; wide screens: right of it). */}
       <div className="relative mt-8 min-h-[34svh] flex-1 md:absolute md:top-32 md:right-[4vw] md:bottom-[12svh] md:left-[44%] md:mt-0">
-        <div className={`absolute inset-x-4 bottom-0 flex items-end justify-center md:inset-x-0 ${shape.tall ? "top-0" : ""}`}>{box}</div>
+        <div className={`absolute inset-x-4 bottom-0 flex items-end justify-center md:inset-x-0 ${shape.tall ? "top-0" : ""}`}>
+          <ServiceObject service={service} eager />
+        </div>
       </div>
       <div aria-hidden="true" className="absolute inset-x-0 bottom-[10svh] h-px bg-navy-900/35 md:bottom-[12svh]" />
     </section>

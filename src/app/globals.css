@@ -2,6 +2,7 @@
 
 @theme {
   --color-navy-900: #0a1338;
+  --color-navy-800: #121c47; /* as palavras gigantes ao fundo das seções navy */
   --color-blue-600: #393185;
   --color-red-500: #e31e24;
   --color-sand-50: #f3efe7;

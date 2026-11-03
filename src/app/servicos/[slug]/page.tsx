@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ServiceCard } from "@/components/home/Services";
+import { ServiceCard } from "@/components/home/ServiceCard";
 import { ServiceHero } from "@/components/layout/ServiceHero";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";

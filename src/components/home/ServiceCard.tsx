@@ -1,7 +1,5 @@
 import { SceneImage, type SceneImageName } from "@/components/journey/SceneImage";
 import { TransitionLink } from "@/components/layout/TransitionLink";
-import { ContainerCode } from "@/components/ui/ContainerCode";
-import { homeCode } from "@/content/homeSections";
 import { site, type Service } from "@/content/site";
 
 // Each service's cut-out, in the journey's pattern (journeyImages, AVIF then WebP): the crane's spreader with the
@@ -47,26 +45,5 @@ export function ServiceCard({ service }: { service: Service }) {
         <span className="mask-arrow h-[0.72em] w-[1.6em] bg-red-500 transition-transform duration-150 ease-out group-hover:translate-x-1 motion-reduce:transition-none" />
       </span>
     </article>
-  );
-}
-
-export function Services() {
-  return (
-    // It slides up over the distribution's last screen, held for it (not with reduced motion: then it simply follows).
-    <section data-surface="light" data-header-theme="light" className="relative z-10 bg-sand-50 py-24 text-navy-900 motion-safe:-mt-[100svh] md:py-36">
-      <div className="site-container">
-        <ContainerCode index={homeCode("services")} label={site.home.services.code} />
-        <h2 className="font-condensed mt-5 text-5xl leading-[0.9] font-bold uppercase md:text-7xl">
-          {site.home.services.title}
-        </h2>
-        <ul className="mt-14 grid gap-x-6 gap-y-14 md:mt-20 md:grid-cols-3">
-          {site.services.map((s) => (
-            <li key={s.slug}>
-              <ServiceCard service={s} />
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
   );
 }

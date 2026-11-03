@@ -198,10 +198,11 @@ test("the Home's container codes run 01, 02, 03… in order, without repeats", a
   const codes = await page
     .locator("main")
     // (the sections' codes: not the container code on scene 1's card, a note on the photo, nor scene 4's chapters,
-    // which carry the scene's own code with their number, 01/05…)
+    // which carry the scene's own code with their number, 01/05…, nor the services' panels after the first: each
+    // carries the section's, 01/03…, nor the code painted on the final call's container door)
     .evaluate((main) => {
       const copy = main.cloneNode(true) as HTMLElement;
-      for (const note of copy.querySelectorAll("[data-note], [data-chapter]")) note.remove();
+      for (const note of copy.querySelectorAll("[data-note], [data-chapter], [data-panel] ~ [data-panel], [data-door]")) note.remove();
       return [...copy.textContent!.matchAll(/APGU 1996-(\d{2})/g)].map((m) => Number(m[1]));
     });
   expect(codes.length).toBeGreaterThanOrEqual(9);

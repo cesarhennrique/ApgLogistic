@@ -53,3 +53,28 @@ test("records scene 4's camera rising, slowly", async ({ page }, testInfo) => {
   await page.close();
   await page.video()!.saveAs(`e2e/__videos__/estrada-b-${testInfo.project.name}.webm`);
 });
+
+// For review: from the services (as they slide up over the distribution) to the footer, as
+// e2e/__videos__/sections-<project>.webm (git-ignored).
+test("records the services, the reasons and the final call", async ({ page }, testInfo) => {
+  test.setTimeout(240_000);
+  await page.addInitScript(() => sessionStorage.setItem("apg-intro", "1"));
+  await page.goto("/");
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(3_000);
+  const [start, end] = await page.evaluate(() => {
+    const s = document.querySelector("section[aria-labelledby=services-title]")!;
+    return [s.getBoundingClientRect().top + window.scrollY - window.innerHeight, document.documentElement.scrollHeight - window.innerHeight];
+  });
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), start);
+  await page.waitForTimeout(1_500);
+  // ~50 s, in small steps (Lenis smooths between them)
+  const steps = 500;
+  for (let i = 1; i <= steps; i++) {
+    await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), start + ((end - start) * i) / steps);
+    await page.waitForTimeout(100);
+  }
+  await page.waitForTimeout(1_000);
+  await page.close();
+  await page.video()!.saveAs(`e2e/__videos__/sections-${testInfo.project.name}.webm`);
+});

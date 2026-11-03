@@ -196,16 +196,21 @@ export const site = {
 
   services,
 
+  // Why APG (APGU 1996-08): each one's number (counted up), its unit, a second figure where there is one, and the
+  // little picture that goes with it (Differentials).
   differentials: [
-    { figure: "100%", title: "Frota própria", text: "Frota 100% própria, sem terceirização." },
+    { viz: "fleet", value: 100, unit: "%", title: "Frota própria", text: "Frota 100% própria, sem terceirização." },
     {
-      figure: "35.000 m²",
+      viz: "yard",
+      value: 35000,
+      unit: " m²",
+      second: "4.000 TEUs estáticos",
       title: "Terminal próprio integrado a Suape",
       text: "35.000 m² de pátio e capacidade para 4.000 TEUs estáticos.",
     },
-    { figure: "100%", title: "Rastreamento", text: "Todos os veículos rastreados." },
-    { figure: "24h", title: "Atendimento 24h", text: "Equipe disponível 24 horas por dia." },
-  ],
+    { viz: "tracking", value: 100, unit: "%", title: "Rastreamento", text: "Todos os veículos rastreados." },
+    { viz: "clock", value: 24, unit: "h", title: "Atendimento 24h", text: "Equipe disponível 24 horas por dia." },
+  ] as const,
 
   timeline: [
     { year: 1996, text: "Fundação da APG por Paulo Germano de Albuquerque Ramos." },
@@ -332,7 +337,8 @@ export const site = {
       ],
     },
     services: { code: "Serviços", title: "Do porto ao destino final", more: "Ver serviço" },
-    differentials: { code: "Por que a APG", title: "Por que a APG" },
+    // its giant word behind; the clock's label (Recife's time, live)
+    differentials: { code: "Por que a APG", title: "Por que a APG", word: "Confiança", clock: "Recife agora" },
     clients: { code: "Clientes", title: "Clientes" },
     // Where APG works: the hubs and routes of the hero's and the distribution's maps.
     coverage: {
