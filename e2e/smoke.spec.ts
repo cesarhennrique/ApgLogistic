@@ -57,3 +57,20 @@ test("the Ç of CONFIANÇA stays inside its line mask", async ({ page }) => {
     )
     .toBe(true);
 });
+
+// The hero's title ends revealed: every word back on its line, inside its mask (GSAP once took the CSS hold's
+// translateY(125%) for a y of its own and left the words 1.25 lines down, hidden), on a repeat visit too.
+test("the hero's title ends revealed, every word inside its line", async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem("apg-intro", "1"));
+  await page.goto("/");
+  await expect
+    .poll(() =>
+      page.locator('h1[data-intro="title"] .reveal-word').evaluateAll((words) =>
+        words.every((w) => {
+          const [a, b] = [w.getBoundingClientRect(), w.parentElement!.getBoundingClientRect()];
+          return Math.abs(a.bottom - b.bottom) < 2 + 0.15 * b.height;
+        }),
+      ),
+    )
+    .toBe(true);
+});

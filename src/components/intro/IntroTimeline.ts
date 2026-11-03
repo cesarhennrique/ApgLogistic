@@ -59,9 +59,10 @@ export async function playIntro({ short }: { short: boolean }): Promise<void> {
     [...lines.values()].forEach((words, i) => {
       tl.fromTo(
         words,
-        // Past the mask's 0.12em of extra room (kept for Ç and accents), so nothing peeks before the reveal.
-        { yPercent: 125 },
-        { yPercent: 0, duration: INTRO.title.duration, ease: EASE },
+        // Past the mask's 0.12em of extra room (kept for Ç and accents), so nothing peeks before the reveal. y: 0
+        // too: GSAP reads the CSS hold (translateY(125%), globals.css) as px of y, which would stay on at the end.
+        { y: 0, yPercent: 125 },
+        { y: 0, yPercent: 0, duration: INTRO.title.duration, ease: EASE },
         INTRO.title.at + i * INTRO.title.stagger,
       );
     });
