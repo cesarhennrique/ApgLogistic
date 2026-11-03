@@ -1884,30 +1884,42 @@ Home inteira contínua, do mapa ao rodapé, sem cortes secos.
 Commit: "feat: distribuição, transições e mobile da jornada"
 ````
 
-## Prompt 14 — Miniaturas 3D dos serviços e heros internos
+## Prompt 14 — Imagens dos serviços e heros internos (revisão 2026-11-03: fotorrealista, sem 3D)
+
+> Substitui a versão 3D. Precisa de `armazem-docas.png` e `terminal-aereo.png` em `assets-src/ai/` (prompts 11 e 12 em `docs/assets/2026-10-30-imagens-ia-jornada.md`).
 
 ````text
-Leia o CLAUDE.md e o spec, seção 4.
+Leia o CLAUDE.md, o spec (seções 3 e 4) e Services.tsx e as páginas
+src/app/sobre, src/app/servicos, src/app/estrutura. Use as skills
+animate, emil-design-eng e frontend-design:frontend-design.
 
-1. src/three/MiniScene.tsx: um único Canvas compartilhado
-   (View/tunneling do drei, para não criar um contexto WebGL por card)
-   que renderiza nos slots data-mini3d e data-hero3d.
-2. Miniaturas dos cards de serviço (giram devagar no hover; paradas
-   sem hover e com reduced-motion):
-   - containers-suape: portêiner + container;
-   - operacao-bahia: carreta APG;
-   - logistica-armazenagem: galpão com docas e van.
-   Reutilize os componentes das cenas com uma prop `static` que desliga
-   as animações de progresso.
-3. Heros internos com câmera fixa e tier low sempre:
-   - /sobre: navio ao pôr do sol;
-   - /servicos/*: a miniatura do serviço, maior;
-   - /estrutura: vista aérea do terminal.
-4. Fora da viewport: frameloop="demand" e pausa (IntersectionObserver).
+O 3D procedural foi descartado; o site usa fotos de IA recortadas
+(assets-src/ai/). Nada de canvas WebGL nesta etapa.
 
-Pronto quando: lint, typecheck, test e e2e passam e só existe 1 contexto
-WebGL por página (verifique no ?debug).
-Commit: "feat: miniaturas 3D e heros internos"
+1. Cards de serviço (Home e /servicos): troque os slots data-mini3d por
+   imagens recortadas no mesmo padrão da jornada:
+   - containers-suape: porteiner-lado com o container no spreader
+     (recorte da região do spreader);
+   - operacao-bahia: carreta-lado;
+   - logistica-armazenagem: armazem-docas.
+   Hover (só pointer: fine): a imagem sobe 6px e escala 1.03 em 240 ms
+   ease-out; reduced motion: nada. AVIF/WebP com sizes corretos.
+2. Heros internos, cada um com foto, degradê navy e título com
+   SplitText, no padrão do hero da Home (sem mapa):
+   - /sobre: hero-porto (noturno, como fundo da Home) e a linha do
+     tempo da Estrada (journeyScene.history) em versão estática;
+   - /servicos/*: a imagem do card, grande, com paralaxe leve no scroll;
+   - /estrutura: terminal-aereo, com os números do terminal (mesmo
+     placar da doca da Estrada).
+3. Apague os slots data-mini3d/data-hero3d e qualquer código 3D que
+   ficar sem uso.
+4. Rode npm run images; orçamento por página interna ≤ 600 KB desktop
+   e ≤ 350 KB mobile.
+
+Pronto quando: lint, typecheck, test e e2e passam, nenhuma página
+interna cria canvas WebGL e os screenshots de /sobre, /servicos/* e
+/estrutura (desktop e mobile) estão em e2e/__screenshots__/.
+Commit: "feat: imagens dos serviços e heros internos"
 ````
 
 > **Checkpoint Marco 2:** gravar um vídeo da Home completa (desktop e celular) e mandar ao cliente.
@@ -1916,38 +1928,32 @@ Commit: "feat: miniaturas 3D e heros internos"
 
 # Marco 3 — Polimento
 
-## Prompt 15 — Níveis de qualidade, pós-processamento e fallback estático
+## Prompt 15 — Aparelhos fracos e fallback sem WebGL (revisão 2026-11-03)
 
 ````text
-Leia o CLAUDE.md e o spec, seção 6 "Níveis de qualidade". Use a skill
+Leia o CLAUDE.md, o spec (seção 6) e HeroCanvas.tsx,
+DistributionCanvas.tsx e as cenas da jornada. Use a skill
 animation-performance e superpowers:test-driven-development para
 pickTier.
 
-1. Instale detect-gpu (@react-three/postprocessing já existe).
-2. src/three/quality.ts: pickTier({ webgl, reducedMotion, gpuTier }):
-   sem webgl ou com reducedMotion dá 'static'; gpuTier ≤ 1 dá 'low';
-   senão 'high'. Testes para as 4 combinações. useQualityTier() usa
-   detect-gpu (getGPUTier) e o PerformanceMonitor do drei, que rebaixa
-   de high para low se o fps ficar abaixo de 30 por 2 s. Nunca sobe
-   de volta na mesma sessão.
-3. O EffectComposer já existe desde o Prompt 13. Tier high: composer
-   completo (N8AO, SMAA, Bloom, Noise, Vignette) e AccumulativeShadows.
-   Tier low: sem composer (só SMAA via antialias nativo), ContactShadows
-   em resolução 512, metade das instâncias de containers do fundo, dpr
-   máximo 1.5.
-4. Tier static: script scripts/capture-fallbacks.ts (Playwright) que
-   abre /?p=X&capture=1 para X em [0, 0.1, 0.3, 0.5, 0.7, 0.9] em 1920x1080
-   e em 750x1334, salva em public/images/fallback/<chapter>-<desktop|mobile>.webp
-   (sharp, qualidade 80). npm script "capture:fallbacks". No tier
-   static, a trilha da jornada mostra essas imagens (next/image com
-   sizes), com crossfade entre capítulos, os mesmos textos e a mesma
-   altura de scroll.
-5. e2e: com reducedMotion: 'reduce' no contexto Playwright, a Home não
-   cria canvas e mostra a imagem do capítulo 1.
+O WebGL só existe nos dois mapas (hero e Distribuição); o resto é
+imagem + transform.
 
-Pronto quando: lint, typecheck, test e e2e passam, e com CPU throttling
-6x no DevTools o site cai para low e continua fluido.
-Commit: "feat: níveis de qualidade, pós-processamento e fallback estático"
+1. src/lib/quality.ts: pickTier({ webgl, reducedMotion, saveData,
+   lowMemory }) → 'static' | 'low' | 'high'. Sem WebGL ou com reduced
+   motion: 'static'; saveData ou deviceMemory ≤ 4: 'low'. Testes para
+   as combinações. Sem dependência nova (não instale detect-gpu).
+2. 'static': os mapas mostram o SVG/PNG estático que já existe como
+   placeholder, com Suape e as rotas desenhadas; nada de canvas.
+3. 'low': dpr máximo 1.5 nos canvas; a cópia desfocada da grua e a
+   pulsação das rotas desligadas; imagens da jornada uma largura
+   abaixo no srcset.
+4. e2e: com reducedMotion 'reduce' e com WebGL desligado
+   (--disable-webgl), a Home não cria canvas e mostra o mapa estático.
+
+Pronto quando: lint, typecheck, test e e2e passam, e com CPU 6x no
+DevTools a jornada continua sem travar (informe o fps médio).
+Commit: "feat: níveis de qualidade e fallback sem WebGL"
 ````
 
 ## Prompt 16 — (removido)
@@ -1995,8 +2001,15 @@ Leia o CLAUDE.md e as metas do spec (seção 1).
    performance ≥ 0.85 mobile e ≥ 0.90 desktop, accessibility ≥ 0.95,
    seo ≥ 0.95, best-practices ≥ 0.95, LCP < 2500, CLS < 0.05.
    npm script "lhci".
-2. Script scripts/check-3d-budget.ts: soma os bytes de public/3d/** e
-   falha acima de 1,5 MB. npm script "budget". Inclua no "test".
+2. Script scripts/check-image-budget.ts: soma os bytes das imagens que
+   a Home baixa (desktop AVIF ≤ 2 MB, mobile AVIF ≤ 1 MB; hoje 1,21 MB
+   e 722 KB) e das páginas internas (≤ 600 KB / 350 KB). npm script
+   "budget". Inclua no "test".
+2b. LCP e TBT (pendentes desde o H1: LCP simulado 4,4 s, TBT ~1,2 s
+   com CPU lenta): carregue o gsap e o código das cenas da jornada
+   depois do primeiro paint (dynamic import ao primeiro scroll ou em
+   requestIdleCallback), mantendo o hero pintado sem JS. Meta: LCP
+   simulado < 2,5 s e TBT < 300 ms no mobile.
 3. Rode tudo e corrija o que falhar (imagens com sizes corretos, code
    split do 3D, fontes).
 4. Gere e2e de screenshots de todas as rotas (desktop e mobile) para a
@@ -2020,6 +2033,9 @@ Leia o CLAUDE.md. Use a skill vercel:deploy e vercel:env-vars.
    (a) apontar apgtransportes.com.br e www para a Vercel;
    (b) verificar o domínio no Resend (SPF, DKIM, MX de retorno).
    Não altere nada fora da Vercel.
+
+4. Rode o Lighthouse mobile contra a URL de preview (rede real) e
+   informe LCP, TBT e CLS da Home.
 
 Pronto quando: o preview está no ar e o smoke passa contra ele.
 ````

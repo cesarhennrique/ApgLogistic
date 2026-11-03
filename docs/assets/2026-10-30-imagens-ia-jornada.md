@@ -81,6 +81,18 @@ Edit this image: show the exact same truck and container from a higher camera, r
 
 Para a de 60°, use o mesmo texto trocando "about 30 degrees" por "about 60 degrees" e "while the side is still seen" por "with only a thin sliver of the side still visible".
 
+**11. Armazém com docas (revisão 2026-11-03; card de Logística e Armazenagem).** Salve como `armazem-docas.png`.
+
+```text
+Photorealistic studio product photograph of a modern logistics warehouse building, light grey insulated metal panels, a row of six loading docks with dock levelers and grey roll-up doors along the long side, a navy blue (#1A2350) horizontal band with one thin red (#E31E24) stripe along the top of the facade, no logos, no text. Three-quarter view from slightly above, the entire building visible with margin, isolated on a pure white seamless background, subtle soft contact shadow, soft even studio lighting from top-left, ultra sharp, 16:9.
+```
+
+**12. Terminal visto do alto (revisão 2026-11-03; hero da página Estrutura).** Exceção ao fundo branco: é uma foto de cena. Salve como `terminal-aereo.png`, na maior resolução.
+
+```text
+Photorealistic aerial drone photograph at golden hour, camera at 45 degrees, of a large container yard and logistics terminal in northeastern Brazil: neatly stacked shipping containers in muted colors with many deep navy blue containers with one red stripe, a long warehouse with loading docks, white cab-over trucks with navy containers parked at the docks, wide paved yard with painted lanes, tropical vegetation and a highway at the edge, distant port cranes on the horizon. No logos, no text, no signs. Ultra sharp, highest resolution, 16:9.
+```
+
 ## Depois de gerar
 
 Me avise quando os arquivos estiverem na pasta. Eu reviso a consistência entre eles (cor, luz, escala), recorto o fundo onde for preciso e reescrevo a jornada no novo padrão.
