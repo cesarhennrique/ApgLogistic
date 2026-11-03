@@ -1922,6 +1922,48 @@ interna cria canvas WebGL e os screenshots de /sobre, /servicos/* e
 Commit: "feat: imagens dos serviços e heros internos"
 ````
 
+## Prompt 14b — Heros dos serviços em fundo claro e ajustes das páginas internas
+
+````text
+Leia o CLAUDE.md, o spec (seções 3 e 4), PageHero.tsx, as páginas
+src/app/servicos/[slug] e scripts/build-service-images.mjs. Use as
+skills emil-design-eng e frontend-design:frontend-design.
+
+Os heros de /sobre e /estrutura (foto de cena com degradê navy) ficaram
+bons. Os três de /servicos/* não: o recorte em fundo branco flutua solto
+sobre o navy chapado e parece barato.
+
+1. Heros de /servicos/* passam a fundo claro #FEFEFE, no mesmo padrão
+   das cenas da jornada (é onde esses recortes ficam bem):
+   - título navy-900, texto navy/70, código APGU do serviço;
+   - palavra gigante ao fundo em #EDEBE6, deslizando devagar com o
+     scroll: "SUAPE", "BAHIA" e "CROSS-DOCKING";
+   - linha de chão em traço navy com a sombra de contato desenhada
+     (TruckShadow) sob o objeto, e uma ou duas cotas red-500 finas
+     (ex.: "40′ · 12,2 m" no container, "46 docas" no armazém);
+   - o header fica no tema claro sobre esses heros.
+2. containers-suape: o recorte atual corta a grua no meio (pedaço de
+   lança e de perna) e, no celular, o topo fica sob o header. Use o
+   portêiner inteiro com o container no spreader, como o quadro largo
+   da cena 2, ocupando a altura do hero.
+3. logistica-armazenagem: a borda do pátio de concreto do armazém sai
+   serrilhada no recorte. Faça o chão sumir num degradê para o branco
+   (máscara linear nos 15% de baixo) em vez do corte.
+4. "Outros serviços" no celular aparece com as imagens dos cards em
+   branco no screenshot de página inteira. Confira se é só o lazy load
+   do screenshot ou se as imagens não carregam; se for o screenshot,
+   role a página antes de capturar.
+5. Marque com o comentário "confirmar com cliente" os textos de hero
+   que você escreveu em site.pages (/sobre e /estrutura).
+6. Screenshots desktop e mobile das 5 páginas internas, com a página
+   rolada até o fim antes de capturar.
+
+Pronto quando: lint, typecheck, test e e2e passam e os três heros de
+serviço têm fundo claro, objeto inteiro apoiado no chão e nada sob o
+header.
+Commit: "fix: heros dos serviços em fundo claro"
+````
+
 > **Checkpoint Marco 2:** gravar um vídeo da Home completa (desktop e celular) e mandar ao cliente.
 
 ---
