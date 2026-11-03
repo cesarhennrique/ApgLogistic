@@ -5,6 +5,9 @@ export type Service = {
   slug: "containers-suape" | "operacao-bahia" | "logistica-armazenagem";
   title: string;
   summary: string;
+  // Its page hero: the giant word behind the picture, and the dimension drawn on it.
+  word: string;
+  cota: string;
   bullets: string[];
   faq: Faq[];
 };
@@ -53,6 +56,8 @@ const services = [
   {
     slug: "containers-suape",
     title: "Containers Suape",
+    word: "Suape",
+    cota: "40′ · 12,2 m",
     summary:
       "Transporte rodoviário de containers no Porto de Suape, integrado à cabotagem e ao nosso terminal no Condomínio CONE Multimodal.",
     bullets: [
@@ -88,6 +93,8 @@ const services = [
   {
     slug: "operacao-bahia",
     title: "Operação Bahia",
+    word: "Bahia",
+    cota: "40′ · 12,2 m",
     summary:
       "Operação de containers na Bahia pela BR-324, com filial em Salvador e a mesma estrutura de frota própria da matriz.",
     bullets: [
@@ -123,6 +130,8 @@ const services = [
   {
     slug: "logistica-armazenagem",
     title: "Logística e Armazenagem",
+    word: "Cross-docking",
+    cota: "46 docas",
     summary:
       "Entregas fracionadas, armazenagem, cross-docking e supply chain a partir do terminal CONE, em Cabo de Santo Agostinho.",
     bullets: [
@@ -354,6 +363,7 @@ export const site = {
   // The internal pages' heros and their sections (spec §4, "Páginas").
   pages: {
     about: {
+      // confirmar com cliente: título e texto do hero
       title: "Desde 1996, do porto ao destino",
       text: "Fundada em Pernambuco por Paulo Germano de Albuquerque Ramos, a APG é o braço rodoviário da cabotagem em Suape.",
       photoAlt: "Porto de Suape à noite, com portêineres no cais",
@@ -361,6 +371,7 @@ export const site = {
       valuesTitle: "Valores",
     },
     structure: {
+      // confirmar com cliente: título e texto do hero
       title: "Terminal CONE",
       text: "35.000 m² de pátio às margens da BR-101, em Cabo de Santo Agostinho, a poucos quilômetros do Porto de Suape.",
       photoAlt: "Vista aérea do terminal CONE, com carretas APG nas docas e containers no pátio",

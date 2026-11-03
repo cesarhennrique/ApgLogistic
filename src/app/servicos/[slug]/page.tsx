@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { SERVICE_IMAGES, ServiceCard } from "@/components/home/Services";
-import { SceneImage } from "@/components/journey/SceneImage";
-import { PageHero } from "@/components/layout/PageHero";
-import { Parallax } from "@/components/motion/Parallax";
+import { ServiceCard } from "@/components/home/Services";
+import { ServiceHero } from "@/components/layout/ServiceHero";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";
 
@@ -29,23 +27,9 @@ const { service: labels } = site.pages;
 export default async function Page({ params }: PageProps<"/servicos/[slug]">) {
   const service = await findService(params);
   if (!service) notFound();
-  const image = SERVICE_IMAGES[service.slug];
   return (
     <main className="flex-1">
-      <PageHero title={service.title} text={service.summary}>
-        {/* The card's cut-out, large (right of the copy on wide screens, above it on phones), drifting with the scroll. */}
-        <div className="absolute inset-x-[6%] top-[14%] bottom-[44%] md:inset-y-[16%] md:right-[4%] md:left-[42%]">
-          <Parallax className="h-full">
-            <SceneImage
-              name={image.name}
-              alt=""
-              eager
-              sizes="(min-width: 768px) 54vw, 88vw"
-              className="h-full w-full object-contain"
-            />
-          </Parallax>
-        </div>
-      </PageHero>
+      <ServiceHero service={service} />
       <section className="bg-sand-50 py-24 text-navy-900 md:py-32">
         <div className="site-container grid gap-16 md:grid-cols-2">
           <div>

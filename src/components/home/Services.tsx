@@ -6,11 +6,12 @@ import { site, type Service } from "@/content/site";
 
 // Each service's cut-out, in the journey's pattern (journeyImages, AVIF then WebP): the crane's spreader with the
 // container (scripts/build-service-images.mjs), the loaded truck, the warehouse and its docks. Its box: 4:3 on
-// phones, 4:5 from md; the portrait crop fills it, the landscape ones sit whole in it.
-export const SERVICE_IMAGES: Record<Service["slug"], { name: SceneImageName; fill: boolean }> = {
+// phones, 4:5 from md; the portrait crop fills it, the landscape ones sit whole in it (the warehouse's yard fading
+// out over its bottom 15%: a cut edge would show).
+const SERVICE_IMAGES: Record<Service["slug"], { name: SceneImageName; fill: boolean; fade?: boolean }> = {
   "containers-suape": { name: "servico-containers-suape", fill: true },
   "operacao-bahia": { name: "carreta-lado", fill: false },
-  "logistica-armazenagem": { name: "armazem-docas", fill: false },
+  "logistica-armazenagem": { name: "armazem-docas", fill: false, fade: true },
 };
 
 // Hover, with a fine pointer only and not with reduced motion: the picture lifts 6 px and grows 3%.
@@ -27,7 +28,7 @@ export function ServiceCard({ service }: { service: Service }) {
             name={image.name}
             alt=""
             sizes="(min-width: 1440px) 440px, (min-width: 768px) 31vw, 92vw"
-            className={image.fill ? "h-full w-full object-cover" : "h-auto w-full"}
+            className={`${image.fill ? "h-full w-full object-cover" : "h-auto w-full"} ${image.fade ? "mask-[linear-gradient(to_bottom,black_85%,transparent)]" : ""}`}
           />
         </div>
       </div>

@@ -19,6 +19,7 @@ const WIDTHS_FOR = {
   "navio-mar-close": [2600],
   // the internal pages' heros: never wider than a wide screen needs
   "armazem-docas": [800, 1200, 1920],
+  "porteiner-servico": [800, 1200, 1920],
   "terminal-aereo": [800, 1200, 1920, 2560],
   "terminal-aereo-mobile": [800, 1215],
 };

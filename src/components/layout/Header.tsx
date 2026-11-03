@@ -40,13 +40,14 @@ export function Header() {
   const overJourney = journey.path === pathname && journey.visible;
   const solid = scrolled && !overJourney;
 
-  // Logo and menu follow the scene under them: white on the dark ones (data-header-theme="dark"), navy on the
-  // light ones. Watched in a 1 px band at the header's middle; where scenes overlap (one sliding in over the
-  // previous), the later one is on top. Written straight to the DOM.
+  // Logo and menu follow the scene under them, over the journey and over an internal page's hero alike (until the
+  // bar turns solid navy): white on the dark ones (data-header-theme="dark"), navy on the light ones. Watched in a
+  // 1 px band at the header's middle; where scenes overlap (one sliding in over the previous), the later one is on
+  // top. Written straight to the DOM.
   useEffect(() => {
     const header = headerRef.current!;
     header.dataset.tone = "light";
-    if (!overJourney) return;
+    if (solid) return;
     const scenes = [...document.querySelectorAll<HTMLElement>("[data-header-theme]")];
     const under = new Set<HTMLElement>();
     let io: IntersectionObserver;
@@ -72,7 +73,7 @@ export function Header() {
       window.removeEventListener("resize", watch);
       io.disconnect();
     };
-  }, [overJourney]);
+  }, [solid, pathname]);
 
   // Over the journey the header gets out of the scenes' way while scrolling down (its links would cross the crane)
   // and comes back as soon as the scroll turns up. Written straight to the DOM.
