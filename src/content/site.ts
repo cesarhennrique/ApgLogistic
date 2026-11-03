@@ -279,6 +279,8 @@ export const site = {
     },
     // The target container's card at the close (its ContainerCode: number and label); the one scene 2 lowers.
     targetCard: { index: 7, label: "40′ · Destino: Terminal CONE" },
+    // Scene 5, the distribution: its counter and the line under it.
+    distribution: { count: 500, unit: "entregas fracionadas por dia" },
     // Shown when the pointer is over Suape on the hero's map.
     suapeHover: "Terminal CONE · Cabo de Santo Agostinho",
   },
@@ -362,6 +364,9 @@ export const site = {
     phone: "Telefone",
     email: "E-mail (RH)",
     whatsappLabel: "Falar no WhatsApp",
+    // The journey's side index: its name and each mark's label ("Ir para" + the scene).
+    journeyNav: "Cenas da jornada",
+    goTo: "Ir para",
     whatsappMessage: "Olá, vim pelo site e gostaria de uma cotação.",
   },
 

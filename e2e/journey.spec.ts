@@ -12,15 +12,37 @@ function collectErrors(page: Page) {
   return errors;
 }
 
+// The scroll at which a scene's own progress (the desktop one its script runs on, 0–1) is p, on any screen: from
+// the scene's data-scroll (Scene: its range in vh, from, and on phones the head and tail kept a screen each while
+// the rest is scaled). A sliding scene's progress starts with its top at the viewport's bottom.
+async function sceneY(page: Page, id: string, p: number) {
+  return page.evaluate(
+    ([id, p]) => {
+      const s = document.getElementById(id)!;
+      const [range, from, head, tail, scale] = s.dataset.scroll!.split(" ").map((v, i) => (i === 1 ? v : Number(v))) as [
+        number,
+        string,
+        number,
+        number,
+        number,
+      ];
+      const mid = range - head - tail;
+      const vh = p * range;
+      const at = innerWidth >= 768 || scale === 1 ? vh : vh < head ? vh : vh < head + mid ? head + (vh - head) * scale : vh - (1 - scale) * mid;
+      const top = s.getBoundingClientRect().top + window.scrollY - (from === "slide" ? innerHeight : 0);
+      return top + (at / 100) * innerHeight;
+    },
+    [id, p] as const,
+  );
+}
+async function scrollToProgress(page: Page, id: string, p: number) {
+  const y = await sceneY(page, id, p);
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), y);
+}
+
 // Scene 1's progress (0–1): from the moment it starts sliding in over the hero (its top at the viewport's bottom)
 // to its end. The camera moves from 0.
-async function scrollToArrival(page: Page, q: number) {
-  await page.evaluate((progress) => {
-    const scene = document.getElementById("chegada")!;
-    const top = scene.getBoundingClientRect().top + window.scrollY - window.innerHeight;
-    window.scrollTo({ top: top + progress * scene.offsetHeight, behavior: "instant" });
-  }, q);
-}
+const scrollToArrival = (page: Page, q: number) => scrollToProgress(page, "chegada", q);
 
 // The hero's canvas mounts after the load event and an idle moment.
 async function settle(page: Page) {
@@ -87,7 +109,8 @@ test("no dead scroll: from the moment scene 1 slides in to the close, every 10vh
   await page.goto("/");
   await settle(page);
   // To the card's arrival (0.93): after it the close holds.
-  const step = await page.evaluate(() => (0.1 * window.innerHeight) / document.getElementById("chegada")!.offsetHeight);
+  // 10vh of the scene's own (desktop) range: on phones, 7.5vh of scroll in its scaled stretch
+  const step = await page.evaluate(() => 10 / Number(document.getElementById("chegada")!.dataset.scroll!.split(" ")[0]));
   let previous = "";
   for (let q = 0; q <= 0.93 + 1e-9; q += step) {
     await scrollToArrival(page, q);
@@ -120,11 +143,54 @@ test("each layer shows in its stretch only: the HUD, the heading, the APG contai
   expect(errors).toEqual([]);
 });
 
-test("the only canvas is the hero's WebGL map", async ({ page }) => {
+test("the hero's map is the only canvas until scene 5 comes near; then scene 5's mounts", async ({ page }) => {
   await page.goto("/");
   await settle(page);
   await expect(page.locator("#hero canvas")).toHaveCount(1);
   await expect(page.locator("canvas")).toHaveCount(1);
+  await scrollToEstrada(page, 0.6);
+  await page.waitForTimeout(500);
+  await expect(page.locator("#distribuicao canvas")).toHaveCount(0);
+  await scrollToProgress(page, "distribuicao", 0.4);
+  await expect(page.locator("#distribuicao canvas")).toHaveCount(1);
+});
+
+// The side index (wide screens): a mark per scene, the one in view current; a click takes you to its scene. Not on
+// phones.
+test("the side index marks the scene in view and takes you to another", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await settle(page);
+  const index = page.getByRole("navigation", { name: "Cenas da jornada" });
+  if (testInfo.project.name === "mobile") {
+    await expect(index).toBeHidden();
+    return;
+  }
+  await expect(index.getByRole("button")).toHaveCount(6);
+  await expect(index.getByRole("button", { name: "Ir para Quem somos" })).toHaveAttribute("aria-current", "step");
+  await index.getByRole("button", { name: "Ir para Estrada" }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.getElementById("estrada")!.getBoundingClientRect().top), { timeout: 8000 })
+    .toBeLessThan(2);
+  await expect(index.getByRole("button", { name: "Ir para Estrada" })).toHaveAttribute("aria-current", "step");
+});
+
+// Reduced motion: no scrub; each scene a screen, its end state still, with its text.
+test.describe("with reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+  test("each scene stands still a screen high, with its text", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("load");
+    const vh = await page.evaluate(() => innerHeight);
+    for (const id of ["chegada", "porteiner", "carga", "distribuicao"]) {
+      const box = (await page.locator(`#${id}`).boundingBox())!;
+      expect(Math.abs(box.height - vh), id).toBeLessThan(2);
+    }
+    await expect(page.getByText("O braço rodoviário da cabotagem no Brasil")).toBeAttached();
+    await expect(page.locator("#estrada").getByText("Do porto ao destino final.")).toBeVisible();
+    await page.locator("#distribuicao").scrollIntoViewIfNeeded();
+    await expect(page.locator("#distribuicao").getByText("entregas fracionadas por dia")).toBeVisible();
+    await expect(page.locator("#distribuicao").getByText("500", { exact: true })).toBeVisible();
+  });
 });
 
 test("the Home's container codes run 01, 02, 03… in order, without repeats", async ({ page }) => {
@@ -202,16 +268,12 @@ test.describe("scene 1 frames", () => {
   }
 });
 
-// Scenes 2 and 3 (spec §3): the progress of a pinned scene, from its top at the viewport's top to its end.
+// Scenes 2 and 3 (spec §3): the share p of a scene's pinned scroll (desktop vh), from its top at the viewport's top
+// to its end; for a sliding scene, after its slide.
 async function scrollToScene(page: Page, id: string, p: number) {
-  await page.evaluate(
-    ([id, progress]) => {
-      const scene = document.getElementById(id)!;
-      const top = scene.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top: top + progress * (scene.offsetHeight - window.innerHeight), behavior: "instant" });
-    },
-    [id, p] as const,
-  );
+  const [range, from] = await page.evaluate((id) => document.getElementById(id)!.dataset.scroll!.split(" "), id);
+  const r = Number(range);
+  await scrollToProgress(page, id, from === "slide" ? (100 + p * (r - 100)) / r : p);
 }
 
 // The camera follows the load, so it is measured in the crane's picture (its offset under the trolley), and the
@@ -293,13 +355,8 @@ test("the container keeps coming down from scene 2 to its seat in scene 3", asyn
   const errors = collectErrors(page);
   await page.goto("/");
   await settle(page);
-  const [from, to] = await page.evaluate((script) => {
-    const crane = document.getElementById("porteiner")!;
-    const load = document.getElementById("carga")!;
-    const top = (el: HTMLElement) => el.getBoundingClientRect().top + window.scrollY;
-    // to scene 3's set-down: 0.06 of its 120vh script after it pins
-    return [top(crane) + script * (crane.offsetHeight - innerHeight), top(load) + 0.072 * innerHeight];
-  }, SCENE2_SCRIPT);
+  // to scene 3's set-down: 0.06 of its 120vh script after it pins (its slide, 100vh of 320)
+  const [from, to] = [await sceneY(page, "porteiner", SCENE2_SCRIPT), await sceneY(page, "carga", (100 + 0.06 * 120) / 320)];
   const vh = await page.evaluate(() => innerHeight);
   const heights: number[] = [];
   for (let y = from; y <= to + 1; y += 0.05 * vh) {
@@ -346,9 +403,9 @@ test("scene 3 swaps to the loaded truck without a pixel jump", async ({ page }) 
   expect(errors).toEqual([]);
 });
 
-// Art-direction review: five points of scenes 2 and 3, saved for a human to look at (not diffed).
-test.describe("scenes 2 and 3 frames", () => {
-  for (const id of ["porteiner", "carga"]) {
+// Art-direction review: points of scenes 2, 3 and 5, saved for a human to look at (not diffed).
+test.describe("scenes 2, 3 and 5 frames", () => {
+  for (const id of ["porteiner", "carga", "distribuicao"]) {
     // (scene 2 also at 0.4 and 0.6, round the middle of its pull-back)
     for (const p of id === "porteiner" ? [0, 0.25, 0.4, 0.5, 0.6, 0.75, 1] : [0, 0.25, 0.5, 0.75, 1]) {
       test(`${id} at ${p}`, async ({ page }, testInfo) => {
@@ -371,6 +428,8 @@ test("scene 4 takes over scene 3's truck without a pixel jump", async ({ page })
   const errors = collectErrors(page);
   await page.goto("/");
   await settle(page);
+  // (the side index changes its mark across the slide, on purpose)
+  await page.addStyleTag({ content: "#journey > nav { visibility: hidden !important }" });
   // k: how far scene 4's top is above the viewport's bottom, in screens (1 = not in yet, 0 = pinned)
   const shot = async (k: number) => {
     await page.evaluate((k) => {
@@ -403,13 +462,9 @@ test("scene 4 takes over scene 3's truck without a pixel jump", async ({ page })
 });
 
 // Scene 4's progress (0–1), from the moment it starts sliding in over scene 3 to its end.
-async function scrollToEstrada(page: Page, p: number) {
-  await page.evaluate((progress) => {
-    const scene = document.getElementById("estrada")!;
-    const top = scene.getBoundingClientRect().top + window.scrollY - window.innerHeight;
-    window.scrollTo({ top: top + progress * scene.offsetHeight, behavior: "instant" });
-  }, p);
-}
+const scrollToEstrada = (page: Page, p: number) => scrollToProgress(page, "estrada", p);
+// Its phases in desktop vh (estradaScript): slide 100, A 300, B 150, C 500, D 120, E 100.
+const ESTRADA = 1270;
 
 // Scene 4's B, the camera rising: the truck alone on a white page (everything else hidden), its pixels' box at 40
 // steps of the phase. It only shrinks, smoothly (no step's shrink more than 1.5% of its width, +4 px, off its
@@ -420,14 +475,11 @@ test("scene 4's camera rises without a jump in the truck's size or place", async
   const errors = collectErrors(page);
   await page.goto("/");
   await settle(page);
-  const isPhone = (await page.evaluate(() => innerWidth)) < 768;
-  const k = isPhone ? 0.75 : 1;
-  const total = isPhone ? 902.5 : 1170;
-  const [b0, b1] = [(100 + 300 * k) / total, (100 + 450 * k) / total];
+  const [b0, b1] = [400 / ESTRADA, 550 / ESTRADA];
   await scrollToEstrada(page, b0 + 0.01);
   await page.waitForTimeout(2500);
   await page.addStyleTag({
-    content: "#estrada > div > div > *:not([class*='aspect-[1672/941]']), header, nextjs-portal { visibility: hidden !important }",
+    content: "#estrada > div > div > *:not([class*='aspect-[1672/941]']), header, nextjs-portal, #journey > nav { visibility: hidden !important }",
   });
   const sharp = (await import("sharp")).default;
   const boxes: { w: number; cx: number; cy: number }[] = [];
@@ -467,28 +519,25 @@ test("scene 4 rises from the side view to the track and ends at the dock", async
   await settle(page);
   const views = () =>
     page.locator("#estrada [data-rim]").first().evaluate((rim) => [...rim.parentElement!.parentElement!.children].map((v) => Number((v as HTMLElement).style.opacity)));
-  const isPhone = (await page.evaluate(() => innerWidth)) < 768;
-  // A: the slide (100vh) then A's 300vh (×0.75 on phones), of 1170 (902.5)
-  const total = isPhone ? 902.5 : 1170;
-  const k = isPhone ? 0.75 : 1;
-  await scrollToEstrada(page, (100 + 150 * k) / total);
+  // halfway through A
+  await scrollToEstrada(page, 250 / ESTRADA);
   await page.waitForTimeout(500);
   expect(await views()).toEqual([1, 0, 0, 0]);
   // C's start: from above alone
-  await scrollToEstrada(page, (100 + 460 * k) / total);
+  await scrollToEstrada(page, 560 / ESTRADA);
   await page.waitForTimeout(500);
   expect(await views()).toEqual([0, 0, 0, 1]);
   // C: every chapter in, at some point
   const shown = new Array(5).fill(0);
   for (let i = 0; i <= 50; i++) {
-    await scrollToEstrada(page, (100 + (450 + (500 * i) / 50) * k) / total);
+    await scrollToEstrada(page, (550 + (500 * i) / 50) / ESTRADA);
     await page.waitForTimeout(120);
     const o = await page.locator("#estrada [data-chapter]").evaluateAll((els) => els.map((e) => Number((e as HTMLElement).style.opacity)));
     o.forEach((v, j) => (shown[j] = Math.max(shown[j], v)));
   }
   expect(shown.every((v) => v > 0.95)).toBe(true);
-  // D: the scoreboard, counted up
-  await scrollToEstrada(page, 1);
+  // D's end: the scoreboard, counted up
+  await scrollToEstrada(page, 1170 / ESTRADA);
   await page.waitForTimeout(800);
   await expect(page.locator("#estrada [data-value]")).toHaveText(["35.000", "4.000", "46", "5.000"]);
   expect(errors).toEqual([]);

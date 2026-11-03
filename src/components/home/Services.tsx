@@ -55,7 +55,8 @@ function ServiceCard({ service }: { service: Service }) {
 
 export function Services() {
   return (
-    <section data-surface="light" className="bg-sand-50 py-24 text-navy-900 md:py-36">
+    // It slides up over the distribution's last screen, held for it (not with reduced motion: then it simply follows).
+    <section data-surface="light" data-header-theme="light" className="relative z-10 bg-sand-50 py-24 text-navy-900 motion-safe:-mt-[100svh] md:py-36">
       <div className="site-container">
         <ContainerCode index={homeCode("services")} label={site.home.services.code} />
         <h2 className="font-condensed mt-5 text-5xl leading-[0.9] font-bold uppercase md:text-7xl">

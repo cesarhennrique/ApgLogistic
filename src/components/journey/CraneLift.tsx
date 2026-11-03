@@ -20,6 +20,8 @@ const { crane: copyText } = site.journeyScene;
 // 360vh: 260 of scroll; scene 3 slides in over its last 100vh (the same truck, the same container), so the script
 // runs over the first 160vh (its progress, c) and the close holds under the slide.
 const HEIGHT_VH = 360;
+// Phones: ×0.75, but the hold under scene 3's slide (its last screen).
+const PHONE = { tail: 100, scale: 0.75 };
 const SCRIPT_END = 160 / (HEIGHT_VH - 100);
 
 // The script (spec §3, revision 2026-10-31), over c: it opens wide on the whole crane, the APG container up at the
@@ -189,7 +191,8 @@ export function CraneLift() {
       const k = CALLOUTS[key];
       // phones: out before the copy comes in over them
       const out = view.width < 768 ? [Math.min(k.out[0], TITLE_IN[0] - 0.06), Math.min(k.out[1], TITLE_IN[0])] : k.out;
-      n.group.style.opacity = String(reduced ? 1 : segment(c, k.in[0], k.in[1]) * (1 - segment(c, out[0], out[1])));
+      // (reduced motion: the still frame carries the copy, not the notes, which would pile up over it)
+      n.group.style.opacity = String(reduced ? 0 : segment(c, k.in[0], k.in[1]) * (1 - segment(c, out[0], out[1])));
     };
     callout(P.notes.trolley, "trolley", sx(HOIST.x - 120), sy(HOIST.y - 20));
     callout(P.notes.spreader, "spreader", sx(SPREADER.x + 30), sy(SPREADER.top + 40 + dy));
@@ -238,7 +241,7 @@ export function CraneLift() {
 
   const { callouts, stats } = copyText;
   return (
-    <Scene id="porteiner" heightVh={HEIGHT_VH} background="#fefefe" headerTheme="light" onProgress={onProgress}>
+    <Scene id="porteiner" heightVh={HEIGHT_VH} phone={PHONE} background="#fefefe" headerTheme="light" onProgress={onProgress}>
       <div ref={stage} aria-hidden="true" className="absolute inset-0 overflow-hidden">
         {/* The giant word behind it all, sliding against the scroll. */}
         <div data-set="" className="absolute inset-x-0 top-1/2 -translate-y-1/2">
@@ -269,7 +272,7 @@ export function CraneLift() {
               style={{ left: GROUND.x0 - 160, width: GROUND.x1 - GROUND.x0 + 320, top: GROUND.y - 80, height: 160 }}
             />
             {/* The crane, always there: a light layer (1200 px) first, so no frame ever lacks it; the sharp one
-                (4488 px on desktop, 1920 on phones) over it once decoded. */}
+                (2560 px on desktop, 1920 on phones: past 60% of the zoom it goes out of focus) over it once decoded. */}
             <picture>
               <source type="image/avif" srcSet={base(1200, "avif")} />
               <img
@@ -284,8 +287,8 @@ export function CraneLift() {
               />
             </picture>
             <picture>
-              <source media="(min-width: 768px)" type="image/avif" srcSet={base(4488, "avif")} />
-              <source media="(min-width: 768px)" type="image/webp" srcSet={base(4488, "webp")} />
+              <source media="(min-width: 768px)" type="image/avif" srcSet={base(2560, "avif")} />
+              <source media="(min-width: 768px)" type="image/webp" srcSet={base(2560, "webp")} />
               <source type="image/avif" srcSet={base(1920, "avif")} />
               <img
                 ref={sharp}

@@ -86,8 +86,14 @@
     "widths": [
       800,
       1200,
-      1920,
-      6688
+      1920
+    ]
+  },
+  "navio-mar-close": {
+    "width": 2600,
+    "height": 1800,
+    "widths": [
+      2600
     ]
   },
   "porteiner-base": {
@@ -97,7 +103,7 @@
       800,
       1200,
       1920,
-      4488
+      2560
     ]
   },
   "porteiner-lado": {

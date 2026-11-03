@@ -3,6 +3,7 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 import { ScrollTrigger } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { type PhoneScroll, phoneLength, toDesktop } from "./sceneScroll";
 
 export { segment } from "./segment";
 
@@ -10,16 +11,18 @@ type Props = {
   id: string;
   // Scroll length of the scene, in vh (the stage stays pinned for heightVh − 100).
   heightVh: number;
-  // Its scroll length on phones, when different (below md).
-  phoneHeightVh?: number;
+  // Phones scroll the scene shorter (below md): its progress range scaled by `scale`, but for its first `head` and
+  // last `tail` vh (a slide in over the scene before, a hold under the next one's), which stay a screen each. The
+  // progress handed to onProgress is the desktop one either way.
+  phone?: PhoneScroll;
   background: string;
   // The header's ink over this scene: "dark" background → light header, "light" → navy header.
   headerTheme: "dark" | "light";
   // The scene's progress, 0–1, on every scroll update: write styles straight to the DOM here (no React state).
-  // Not called with reduced motion: the scene then shows its resting layout.
+  // Not called with reduced motion: the scene then shows its resting layout, a screen high.
   onProgress?: (p: number) => void;
   // "slide": the progress starts as the section enters from below (for a scene that slides in over the previous
-  // one), not when its stage pins.
+  // one, overlapping its last screen), not when its stage pins.
   from?: "pin" | "slide";
   className?: string;
   children: ReactNode;
@@ -27,7 +30,7 @@ type Props = {
 
 // One journey scene (spec §6, "Cenas da jornada"): a section with its own scroll length and a 100svh sticky stage,
 // its progress from one scrubbed ScrollTrigger.
-export function Scene({ id, heightVh, phoneHeightVh, background, headerTheme, onProgress, from = "pin", className = "", children }: Props) {
+export function Scene({ id, heightVh, phone, background, headerTheme, onProgress, from = "pin", className = "", children }: Props) {
   const section = useRef<HTMLElement>(null);
   const reduced = useReducedMotion();
   // The latest callback, so the trigger isn't rebuilt on every render.
@@ -35,35 +38,43 @@ export function Scene({ id, heightVh, phoneHeightVh, background, headerTheme, on
   useEffect(() => {
     callback.current = onProgress;
   });
+  const range = from === "pin" ? heightVh - 100 : heightVh;
+  const phoneHeight = phone && phoneLength(range, phone) + (from === "pin" ? 100 : 0);
 
   useEffect(() => {
     if (reduced) return;
+    const progress = (p: number) => (phone && window.innerWidth < 768 ? toDesktop(p, range, phone) : p);
     const trigger = ScrollTrigger.create({
       trigger: section.current,
       start: from === "pin" ? "top top" : "top bottom",
       end: "bottom bottom",
       scrub: true,
-      onUpdate: (self) => callback.current?.(self.progress),
+      onUpdate: (self) => callback.current?.(progress(self.progress)),
     });
-    callback.current?.(trigger.progress);
+    callback.current?.(progress(trigger.progress));
     return () => trigger.kill();
-  }, [reduced, from]);
+  }, [reduced, from, phone, range]);
 
   return (
     <section
       ref={section}
       id={id}
       data-header-theme={headerTheme}
-      // Over the scene before it (z-10, in document order). A pinned scene bleeds 1 px of its background upwards:
-      // where two scenes meet on a fractional pixel, the previous one's edge never shows as a line across the top (a
-      // sliding scene must not: its picture continues the one under it).
-      className={`scene-height relative z-10 ${className}`}
-      style={{
-        "--scene-h": `${heightVh}vh`,
-        "--scene-h-phone": phoneHeightVh === undefined ? undefined : `${phoneHeightVh}vh`,
-        background,
-        boxShadow: from === "pin" ? `0 -1px 0 ${background}` : undefined,
-      } as CSSProperties}
+      // The scroll's shape, for the e2e tests to find a progress on any screen: range, from, head, tail, scale.
+      data-scroll={[range, from, phone?.head ?? 0, phone?.tail ?? 0, phone?.scale ?? 1].join(" ")}
+      // Over the scene before it (z-10, in document order); a sliding one overlaps its last screen (not with reduced
+      // motion: the scenes then stand one after the other, a screen each). A pinned scene bleeds 1 px of its
+      // background upwards: where two scenes meet on a fractional pixel, the previous one's edge never shows as a
+      // line across the top (a sliding scene must not: its picture continues the one under it).
+      className={`scene-height relative z-10 ${from === "slide" ? "motion-safe:-mt-[100svh]" : ""} ${className}`}
+      style={
+        {
+          "--scene-h": `${heightVh}vh`,
+          "--scene-h-phone": phoneHeight === undefined ? undefined : `${phoneHeight}vh`,
+          background,
+          boxShadow: from === "pin" ? `0 -1px 0 ${background}` : undefined,
+        } as CSSProperties
+      }
     >
       <div className="sticky top-0 h-svh overflow-hidden">{children}</div>
     </section>

@@ -12,6 +12,8 @@ import { Scene, segment } from "./Scene";
 
 const scene = site.journey.find((s) => s.id === "chegada")!;
 const HEIGHT_VH = 320;
+// Phones: ×0.75, but the slide in over the hero (its first screen).
+const PHONE = { head: 100, scale: 0.75 };
 const TEUS = new Intl.NumberFormat("pt-BR");
 
 // The script (spec §3, revisions 2026-10-30c and 2026-10-31), over the scene's progress (q): the photo stays still,
@@ -42,7 +44,7 @@ const COPY_OUT = [0.76, 0.8] as const;
 // over enough scroll that no 10vh step of it goes by unseen); its card comes in, solid by 0.85.
 const TARGET_IN = [0.75, 0.8] as const;
 const CLOSE_IN = [0.75, 0.86] as const;
-const LOCK = [0.86, 0.92] as const;
+const LOCK = [0.86, 0.99] as const;
 // (fully in by 0.85: the close holds from there)
 const CARD_IN = [0.8, 0.85] as const;
 // The original photo (desktop) crossfades over the 1920 one before the zoom gets close.
@@ -105,7 +107,8 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const h = frame.heading;
   const hw = h.label.offsetWidth;
   const hx = Math.min(Math.max(bow.x + (md ? 96 : 40), 16), view.width - hw - 16);
-  const hy = Math.max(bow.y + 28, header + 8);
+  // (below the HUD, in the same corner: on a short phone the bow's label would run into it)
+  const hy = Math.max(bow.y + 28, header + 8, frame.hud.group.offsetTop + frame.hud.group.offsetHeight + 8);
   place(h.label, hx, hy);
   guide(h, bow.x, bow.y, Math.min(Math.max(bow.x, hx), hx + hw), hy);
   // (held at the top once the bow has gone off it, its leader pointing where the bow went)
@@ -244,10 +247,10 @@ export function OceanArrival() {
       heightVh={HEIGHT_VH}
       background="#0d2f4f"
       headerTheme="dark"
+      // over the hero's last screen: it slides in on top of the hero's copy of the picture
       from="slide"
       onProgress={onProgress}
-      // Over the hero's last screen: it slides in on top of the hero's copy of the picture.
-      className="-mt-[100svh]"
+      phone={PHONE}
     >
       <div ref={stage} className="absolute inset-0">
         <ArrivalFrame alt={site.journeyScene.shipAlt} />

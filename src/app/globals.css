@@ -182,6 +182,13 @@ body {
   }
 }
 
+/* With reduced motion, no scrub: each scene a screen, still, one after the other. */
+@media (prefers-reduced-motion: reduce) {
+  .scene-height {
+    height: 100svh;
+  }
+}
+
 /* The hero photo's entrance starts zoomed in (the intro timeline zooms it out); not with reduced motion, nor when
    no intro runs (no intro-full / intro-short class). */
 .intro-full [data-intro-photo],

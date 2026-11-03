@@ -18,6 +18,8 @@ const scene = site.journey.find((s) => s.id === "carga")!;
 // stays see-through and empty until it pins), then 120 of script (its progress, c), then the end holds while scene 4
 // slides in over it.
 const HEIGHT_VH = 320;
+// Phones: ×0.75, but the slide in over scene 2 and the hold under scene 4's slide (a screen each).
+const PHONE = { head: 100, tail: 100, scale: 0.75 };
 const SLIDE_END = 100 / HEIGHT_VH;
 const SCRIPT = [SLIDE_END, SLIDE_END + 120 / HEIGHT_VH] as const;
 const BACKGROUND = "#fefefe";
@@ -169,10 +171,10 @@ export function Load() {
       // see-through while it slides in (the stage paints its own background once pinned)
       background="transparent"
       headerTheme="light"
+      // over scene 2's last screen: it slides in on top of the same picture
       from="slide"
       onProgress={onProgress}
-      // Over scene 2's last screen: it slides in on top of the same picture.
-      className="-mt-[100svh]"
+      phone={PHONE}
     >
       <div ref={stage} className="absolute inset-0 overflow-hidden">
         <div aria-hidden="true" className="absolute inset-0 origin-top-left">

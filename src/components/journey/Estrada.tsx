@@ -12,7 +12,8 @@ import {
   ESTRADA_VH,
   TRUCK_VIEWS,
   type TruckView,
-  estradaHeightVh,
+  ESTRADA_HEIGHT_VH,
+  ESTRADA_PHONE,
   phasesAt,
   rigCentre,
   roadDistance,
@@ -22,6 +23,7 @@ import {
   viewFit,
   viewWeights,
 } from "./estradaScript";
+import { CONE_AT } from "@/three/stages/distributionCamera";
 import { leader } from "./marks";
 import { CONTAINER_CLIP, TRUCK_FRAME } from "./Load";
 import { Scene, segment } from "./Scene";
@@ -52,7 +54,8 @@ const FAR_VIEWS: TruckView[] = [TRUCK_VIEWS.alto30, TRUCK_VIEWS.alto60, TRUCK_VI
 const PERSPECTIVE = 3;
 
 // The wheels of the side view (Road's, carried on): hubs, the disc's radius on the plain sidewall, the tyres' line.
-const IMG = "/images/journey/carreta-lado-vazia-1672.webp";
+// (AVIF where the browser takes it: the WebP is twice the bytes)
+const IMG = `image-set(url(/images/journey/carreta-lado-vazia-1672.avif) type("image/avif"), url(/images/journey/carreta-lado-vazia-1672.webp) type("image/webp"))`;
 const WHEELS = [172, 578, 1216, 1357, 1498].map((x) => ({ x, y: 639 }));
 const RIM_R = 54;
 const TOP_SPEED = 80;
@@ -134,6 +137,8 @@ export function Estrada() {
   const cardsEl = useRef<HTMLUListElement>(null);
   const trackTitleEl = useRef<HTMLParagraphElement>(null);
   const boardEl = useRef<HTMLDivElement>(null);
+  const nightEl = useRef<HTMLDivElement>(null);
+  const coneEl = useRef<HTMLDivElement>(null);
   const planeEl = useRef<HTMLDivElement>(null);
   const planeLaneEl = useRef<HTMLDivElement>(null);
   const planeShadowEl = useRef<HTMLDivElement>(null);
@@ -251,12 +256,12 @@ export function Estrada() {
     el.style.transform = sliding ? `translate(0, ${-stageTop}px)` : "";
     el.style.background = sliding ? "" : BACKGROUND;
     rigEl.current!.style.visibility = sliding ? "hidden" : "";
-    const ph = phasesAt(reduced ? 0 : raw.current, mobile);
+    const ph = phasesAt(reduced ? 0 : raw.current);
     if (!farRef.current && ph.slide >= 1) {
       farRef.current = true;
       setFar(true);
     }
-    const reveal = reduced ? 1 : segment(ph.slide, 0.6, 1);
+    const reveal = reduced ? 1 : ph.slide;
 
     // The road through A and B: its distance (px) and speed.
     const tAB = (ph.a * ESTRADA_VH.a + ph.b * ESTRADA_VH.b) / (ESTRADA_VH.a + ESTRADA_VH.b);
@@ -280,14 +285,19 @@ export function Estrada() {
     const stop = L.length - 0.62 * L.Lc;
     const s = ph.d > 0 ? lerp(cEnd, stop, easeOut(segment(ph.d, 0, 0.6))) : lerp(L.start, cEnd, ph.c);
     const at = pointAt(L, s);
-    const zD = 1 - 0.22 * easeInOut(segment(ph.d, 0, 0.6));
+    // E: the camera pulls back further and over to put the dock's door on the terminal's point of the map that
+    // scene 5 opens on (CONE_AT), as the ground darkens to navy.
+    const kE = easeInOut(segment(ph.e, 0, 0.95));
+    const zD = (1 - 0.22 * easeInOut(segment(ph.d, 0, 0.6))) * lerp(1, 0.55, kE);
+    const door = pointAt(L, L.length);
+    const cone = CONE_AT({ width: W, height: H });
     const dockAt = mobile ? { x: 0.5 * W, y: 0.55 * H } : { x: 0.62 * W, y: 0.4 * H };
     let angle = 0;
     if (ph.c > 0) {
       z = L.zC * zD;
       const k = easeInOut(segment(ph.d, 0, 0.6));
-      X = lerp(L.c.x, dockAt.x, k);
-      Y = lerp(L.c.y, dockAt.y, k);
+      X = lerp(lerp(L.c.x, dockAt.x, k), cone.x - (door.x - at.x) * zD, kE);
+      Y = lerp(lerp(L.c.y, dockAt.y, k), cone.y - (door.y - at.y) * zD, kE);
       // the truck points left (π): it turns to the track's heading
       angle = at.angle - Math.PI;
       if (angle < -Math.PI) angle += 2 * Math.PI;
@@ -415,7 +425,7 @@ export function Estrada() {
     trackTitleEl.current!.style.opacity = String(segment(ph.c, 0, 0.05) * (1 - segment(ph.d, 0, 0.2)));
 
     // D: the scoreboard, its cells in one after the other, their numbers counting up.
-    const board = segment(ph.d, 0.3, 0.45);
+    const board = segment(ph.d, 0.3, 0.45) * (1 - segment(ph.e, 0, 0.3));
     boardEl.current!.style.opacity = String(board);
     boardEl.current!.querySelectorAll<HTMLElement>("[data-cell]").forEach((cell, i) => {
       const k = segment(ph.d, 0.32 + i * 0.05, 0.42 + i * 0.05, easeOut);
@@ -424,6 +434,10 @@ export function Estrada() {
       const n = segment(ph.d, 0.35 + i * 0.05, 0.75 + i * 0.05, easeOut);
       cell.querySelector<HTMLElement>("[data-value]")!.textContent = count.format(Math.round(dock.stats[i].value * n));
     });
+    // E: night falls over it all but the terminal's red point (scene 5's, on the same pixel).
+    nightEl.current!.style.opacity = String(segment(ph.e, 0.1, 0.85));
+    coneEl.current!.style.opacity = String(segment(ph.e, 0.4, 1));
+    coneEl.current!.style.transform = `translate3d(${cone.x.toFixed(1)}px, ${cone.y.toFixed(1)}px, 0) translate(-50%, -50%)`;
   }, [reduced]);
 
   const onProgress = useCallback(
@@ -466,15 +480,14 @@ export function Estrada() {
   return (
     <Scene
       id="estrada"
-      heightVh={estradaHeightVh(false)}
-      phoneHeightVh={estradaHeightVh(true)}
+      heightVh={ESTRADA_HEIGHT_VH}
+      phone={ESTRADA_PHONE}
       // see-through while it slides in (the stage paints its own background once pinned)
       background="transparent"
       headerTheme="light"
+      // over scene 3's last screen: it slides in on top of the same truck
       from="slide"
       onProgress={onProgress}
-      // Over scene 3's last screen: it slides in on top of the same truck.
-      className="-mt-[100svh]"
     >
       <div ref={stage} className="absolute inset-0 overflow-hidden">
         {/* The giant word behind the truck, sliding against its run. */}
@@ -562,7 +575,7 @@ export function Estrada() {
                     left: pct(wh.x - RIM_R, TRUCK.width),
                     top: pct(wh.y - RIM_R, TRUCK.height),
                     width: pct(2 * RIM_R, TRUCK.width),
-                    backgroundImage: `url(${IMG})`,
+                    backgroundImage: IMG,
                     backgroundSize: `${(TRUCK.width / (2 * RIM_R)) * 100}% auto`,
                     backgroundPosition: `${pct(wh.x - RIM_R, TRUCK.width - 2 * RIM_R)} ${pct(wh.y - RIM_R, TRUCK.height - 2 * RIM_R)}`,
                   }}
@@ -664,6 +677,9 @@ export function Estrada() {
             ))}
           </dl>
         </div>
+        {/* E: the night over scene 4's last screen and the terminal's red point (scene 5 opens on both). */}
+        <div ref={nightEl} aria-hidden="true" className="absolute inset-0 bg-navy-900 opacity-0" />
+        <div ref={coneEl} aria-hidden="true" className="suape-dot absolute top-0 left-0 size-3 rounded-full bg-red-500 opacity-0" />
       </div>
     </Scene>
   );

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { GALPAO_DOOR, VAN_DESTINATIONS, toMap, toSvg, vanStateAt } from "./distributionLayout";
+import { PE_BA_BOUNDS, SALVADOR_AT } from "../stages/distributionCamera";
+import { DELIVERIES, SALVADOR, deliveryAt, routeWindow, toSvg } from "./distributionLayout";
+import { parseStates, toHero } from "./heroMapLayout";
 
 // The two states' outlines, in the SVG's own units (scripts/clean-map.mjs: x = (lon + 49) * 100, y = (2 - lat) * 100).
 const svg = readFileSync("public/images/map/nordeste.svg", "utf8");
@@ -25,57 +27,52 @@ function inside([x, y]: [number, number], polygons: [number, number][][]) {
 const pe = rings("PE");
 const ba = rings("BA");
 
-describe("VAN_DESTINATIONS", () => {
-  it("sends 24 vans, three per coverage route in site.ts", () => {
-    expect(VAN_DESTINATIONS).toHaveLength(24);
-    expect(new Set(VAN_DESTINATIONS.map((d) => `${d.x.toFixed(2)},${d.z.toFixed(2)}`)).size).toBe(24);
+describe("the deliveries", () => {
+  it("are 24, three per coverage route in site.ts, each from its hub", () => {
+    expect(DELIVERIES).toHaveLength(24);
+    expect(new Set(DELIVERIES.map((d) => `${d.to.x.toFixed(2)},${d.to.z.toFixed(2)}`)).size).toBe(24);
+    // Suape is the map's origin
+    expect(DELIVERIES[0].from).toEqual({ x: 0, z: 0 });
   });
 
-  it("puts every destination inside Pernambuco or Bahia", () => {
-    for (const d of VAN_DESTINATIONS) {
-      const p = toSvg(d);
+  it("all end inside Pernambuco or Bahia", () => {
+    for (const d of DELIVERIES) {
+      const p = toSvg(d.to);
       expect(inside(p, pe) || inside(p, ba), `(${p.join(", ")})`).toBe(true);
     }
   });
 
-  it("round-trips between the map's world coordinates and the SVG's", () => {
-    const [x, y] = toSvg(toMap(1000, 1500));
-    expect(x).toBeCloseTo(1000, 6);
-    expect(y).toBeCloseTo(1500, 6);
-  });
-});
-
-describe("vanStateAt", () => {
-  it("keeps every van inside the warehouse (hidden) before the chapter starts", () => {
-    for (let i = 0; i < 24; i++) {
-      const s = vanStateAt(i, 0);
-      expect(s.visible).toBe(false);
-      expect(Math.hypot(s.x - GALPAO_DOOR.x, s.z - GALPAO_DOOR.z)).toBeLessThan(1e-6);
-    }
-  });
-
-  it("has every van at its destination by the end", () => {
-    VAN_DESTINATIONS.forEach((d, i) => {
-      const s = vanStateAt(i, 1);
-      expect(Math.hypot(s.x - d.x, s.z - d.z)).toBeLessThan(1e-6);
+  it("branch out one after another: Salvador's only once the line has reached Salvador, all by 90%", () => {
+    const trunk = DELIVERIES.findIndex((d) => d.trunk);
+    const [, trunkEnd] = routeWindow(trunk);
+    DELIVERIES.forEach((d, i) => {
+      const [start, end] = routeWindow(i);
+      expect(end).toBeLessThanOrEqual(0.9);
+      if (d.hub === "Salvador") expect(start).toBeGreaterThanOrEqual(trunkEnd);
+      if (i > 0) expect(start).toBeGreaterThan(routeWindow(i - 1)[0]);
     });
   });
 
-  it("fans out: the vans leave one after another, never all at once", () => {
-    const out = (u: number) => Array.from({ length: 24 }, (_, i) => vanStateAt(i, u).visible).filter(Boolean).length;
-    expect(out(0.1)).toBeGreaterThan(0);
-    expect(out(0.1)).toBeLessThan(24);
-    expect(out(0.5)).toBe(24);
+  it("counts the deliveries lit at a progress", () => {
+    expect(deliveryAt(0)).toBe(0);
+    expect(deliveryAt(1)).toBe(24);
+    expect(deliveryAt(0.5)).toBeGreaterThan(0);
+    expect(deliveryAt(0.5)).toBeLessThan(24);
+  });
+});
+
+describe("the camera's map numbers", () => {
+  it("are Salvador's hub", () => {
+    expect(SALVADOR_AT.x).toBeCloseTo(SALVADOR.x, 1);
+    expect(SALVADOR_AT.z).toBeCloseTo(SALVADOR.z, 1);
   });
 
-  it("drives smoothly: under 1 m between u and u + 0.001", () => {
-    for (let i = 0; i < 24; i += 5) {
-      let last = vanStateAt(i, 0);
-      for (let u = 0.001; u <= 1; u += 0.001) {
-        const s = vanStateAt(i, u);
-        expect(Math.hypot(s.x - last.x, s.z - last.z)).toBeLessThan(1);
-        last = s;
-      }
-    }
+  it("are PE and BA's extents on the SVG", () => {
+    const s = parseStates(svg);
+    const pts = [...s.PE, ...s.BA].flat().map(([x, y]) => toHero(x, y));
+    expect(PE_BA_BOUNDS.minX).toBeCloseTo(Math.min(...pts.map((p) => p.x)), 1);
+    expect(PE_BA_BOUNDS.maxX).toBeCloseTo(Math.max(...pts.map((p) => p.x)), 1);
+    expect(PE_BA_BOUNDS.minZ).toBeCloseTo(Math.min(...pts.map((p) => p.z)), 1);
+    expect(PE_BA_BOUNDS.maxZ).toBeCloseTo(Math.max(...pts.map((p) => p.z)), 1);
   });
 });

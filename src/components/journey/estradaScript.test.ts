@@ -1,23 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { TRUCK_VIEWS, estradaHeightVh, phasesAt, rigCentre, roadDistance, thetaAt, trackPath, viewFit, viewWeights } from "./estradaScript";
+import { ESTRADA_HEIGHT_VH, TRUCK_VIEWS, phasesAt, rigCentre, roadDistance, thetaAt, trackPath, viewFit, viewWeights } from "./estradaScript";
 
 describe("estrada's phases", () => {
-  it("slides in over 100vh, then runs A, B, C and D (×0.75 on phones)", () => {
-    expect(estradaHeightVh(false)).toBe(100 + 300 + 150 + 500 + 120);
-    expect(estradaHeightVh(true)).toBe(100 + 0.75 * (300 + 150 + 500 + 120));
+  it("slides in over 100vh, runs A, B, C and D, then holds a screen under the next scene's slide", () => {
+    expect(ESTRADA_HEIGHT_VH).toBe(100 + 300 + 150 + 500 + 120 + 100);
   });
 
   it("is all 0 at the top, all 1 at the end, and each phase starts where the one before ends", () => {
-    for (const mobile of [false, true]) {
-      expect(phasesAt(0, mobile)).toEqual({ slide: 0, a: 0, b: 0, c: 0, d: 0 });
-      expect(phasesAt(1, mobile)).toEqual({ slide: 1, a: 1, b: 1, c: 1, d: 1 });
-      const total = estradaHeightVh(mobile);
-      const k = mobile ? 0.75 : 1;
-      const aEnd = (100 + 300 * k) / total;
-      expect(phasesAt(100 / total, mobile)).toMatchObject({ slide: 1, a: 0 });
-      expect(phasesAt(aEnd, mobile)).toMatchObject({ a: 1, b: 0 });
-      expect(phasesAt((100 + 375 * k) / total, mobile).b).toBeCloseTo(0.5);
-    }
+    expect(phasesAt(0)).toEqual({ slide: 0, a: 0, b: 0, c: 0, d: 0, e: 0 });
+    expect(phasesAt(1)).toEqual({ slide: 1, a: 1, b: 1, c: 1, d: 1, e: 1 });
+    const at = (vh: number) => phasesAt(vh / ESTRADA_HEIGHT_VH);
+    expect(at(100)).toMatchObject({ slide: 1, a: 0 });
+    expect(at(400)).toMatchObject({ a: 1, b: 0 });
+    expect(at(475).b).toBeCloseTo(0.5);
+    expect(at(1170)).toMatchObject({ d: 1, e: 0 });
   });
 });
 

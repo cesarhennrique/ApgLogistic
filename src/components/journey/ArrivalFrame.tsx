@@ -8,12 +8,14 @@ import { APG_CONTAINERS, PHOTO, type View } from "./oceanCamera";
 
 const { widths } = images["navio-mar"];
 const src = (w: number, ext: string) => `/images/journey/navio-mar-${w}.${ext}`;
-// Up to 1920: the original (6688) is the close's own layer, loaded later, on desktop only.
+// Up to 1920: the close has a layer of its own, the original's full resolution cropped round the client's container
+// (navio-mar-close, CLOSE in photo px), loaded later, on desktop only.
 const base = widths.filter((w) => w <= 1920);
 const srcSet = (ext: string) => base.map((w) => `${src(w, ext)} ${w}w`).join(", ");
 // Its width at the wide framing: the photo covering the screen.
 const SIZES = `(min-aspect-ratio: ${PHOTO.width}/${PHOTO.height}) 100vw, ${((PHOTO.width / PHOTO.height) * 100).toFixed(1)}vh`;
-const ORIGINAL = { avif: src(PHOTO.width, "avif"), webp: src(PHOTO.width, "webp") };
+const CLOSE = { x: 1990, y: 912, width: 2600, height: 1800 };
+const ORIGINAL = { avif: `/images/journey/navio-mar-close-${CLOSE.width}.avif`, webp: `/images/journey/navio-mar-close-${CLOSE.width}.webp` };
 
 export const viewOf = (stage: HTMLElement): View => ({
   width: stage.clientWidth,
@@ -149,10 +151,15 @@ export function ArrivalFrame({ alt }: { alt: string }) {
             />
           </picture>
         )}
-        {/* The original, crossfaded over the same box: no jump between the two. */}
+        {/* The close's crop, crossfaded over the same pixels of the photo: no jump between the two. */}
         <picture data-sharp="">
           <source type="image/avif" />
-          <img alt="" decoding="async" className="absolute inset-0 h-full w-full opacity-0" />
+          <img
+            alt=""
+            decoding="async"
+            className="absolute opacity-0"
+            style={{ left: CLOSE.x, top: CLOSE.y, width: CLOSE.width, height: CLOSE.height }}
+          />
         </picture>
       </div>
 

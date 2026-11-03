@@ -6,27 +6,22 @@ import { segment } from "./segment";
 // A, side on (the truck drives off, the services and differentials revealed as it passes them);
 // B, the camera rises (the navy band becomes the road under the truck, the views swap: side → 30° → 60° → above);
 // C, the track seen from above (S curves, the history's chapters as the truck reaches them);
-// D, the arrival at the CONE terminal's dock (its numbers as a scoreboard).
-export const ESTRADA_VH = { slide: 100, a: 300, b: 150, c: 500, d: 120 } as const;
-// Phones scroll each phase over three quarters of the height (the slide stays a screen: it is scene 3's last one).
-const PHONE = 0.75;
+// D, the arrival at the CONE terminal's dock (its numbers as a scoreboard);
+// E, the hold under the distribution's slide: the camera pulls back, the ground darkens to navy and the dock
+// becomes the terminal's red point on the map, where the distribution opens.
+export const ESTRADA_VH = { slide: 100, a: 300, b: 150, c: 500, d: 120, e: 100 } as const;
+export const ESTRADA_HEIGHT_VH = Object.values(ESTRADA_VH).reduce((a, b) => a + b, 0);
+// Phones: ×0.75 (Scene), but the slide in over scene 3 and the hold under the distribution's (a screen each).
+export const ESTRADA_PHONE = { head: ESTRADA_VH.slide, tail: ESTRADA_VH.e, scale: 0.75 };
 
-export const estradaHeightVh = (mobile: boolean) =>
-  ESTRADA_VH.slide + (mobile ? PHONE : 1) * (ESTRADA_VH.a + ESTRADA_VH.b + ESTRADA_VH.c + ESTRADA_VH.d);
-
-// Each phase's own progress at the scene's progress p.
-export function phasesAt(p: number, mobile: boolean) {
-  const k = mobile ? PHONE : 1;
-  const vh = p * estradaHeightVh(mobile);
-  const ends: number[] = [ESTRADA_VH.slide];
-  for (const len of [ESTRADA_VH.a, ESTRADA_VH.b, ESTRADA_VH.c, ESTRADA_VH.d]) ends.push(ends[ends.length - 1] + k * len);
-  return {
-    slide: segment(vh, 0, ends[0]),
-    a: segment(vh, ends[0], ends[1]),
-    b: segment(vh, ends[1], ends[2]),
-    c: segment(vh, ends[2], ends[3]),
-    d: segment(vh, ends[3], ends[4]),
-  };
+// Each phase's own progress at the scene's (desktop) progress p.
+export function phasesAt(p: number) {
+  const vh = p * ESTRADA_HEIGHT_VH;
+  const [slide, a, b, c, d, e] = (Object.values(ESTRADA_VH) as number[]).map((len, i, all) => {
+    const start = all.slice(0, i).reduce((x, y) => x + y, 0);
+    return segment(vh, start, start + len);
+  });
+  return { slide, a, b, c, d, e };
 }
 
 // The road under the truck through A and B (t, 0–1 over both): it pulls away, speeds up over the first stretch

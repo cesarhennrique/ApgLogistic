@@ -1,13 +1,11 @@
 import { Loader } from "@/components/intro/Loader";
 import { CraneLift } from "@/components/journey/CraneLift";
+import { Distribution } from "@/components/journey/Distribution";
 import { Estrada } from "@/components/journey/Estrada";
+import { JourneyIndex } from "@/components/journey/JourneyIndex";
 import { Load } from "@/components/journey/Load";
 import { OceanArrival } from "@/components/journey/OceanArrival";
-import { ScenePlaceholder } from "@/components/journey/ScenePlaceholder";
-import { site } from "@/content/site";
 import { Hero } from "./Hero";
-
-const scene = (id: (typeof site.journey)[number]["id"]) => site.journey.find((s) => s.id === id)!;
 
 // The journey (spec §3): the hero (scene 0, the 3D map) and scenes 1–5, each a section with its own sticky stage.
 export function Journey() {
@@ -20,7 +18,8 @@ export function Journey() {
       <CraneLift />
       <Load />
       <Estrada />
-      <ScenePlaceholder scene={scene("distribuicao")} heightVh={300} background="#0a1338" headerTheme="dark" />
+      <Distribution />
+      <JourneyIndex />
     </div>
   );
 }
