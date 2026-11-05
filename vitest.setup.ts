@@ -4,7 +4,9 @@ import { afterEach } from "vitest";
 afterEach(cleanup);
 
 // jsdom has no matchMedia; gsap's ScrollTrigger calls it on import. Tests stub it to change `matches`.
-window.matchMedia ??= (query: string) =>
+// (not in the node environment: route tests)
+if (typeof window !== "undefined")
+  window.matchMedia ??= (query: string) =>
   ({
     matches: false,
     media: query,

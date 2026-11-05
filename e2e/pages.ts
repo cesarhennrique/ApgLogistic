@@ -5,4 +5,6 @@ export const PAGES = [
   { path: "/servicos/operacao-bahia", h1: "Operação Bahia" },
   { path: "/servicos/logistica-armazenagem", h1: "Logística e Armazenagem" },
   { path: "/estrutura", h1: "Terminal CONE" },
+  { path: "/contato", h1: "Solicite uma cotação" },
+  { path: "/trabalhe-conosco", h1: "Trabalhe na APG" },
 ];

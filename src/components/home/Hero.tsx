@@ -76,7 +76,7 @@ export function Hero() {
               {site.home.hero.subtitle}
             </p>
             <div data-intro="actions" className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 md:mt-10 md:gap-x-8 md:gap-y-4">
-              <CtaButton href="/contato">{site.cta.quote}</CtaButton>
+              <CtaButton href={site.cta.quoteHref}>{site.cta.quote}</CtaButton>
               <SeeOperationLink />
             </div>
           </div>

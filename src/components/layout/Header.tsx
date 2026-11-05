@@ -149,7 +149,7 @@ export function Header() {
           <div className="flex items-center gap-2 md:gap-6">
             {/* Below md the hero carries the CTA; the header keeps just logo and menu. */}
             <div className="max-md:hidden">
-              <CtaButton href="/contato">{site.cta.quote}</CtaButton>
+              <CtaButton href={site.cta.quoteHref}>{site.cta.quote}</CtaButton>
             </div>
             <button
               ref={buttonRef}

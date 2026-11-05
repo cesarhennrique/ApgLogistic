@@ -29,7 +29,7 @@ export function TransitionLink({ href, onClick, ...rest }: Props) {
           e.altKey ||
           rest.target === "_blank" ||
           !href.startsWith("/") ||
-          href === pathname
+          href.split("#")[0] === pathname
         )
           return;
         if (playCurtain(href)) e.preventDefault();

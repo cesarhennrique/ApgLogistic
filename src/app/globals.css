@@ -225,3 +225,22 @@ body {
     animation: none;
   }
 }
+
+/* A sent form's stamp (Sheet): pressed down onto the sheet with a slight turn; a plain fade with reduced motion. */
+.stamp {
+  transform: rotate(-8deg);
+  animation: stamp-in 0.35s var(--ease-out) both;
+}
+
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: rotate(-14deg) scale(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp {
+    animation: intro-fade 0.2s ease-out both;
+  }
+}

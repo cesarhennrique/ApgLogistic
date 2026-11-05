@@ -198,7 +198,7 @@ export function FinalCta() {
             {/* inside: the ways to reach APG */}
             <ul className="absolute inset-[5%] flex flex-col justify-center gap-4 bg-[#050a20] p-5 text-sand-50 md:gap-5 md:p-7">
               <li data-contact="">
-                <CtaButton href="/contato">{site.cta.quote}</CtaButton>
+                <CtaButton href={site.cta.quoteHref}>{site.cta.quote}</CtaButton>
               </li>
               {site.whatsapp && (
                 <li data-contact="">

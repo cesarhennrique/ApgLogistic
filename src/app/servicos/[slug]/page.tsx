@@ -42,7 +42,7 @@ export default async function Page({ params }: PageProps<"/servicos/[slug]">) {
               ))}
             </ul>
             <div className="mt-10">
-              <CtaButton href="/contato">{site.cta.quote}</CtaButton>
+              <CtaButton href={site.cta.quoteHref}>{site.cta.quote}</CtaButton>
             </div>
           </div>
           <div>

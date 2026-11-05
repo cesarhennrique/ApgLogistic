@@ -315,7 +315,8 @@ export const site = {
   // confirmar com cliente
   values: ["Segurança", "Pontualidade", "Transparência", "Compromisso com o cliente"],
 
-  cta: { quote: "Solicitar cotação", specialist: "Fale com um especialista" },
+  // the quote CTAs land on the form itself (/contato, its sheet: id "cotacao")
+  cta: { quote: "Solicitar cotação", quoteHref: "/contato#cotacao", specialist: "Fale com um especialista" },
 
   // Home sections. `code` is the ContainerCode label (spec §5); titles follow the section names in spec §4.
   home: {
@@ -383,6 +384,98 @@ export const site = {
       photoAlt: "Vista aérea do terminal CONE, com carretas APG nas docas e containers no pátio",
     },
     service: { includes: "O que inclui", faq: "Perguntas frequentes", others: "Outros serviços" },
+    contact: {
+      // confirmar com cliente: título e texto do hero
+      title: "Solicite uma cotação",
+      text: "Transporte de containers, armazenagem e entregas fracionadas, do Porto de Suape ao destino. Atendimento 24 h.",
+      photoAlt: "Porto de Suape à noite, com portêineres no cais",
+      addressesTitle: "Onde estamos",
+      mapTitle: "Mapa do terminal CONE, em Cabo de Santo Agostinho – PE",
+    },
+    careers: {
+      // confirmar com cliente: título e texto do hero
+      title: "Trabalhe na APG",
+      text: "Operação, estrada, escritório e comercial: envie seu currículo para o nosso time de RH.",
+      photoAlt: "Vista aérea do terminal CONE, com carretas APG nas docas e containers no pátio",
+    },
+  },
+
+  // The quote and résumé forms (spec §6, "Formulários"). Each sheet carries an APGU code (spec §5), also on the
+  // stamp it gets once sent.
+  forms: {
+    errors: {
+      name: "Informe seu nome, de 2 a 100 caracteres.",
+      company: "Use até 120 caracteres.",
+      email: "Informe um e-mail válido, como nome@empresa.com.br.",
+      phone: "Informe o telefone com DDD: 10 ou 11 dígitos.",
+      origin: "Informe a origem da carga.",
+      destination: "Informe o destino da carga.",
+      cargoType: "Escolha o tipo de carga.",
+      volume: "Use até 100 caracteres.",
+      message: "Use até 2.000 caracteres.",
+      area: "Escolha a área de interesse.",
+      file: "Anexe o currículo em PDF, de até 5 MB.",
+      consent: "Para enviar, aceite a Política de Privacidade.",
+      website: "Deixe este campo vazio.",
+    },
+    optional: "opcional",
+    // "Li e aceito a" + the privacy page's link + the rest
+    consent: ["Li e aceito a", "e autorizo a APG a usar estes dados para responder ao meu contato."],
+    honeypot: "Não preencha este campo",
+    sending: "Enviando…",
+    invalid: "Confira os campos marcados.",
+    failTitle: "Não foi possível enviar agora.",
+    failText: "O que você digitou continua aqui. Tente de novo em alguns minutos ou fale com a gente:",
+    rateLimited: "Muitos envios seguidos deste endereço. Aguarde alguns minutos e tente de novo, ou fale com a gente:",
+    stamp: "Recebido",
+    quote: {
+      code: 11,
+      label: "Cotação",
+      fields: {
+        name: "Nome",
+        company: "Empresa",
+        email: "E-mail",
+        phone: "Telefone",
+        origin: "Origem",
+        destination: "Destino",
+        cargoType: "Tipo de carga",
+        volume: "Volume",
+        message: "Mensagem",
+      },
+      placeholders: { origin: "Ex.: Porto de Suape", destination: "Ex.: Petrolina – PE", volume: "Ex.: 4 containers por mês" },
+      choose: "Escolha",
+      cargoTypes: [
+        { value: "container-20", label: "Container 20′" },
+        { value: "container-40", label: "Container 40′" },
+        { value: "fracionada", label: "Carga fracionada" },
+        { value: "armazenagem", label: "Armazenagem" },
+        { value: "outro", label: "Outro" },
+      ],
+      submit: "Enviar cotação",
+      successTitle: "Cotação recebida",
+      successText: "Nossa equipe comercial vai responder pelo e-mail ou telefone que você informou.",
+      again: "Enviar outra cotação",
+      mailSubject: "Nova cotação pelo site",
+    },
+    resume: {
+      code: 12,
+      label: "Currículo",
+      fields: { name: "Nome", email: "E-mail", phone: "Telefone", area: "Área de interesse", file: "Currículo em PDF" },
+      fileHint: "PDF de até 5 MB",
+      choose: "Escolha",
+      areas: [
+        { value: "operacao", label: "Operação" },
+        { value: "motorista", label: "Motorista" },
+        { value: "administrativo", label: "Administrativo" },
+        { value: "comercial", label: "Comercial" },
+        { value: "outro", label: "Outro" },
+      ],
+      submit: "Enviar currículo",
+      successTitle: "Currículo recebido",
+      successText: "Obrigado. Nosso time de RH vai analisar e entra em contato se houver uma vaga para o seu perfil.",
+      again: "Enviar outro currículo",
+      mailSubject: "Novo currículo pelo site",
+    },
   },
 
   nav,

@@ -4,7 +4,7 @@ import { PAGES } from "./pages";
 
 // Spec §6 "Acessibilidade": WCAG 2.1 AA on every route. With reduced motion every section is at rest (no intro, no
 // scroll choreography), so axe sees the whole page as it reads.
-const ROUTES = ["/", ...PAGES.map((p) => p.path), "/contato", "/trabalhe-conosco", "/privacidade"];
+const ROUTES = ["/", ...PAGES.map((p) => p.path), "/privacidade"];
 
 test.use({ reducedMotion: "reduce" });
 
