@@ -2099,6 +2099,12 @@ Commit: "feat: níveis de qualidade e fallback sem WebGL"
 Leia o CLAUDE.md. Use as skills improve-animations,
 find-animation-opportunities e break-ui, nesta ordem.
 
+0. Pendência do Prompt 15: o chunk do DistributionCanvas ainda só
+   começa a carregar com rootMargin "100% 0px" (o mapa estático por
+   baixo foi feito). Pré-carregue o import() quando a Estrada entrar na
+   tela e confirme num vídeo com Fast 3G + CPU 4x que a Distribuição
+   nunca aparece sem mapa.
+
 1. Revise todo o motion do site contra o spec (seção 5 "Movimento"):
    durações, easings e consistência. Corrija o que destoar. Liste no
    commit o que mudou.
@@ -2138,6 +2144,12 @@ Leia o CLAUDE.md e as metas do spec (seção 1).
    a Home baixa (desktop AVIF ≤ 2 MB, mobile AVIF ≤ 1 MB; hoje 1,21 MB
    e 722 KB) e das páginas internas (≤ 600 KB / 350 KB). npm script
    "budget". Inclua no "test".
+2a. Fps da Estrada e da Distribuição (Prompt 15: 20–25 e 19–28 fps com
+   CPU 6x; no trace, ~17 s em "Layerize"): reduza o número de camadas
+   compostas — tire will-change/translateZ de elementos que não se
+   movem, agrupe os cartões e marcos parados numa camada só, e use
+   contain: paint nos painéis. Meta: ≥ 30 fps nas duas com CPU 6x;
+   informe antes e depois, e a contagem de camadas no painel Layers.
 2b. LCP e TBT (pendentes desde o H1: LCP simulado 4,4 s, TBT ~1,2 s
    com CPU lenta): carregue o gsap e o código das cenas da jornada
    depois do primeiro paint (dynamic import ao primeiro scroll ou em
