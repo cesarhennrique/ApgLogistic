@@ -14,14 +14,16 @@ test("the first visit shows the loader, done in under 4 s; the next one in the s
   await page.goto("/");
   await expect(loader(page)).toBeVisible();
   await expect(loader(page)).toHaveAttribute("data-leaving", /\d+/, { timeout: 8_000 });
-  // When the curtain started lifting: the GSAP exit, or the compositor failsafe if the main thread was stuck.
-  const leftAt = await loader(page).evaluate((el) => {
-    const js = Number(el.dataset.leaving);
+  // How long the loader was on screen before the curtain started lifting (the GSAP exit, or the compositor failsafe if
+  // the main thread was stuck), counted from when its stylesheet showed it: the failsafe's own clock. From navigation
+  // start, a stylesheet arriving late (the dev server's chunk) ate the 200 ms between the failsafe and the 4 s.
+  const onScreen = await loader(page).evaluate((el) => {
     const css = el.getAnimations().find((a) => (a as CSSAnimation).animationName === "loader-failsafe");
-    const delay = css ? Number(css.effect?.getTiming().delay ?? 0) : 0;
-    return Math.min(js, css?.startTime != null ? Number(css.startTime) + delay : Infinity);
+    const shown = css?.startTime != null ? Number(css.startTime) : 0;
+    const delay = css ? Number(css.effect?.getTiming().delay ?? 0) : Infinity;
+    return Math.min(Number(el.dataset.leaving) - shown, delay);
   });
-  expect(leftAt).toBeLessThan(4_000);
+  expect(onScreen).toBeLessThan(4_000);
   await introDone(page);
   await expect(loader(page)).toBeHidden();
   await expect(page.locator("h1")).toBeVisible();

@@ -30,6 +30,12 @@ for (const { path, h1 } of PAGES) {
     // the header navy over a light hero (the services'), sand over a photo's
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
     await expect(page.locator("header")).toHaveAttribute("data-tone", path.startsWith("/servicos") ? "dark" : "light");
+    // the header's layers done fading (a shot mid-fade showed a grey bar and a faded logo), the frosted white bar on
+    // over the light heros
+    await expect
+      .poll(() => page.locator("header > div[aria-hidden]").evaluateAll((els) => els.map((e) => getComputedStyle(e).opacity).join(" ")))
+      .toMatch(/^[01]( [01])*$/);
+    if (path.startsWith("/servicos")) await expect(page.locator("header > div.backdrop-blur-md.bg-\\[\\#fefefe\\]\\/85")).toHaveCSS("opacity", "1");
     await page.screenshot({ path: `e2e/__screenshots__/pages/${testInfo.project.name}${path.replaceAll("/", "-")}.png`, fullPage: true });
     expect(errors).toEqual([]);
   });

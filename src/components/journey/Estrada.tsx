@@ -99,6 +99,20 @@ type Layout = {
   length: number;
   start: number;
   chapters: number[];
+  // the trail's segments (in order along the track, the first at trailFrom, TRAIL_STEP apart) and their resting
+  // transforms; the parts apply writes every frame, gathered once (no DOM query per frame)
+  trail: HTMLElement[];
+  trailBase: string[];
+  trailFrom: number;
+  parts: {
+    views: HTMLElement[];
+    rims: HTMLElement[];
+    cards: HTMLElement[];
+    pins: HTMLElement[];
+    leaders: HTMLElement[];
+    chapters: { el: HTMLElement; count: HTMLElement | null; bar: HTMLElement }[];
+    cells: { el: HTMLElement; value: HTMLElement }[];
+  };
 };
 
 const SAMPLE = 4;
@@ -118,6 +132,7 @@ export function Estrada() {
   const stage = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const raw = useRef(0);
+  const top = useRef<number | null>(null);
   const layout = useRef<Layout | null>(null);
   // alto-30, alto-60 and cima: fetched once A starts (set once, not per frame)
   const [far, setFar] = useState(false);
@@ -147,6 +162,7 @@ export function Estrada() {
   const pinsEl = useRef<HTMLDivElement>(null);
   const leadersEl = useRef<HTMLDivElement>(null);
   const titleLines = useRef<HTMLElement[][]>([]);
+  const trailDrawn = useRef({ full: 0, partial: -1 });
   const trackRef = useRef<SVGPathElement>(null);
   const laneRef = useRef<SVGPathElement>(null);
 
@@ -215,8 +231,28 @@ export function Estrada() {
       length,
       start,
       chapters,
+      trail: [],
+      trailBase: [],
+      trailFrom: start - Lc / 2,
+      parts: {
+        views: [...viewsEl.current!.children] as HTMLElement[],
+        rims: [...viewsEl.current!.querySelectorAll<HTMLElement>("[data-rim]")],
+        cards: [...cardsEl.current!.children] as HTMLElement[],
+        pins: [...pinsEl.current!.querySelectorAll<HTMLElement>("[data-pin]")],
+        leaders: [...leadersEl.current!.children] as HTMLElement[],
+        chapters: [...chaptersEl.current!.querySelectorAll<HTMLElement>("[data-chapter]")].map((el) => ({
+          el,
+          count: el.querySelector<HTMLElement>("[data-count]"),
+          bar: el.querySelector<HTMLElement>("[data-bar]")!,
+        })),
+        cells: [...boardEl.current!.querySelectorAll<HTMLElement>("[data-cell]")].map((el) => ({
+          el,
+          value: el.querySelector<HTMLElement>("[data-value]")!,
+        })),
+      },
     };
     layout.current = L;
+    trailDrawn.current = { full: 0, partial: -1 };
 
     // The trail's segments, built for this track (a few hundred thin boxes along it, revealed by opacity).
     const trail = trailEl.current!;
@@ -225,10 +261,11 @@ export function Estrada() {
       const p = pointAt(L, s);
       const seg = document.createElement("i");
       seg.className = "absolute top-0 left-0 h-[3px] w-[13px] origin-[0_50%] bg-red-500 opacity-0";
-      seg.dataset.s = String(s);
-      seg.dataset.base = `translate(${p.x.toFixed(1)}px, ${(p.y - 1.5).toFixed(1)}px) rotate(${p.angle.toFixed(4)}rad)`;
-      seg.style.transform = seg.dataset.base;
+      const base = `translate(${p.x.toFixed(1)}px, ${(p.y - 1.5).toFixed(1)}px) rotate(${p.angle.toFixed(4)}rad)`;
+      seg.style.transform = base;
       trail.append(seg);
+      L.trail.push(seg);
+      L.trailBase.push(base);
     }
     // The chapters' pins at the track's edge, on the side of their card.
     pinsEl.current!.querySelectorAll<HTMLElement>("[data-pin]").forEach((pin, i) => {
@@ -253,7 +290,8 @@ export function Estrada() {
     if (!L) return;
     const { W, H, mobile, s0 } = L;
     // Sliding in over scene 3: held still on screen, see-through and without its truck (Road's hand-over).
-    const stageTop = reduced ? 0 : Math.max(el.parentElement!.getBoundingClientRect().top, 0);
+    // (the section's top from the scroll trigger; read from the layout only on a first draw or a resize)
+    const stageTop = reduced ? 0 : Math.max(top.current ?? el.parentElement!.getBoundingClientRect().top, 0);
     const sliding = stageTop > 0;
     el.style.transform = sliding ? `translate(0, ${-stageTop}px)` : "";
     el.style.background = sliding ? "" : BACKGROUND;
@@ -315,13 +353,13 @@ export function Estrada() {
 
     // The views, crossfading with the angle (viewWeights).
     const weights = viewWeights(theta);
-    const views = viewsEl.current!.children as HTMLCollectionOf<HTMLElement>;
+    const { views, rims, cards, pins, leaders, chapters, cells } = L.parts;
     for (let i = 0; i < 4; i++) views[i].style.opacity = String(weights[i]);
     // Rolling, not sliding: the wheels turn by the road's distance over the tyre's radius.
     const deg = (-dist / ((SIDE.wheel.y - WHEELS[0].y) * sz)) * (180 / Math.PI);
-    for (const rim of viewsEl.current!.querySelectorAll<HTMLElement>("[data-rim]")) {
-      rim.style.transform = `rotate(${deg.toFixed(2)}deg)`;
-      rim.style.display = dist > 0 && weights[0] > 0 ? "block" : "";
+    for (let i = 0; i < rims.length; i++) {
+      rims[i].style.transform = `rotate(${deg.toFixed(2)}deg)`;
+      rims[i].style.display = dist > 0 && weights[0] > 0 ? "block" : "";
     }
 
     // B's ground: the plane, tilted to the camera's angle about the road's middle, which sits on the tyres' line side
@@ -357,7 +395,6 @@ export function Estrada() {
     // The cards: riding the road (wide screens), each revealed as the cab passes it, the first one there from the
     // start (never an empty band); on phones one at a time under the truck, in from the left as the truck reaches
     // it, out to the right for the next.
-    const cards = cardsEl.current!.children as HTMLCollectionOf<HTMLElement>;
     for (let i = 0; i < cards.length; i++) {
       const at0 = i * L.spacing;
       if (!mobile) {
@@ -378,20 +415,29 @@ export function Estrada() {
     worldEl.current!.style.opacity = String(inC ? 1 : 0);
     worldEl.current!.style.transform = `translate3d(${(X - at.x * zw).toFixed(1)}px, ${(Y - at.y * zw).toFixed(1)}px, 0) scale(${zw.toFixed(5)})`;
     const behind = s - 0.5 * L.Lc;
-    for (const seg of trailEl.current!.querySelectorAll<HTMLElement>("i")) {
-      const f = inC ? Math.min(Math.max((behind - Number(seg.dataset.s)) / TRAIL_STEP, 0), 1) : 0;
-      const o = f > 0 ? "1" : "0";
-      if (seg.style.opacity !== o) seg.style.opacity = o;
-      if (f > 0 && f < 1) seg.style.transform = `${seg.dataset.base} scaleX(${f.toFixed(3)})`;
-      else if (f >= 1 && seg.style.transform !== seg.dataset.base) seg.style.transform = seg.dataset.base!;
+    // The trail drawn up to the truck's rear: the segments wholly behind it shown, the one under it drawn part way;
+    // only those whose state changes since the last frame are written.
+    {
+      const n = L.trail.length;
+      const at = inC ? (behind - L.trailFrom) / TRAIL_STEP : 0;
+      const full = Math.min(Math.max(Math.floor(at), 0), n);
+      const was = trailDrawn.current;
+      const draw = (i: number, k: number) => {
+        L.trail[i].style.opacity = k > 0 ? "1" : "0";
+        L.trail[i].style.transform = k > 0 && k < 1 ? `${L.trailBase[i]} scaleX(${k.toFixed(3)})` : L.trailBase[i];
+      };
+      for (let i = Math.min(was.full, full); i < Math.max(was.full, full); i++) draw(i, i < full ? 1 : 0);
+      if (was.partial >= full && was.partial !== full) draw(was.partial, 0);
+      const f = at - full;
+      const partial = full < n && f > 0 ? full : -1;
+      if (partial >= 0) draw(partial, f);
+      trailDrawn.current = { full, partial };
     }
     // Each chapter as the truck reaches it, until the next one, alternately either side of the truck (wide screens:
     // right of it, then left under the title; phones: above it, then below): its pin on the track lights up and
     // pulses, a leader draws from it to the card, the card comes in (its icon drawing itself, its number counting,
     // its title rising line by line, its bar of chapters filling) and slides out as the next one comes.
-    const pins = pinsEl.current!.querySelectorAll<HTMLElement>("[data-pin]");
-    const leaders = leadersEl.current!.children as HTMLCollectionOf<HTMLElement>;
-    chaptersEl.current!.querySelectorAll<HTMLElement>("[data-chapter]").forEach((ch, i) => {
+    chapters.forEach(({ el: ch, count: counter, bar }, i) => {
       const at0 = L.chapters[i];
       const k = inC ? segment(s, at0 - CHAPTER_IN * L.Lc, at0, easeOut) : 0;
       const next = L.chapters[i + 1];
@@ -408,14 +454,14 @@ export function Estrada() {
       const c = history[i].count;
       if (c) {
         const n = Math.round(lerp(c.from, c.to, easeOut(segment(s, at0 - CHAPTER_IN * L.Lc, at0 + L.Lc))));
-        ch.querySelector<HTMLElement>("[data-count]")!.textContent = c.from === 0 ? count.format(n) : String(n);
+        counter!.textContent = c.from === 0 ? count.format(n) : String(n);
       }
       // the title's lines out of their masks, one after the other
       titleLines.current[i]?.forEach((line, j) => {
         const t = segment(s, at0 - (CHAPTER_IN - 0.12 * (j + 1)) * L.Lc, at0 + 0.12 * (j + 1) * L.Lc, easeOut);
         line.style.transform = `translate3d(0, ${((1 - t) * 110).toFixed(1)}%, 0)`;
       });
-      ch.querySelector<HTMLElement>("[data-bar]")!.style.transform = `scaleX(${k.toFixed(4)})`;
+      bar.style.transform = `scaleX(${k.toFixed(4)})`;
       // the leader, from the pin (world → stage px) to the card, drawn as far as k
       const [ax, ay] = [X + (Number(pin.dataset.x) - at.x) * zw, Y + (Number(pin.dataset.y) - at.y) * zw];
       const end = L.cardEnds[i];
@@ -429,12 +475,12 @@ export function Estrada() {
     // D: the scoreboard, its cells in one after the other, their numbers counting up.
     const board = segment(ph.d, 0.3, 0.45) * (1 - segment(ph.e, 0, 0.3));
     boardEl.current!.style.opacity = String(board);
-    boardEl.current!.querySelectorAll<HTMLElement>("[data-cell]").forEach((cell, i) => {
+    cells.forEach(({ el: cell, value }, i) => {
       const k = segment(ph.d, 0.32 + i * 0.05, 0.42 + i * 0.05, easeOut);
       cell.style.opacity = String(k);
       cell.style.transform = `translate3d(0, ${((1 - k) * 12).toFixed(1)}px, 0)`;
       const n = segment(ph.d, 0.35 + i * 0.05, 0.75 + i * 0.05, easeOut);
-      cell.querySelector<HTMLElement>("[data-value]")!.textContent = count.format(Math.round(dock.stats[i].value * n));
+      value.textContent = count.format(Math.round(dock.stats[i].value * n));
     });
     // E: night falls over it all but the terminal's red point (scene 5's, on the same pixel).
     nightEl.current!.style.opacity = String(segment(ph.e, 0.1, 0.85));
@@ -443,8 +489,9 @@ export function Estrada() {
   }, [reduced]);
 
   const onProgress = useCallback(
-    (p: number) => {
+    (p: number, t: number) => {
       raw.current = p;
+      top.current = t;
       apply();
     },
     [apply],
@@ -467,6 +514,7 @@ export function Estrada() {
   useEffect(() => {
     if (reduced) return;
     const run = () => {
+      top.current = null;
       measure();
       apply();
     };

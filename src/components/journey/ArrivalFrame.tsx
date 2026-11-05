@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import images from "@/content/journeyImages.json";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { site } from "@/content/site";
+import { useQualityTier } from "@/lib/quality";
 import { APG_CONTAINERS, PHOTO, type View } from "./oceanCamera";
 
 const { widths } = images["navio-mar"];
@@ -11,7 +12,8 @@ const src = (w: number, ext: string) => `/images/journey/navio-mar-${w}.${ext}`;
 // Up to 1920: the close has a layer of its own, the original's full resolution cropped round the client's container
 // (navio-mar-close, CLOSE in photo px), loaded later, on desktop only.
 const base = widths.filter((w) => w <= 1920);
-const srcSet = (ext: string) => base.map((w) => `${src(w, ext)} ${w}w`).join(", ");
+// (the 'low' tier, lib/quality: its largest left out)
+const srcSet = (ext: string, low: boolean) => (low ? base.slice(0, -1) : base).map((w) => `${src(w, ext)} ${w}w`).join(", ");
 // Its width at the wide framing: the photo covering the screen.
 const SIZES = `(min-aspect-ratio: ${PHOTO.width}/${PHOTO.height}) 100vw, ${((PHOTO.width / PHOTO.height) * 100).toFixed(1)}vh`;
 const CLOSE = { x: 1990, y: 912, width: 2600, height: 1800 };
@@ -103,6 +105,7 @@ export function ArrivalFrame({ alt }: { alt: string }) {
   // The photo only after the page's load: on a slow connection Chrome fetches lazy images far ahead (~2500 px), and
   // this one competed with the hero's LCP.
   const [loaded, setLoaded] = useState(false);
+  const low = useQualityTier() === "low";
   useEffect(() => {
     const go = () => setLoaded(true);
     if (document.readyState === "complete") go();
@@ -138,8 +141,8 @@ export function ArrivalFrame({ alt }: { alt: string }) {
       <div data-photo="" className="absolute top-0 left-0 origin-top-left" style={{ width: PHOTO.width, height: PHOTO.height }}>
         {loaded && (
           <picture>
-            <source type="image/avif" srcSet={srcSet("avif")} sizes={SIZES} />
-            <source type="image/webp" srcSet={srcSet("webp")} sizes={SIZES} />
+            <source type="image/avif" srcSet={srcSet("avif", low)} sizes={SIZES} />
+            <source type="image/webp" srcSet={srcSet("webp", low)} sizes={SIZES} />
             <img
               src={src(1920, "webp")}
               width={PHOTO.width}

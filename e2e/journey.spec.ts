@@ -180,6 +180,11 @@ test.describe("with reduced motion", () => {
   test("each scene stands still a screen high, with its text", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("load");
+    // the 'static' tier (lib/quality): no canvas, the maps as still pictures
+    await page.waitForTimeout(2500);
+    await expect(page.locator("canvas")).toHaveCount(0);
+    await expect(page.locator('#hero [data-static-map="hero"]')).toBeVisible();
+    await expect(page.locator('#distribuicao [data-static-map="distribution"]')).toBeAttached();
     const vh = await page.evaluate(() => innerHeight);
     for (const id of ["chegada", "porteiner", "carga", "distribuicao"]) {
       const box = (await page.locator(`#${id}`).boundingBox())!;

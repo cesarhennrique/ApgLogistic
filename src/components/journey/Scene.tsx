@@ -19,8 +19,9 @@ type Props = {
   // The header's ink over this scene: "dark" background → light header, "light" → navy header.
   headerTheme: "dark" | "light";
   // The scene's progress, 0–1, on every scroll update: write styles straight to the DOM here (no React state).
-  // Not called with reduced motion: the scene then shows its resting layout, a screen high.
-  onProgress?: (p: number) => void;
+  // Not called with reduced motion: the scene then shows its resting layout, a screen high. top: where the section's
+  // top is on screen (px), from the trigger's own numbers: no layout read per frame.
+  onProgress?: (p: number, top: number) => void;
   // "slide": the progress starts as the section enters from below (for a scene that slides in over the previous
   // one, overlapping its last screen), not when its stage pins.
   from?: "pin" | "slide";
@@ -44,14 +45,16 @@ export function Scene({ id, heightVh, phone, background, headerTheme, onProgress
   useEffect(() => {
     if (reduced) return;
     const progress = (p: number) => (phone && window.innerWidth < 768 ? toDesktop(p, range, phone) : p);
+    // the trigger starts with the section's top at the viewport's bottom (slide) or top (pin)
+    const topOf = (self: ScrollTrigger) => (from === "slide" ? window.innerHeight : 0) - (self.scroll() - self.start);
     const trigger = ScrollTrigger.create({
       trigger: section.current,
       start: from === "pin" ? "top top" : "top bottom",
       end: "bottom bottom",
       scrub: true,
-      onUpdate: (self) => callback.current?.(progress(self.progress)),
+      onUpdate: (self) => callback.current?.(progress(self.progress), topOf(self)),
     });
-    callback.current?.(progress(trigger.progress));
+    callback.current?.(progress(trigger.progress), topOf(trigger));
     return () => trigger.kill();
   }, [reduced, from, phone, range]);
 

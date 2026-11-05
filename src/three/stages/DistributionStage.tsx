@@ -86,7 +86,8 @@ const ringMaterials = ROUTES.map(() => new MeshBasicMaterial({ color: RED, trans
 
 // Scene 5: the hero's map from straight above, the CONE terminal at its origin; the lines out to the deliveries.
 // Everything follows distributionProgress (no clock): the canvas renders on demand.
-export function DistributionStage() {
+// pulse: each destination's ring going out as its line lands (off on the 'low' tier).
+export function DistributionStage({ pulse = true }: { pulse?: boolean }) {
   const lines = useRef<(ComponentRef<typeof Line> | null)[]>([]);
   const dots = useRef<(Mesh | null)[]>([]);
   const rings = useRef<(Mesh | null)[]>([]);
@@ -128,7 +129,7 @@ export function DistributionStage() {
       const land = MathUtils.clamp((c - end) / LAND, 0, 1);
       destinationMaterials[i].opacity = land > 0 ? 1 : 0;
       dots.current[i]?.scale.setScalar(land > 0 ? 0.6 + 0.4 * MathUtils.smootherstep(land, 0, 0.4) : 0.001);
-      ringMaterials[i].opacity = land > 0 && land < 1 ? 0.7 * (1 - land) : 0;
+      ringMaterials[i].opacity = pulse && land > 0 && land < 1 ? 0.7 * (1 - land) : 0;
       rings.current[i]?.scale.setScalar(1 + 2.4 * land);
     });
   });

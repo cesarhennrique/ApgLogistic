@@ -1,19 +1,8 @@
 import { Box3, QuadraticBezierCurve3, Vector3 } from "three";
-import { site } from "@/content/site";
+import { ROUTE_STARTS, toHero } from "./mapUnits";
 
-// The hero's map of the Northeast, from public/images/map/nordeste.svg (scripts/clean-map.mjs projection:
-// x = (lon + 49) * 100, y = (2 - lat) * 100). One SVG unit is HERO_SCALE units; Suape sits at the origin,
-// north toward -Z, east toward +X (the same orientation as the distribution map).
-export const HERO_SCALE = 0.05;
-
-const svgOf = (lon: number, lat: number): [number, number] => [(lon + 49) * 100, (2 - lat) * 100];
-const [suapeX, suapeY] = svgOf(site.home.coverage.hubs[0].lon, site.home.coverage.hubs[0].lat);
-
-export function toHero(svgX: number, svgY: number) {
-  return { x: (svgX - suapeX) * HERO_SCALE, z: (svgY - suapeY) * HERO_SCALE };
-}
-
-export const SALVADOR_HERO = toHero(...svgOf(site.home.coverage.hubs[1].lon, site.home.coverage.hubs[1].lat));
+// The hero's map of the Northeast (its units: mapUnits).
+export { HERO_SCALE, SALVADOR_HERO, toHero } from "./mapUnits";
 
 type Ring = [number, number][];
 
@@ -67,16 +56,7 @@ export function buildDots(states: Record<string, Ring[]>, spacing = 14) {
   return { positions: new Float32Array(positions), colors: new Float32Array(colors), count: positions.length / 3 };
 }
 
-// Five cabotage routes arriving from the sea (east of Suape), arcing low over the water down onto Suape. They
-// start close enough to stay inside the hero's frame. Bearings from east (degrees, negative = north) and
-// distances offshore.
-const ROUTE_STARTS: [number, number][] = [
-  [-58, 11],
-  [-30, 9],
-  [-4, 12],
-  [22, 9],
-  [48, 11],
-];
+// The five cabotage routes (mapUnits' ROUTE_STARTS) arcing low over the water down onto Suape.
 export const HERO_ROUTES = ROUTE_STARTS.map(([bearing, distance], i) => {
   const a = (bearing * Math.PI) / 180;
   const start = new Vector3(Math.cos(a) * distance, 0, Math.sin(a) * distance);

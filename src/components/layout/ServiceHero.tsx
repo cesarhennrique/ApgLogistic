@@ -123,8 +123,9 @@ export function ServiceHero({ service }: { service: Service }) {
       data-header-theme="light"
       className="relative isolate flex min-h-svh flex-col overflow-hidden bg-[#fefefe] pb-[10svh] text-navy-900 md:block md:pb-0"
     >
-      {/* The giant word behind, sliding against the scroll (phones: behind the object, clear of the copy). */}
-      <div aria-hidden="true" className="absolute inset-x-0 top-[58%] -z-10 md:top-1/2 md:-translate-y-1/2">
+      {/* The giant word behind, sliding against the scroll: below the copy, standing on the ground line behind the
+          object (phones: behind the object). */}
+      <div aria-hidden="true" className="absolute inset-x-0 top-[58%] -z-10 md:top-auto md:bottom-[12svh]">
         <Parallax axis="x" distance={-160}>
           <p className="font-condensed pl-[4vw] text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase md:text-[22vw]">
             {service.word}

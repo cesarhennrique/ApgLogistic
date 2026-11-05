@@ -6,6 +6,8 @@ import { gsap, ScrollTrigger } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { ArrivalFrame } from "@/components/journey/ArrivalFrame";
 import { segment } from "@/components/journey/segment";
+import { StaticMap } from "@/components/journey/StaticMap";
+import { useQualityTier } from "@/lib/quality";
 import { readDebugParams } from "@/three/debug";
 import { heroDive } from "@/three/progress";
 
@@ -32,6 +34,8 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
   const [canvas, setCanvas] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const reduced = useReducedMotion();
+  // no canvas on the 'static' tier (no WebGL, reduced motion: lib/quality): the map as a still picture
+  const tier = useQualityTier();
 
   // The 3D chunk (three, drei: ~530 KB of script) loads after the page's load event, a frame actually painted (on a
   // fast connection the load can fire before the first paint) and an idle moment: off the LCP's path.
@@ -116,9 +120,16 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
           <img
             src="/images/map/nordeste.svg"
             alt=""
-            className={`absolute top-[16%] right-[6%] h-[60%] w-auto invert transition-opacity duration-600 ease-out max-md:top-[12%] max-md:right-[8%] max-md:h-[34%] ${mapReady ? "opacity-0" : "opacity-[0.07]"}`}
+            className={`absolute top-[16%] right-[6%] h-[60%] w-auto invert transition-opacity duration-600 ease-out max-md:top-[12%] max-md:right-[8%] max-md:h-[34%] ${mapReady || tier === "static" ? "opacity-0" : "opacity-[0.07]"}`}
           />
-          {canvas && <HeroCanvas onReady={() => setMapReady(true)} />}
+          {tier === "static" && (
+            <StaticMap
+              variant="hero"
+              fit
+              className="absolute top-[16%] right-[6%] h-[60%] w-auto max-md:top-[12%] max-md:right-[8%] max-md:h-[34%]"
+            />
+          )}
+          {canvas && tier !== null && tier !== "static" && <HeroCanvas onReady={() => setMapReady(true)} />}
         </div>
         <div ref={ocean} className="absolute inset-0 overflow-hidden opacity-0">
           {canvas && <ArrivalFrame alt="" />}

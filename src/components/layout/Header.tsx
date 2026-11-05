@@ -120,10 +120,11 @@ export function Header() {
           aria-hidden="true"
           className={`pointer-events-none absolute inset-x-0 top-0 h-[120px] bg-linear-to-b from-navy-900/40 to-transparent transition-opacity duration-200 ease-out group-data-[tone=dark]/header:opacity-0 ${overJourney ? "opacity-100" : "opacity-0"}`}
         />
-        {/* Over the light scenes: a frosted white bar, so the navy links read over the crane's boom. */}
+        {/* Over the light scenes and heros (#FEFEFE): a frosted white bar, so the navy links read over the crane's
+            boom; until the bar turns solid navy. */}
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-0 bg-[#fefefe]/85 opacity-0 backdrop-blur-md transition-opacity duration-200 ease-out ${overJourney ? "group-data-[tone=dark]/header:opacity-100" : ""}`}
+          className={`pointer-events-none absolute inset-0 bg-[#fefefe]/85 opacity-0 backdrop-blur-md transition-opacity duration-200 ease-out ${solid ? "" : "group-data-[tone=dark]/header:opacity-100"}`}
         />
         <div className="site-container relative flex h-16 items-center justify-between gap-3 md:h-20">
           <TransitionLink

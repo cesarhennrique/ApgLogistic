@@ -5,6 +5,7 @@ import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react
 import { introBridge, subscribeCovered } from "@/components/intro/bridge";
 import { NAVIGATE_EVENT } from "@/components/layout/PageCurtain";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { useQualityTier } from "@/lib/quality";
 import { CameraRig } from "./CameraRig";
 import { readDebugParams } from "./debug";
 import { LoadProbe } from "./LoadProbe";
@@ -19,7 +20,9 @@ const DebugProbe = lazy(() => import("./DebugTools").then((m) => ({ default: m.D
 // Client-only (next/dynamic ssr:false). The only canvas on the page: the hero's map, in the hero's sticky stage.
 // onReady: the first frame is drawn (the hero hides its static stand-in).
 export default function HeroCanvas({ onReady }: { onReady?: () => void }) {
-  const reducedMotion = useReducedMotion();
+  // the routes' glow and Suape's beat off with reduced motion and on the 'low' tier (lib/quality)
+  const tier = useQualityTier();
+  const reducedMotion = useReducedMotion() || tier === "low";
   const [{ debug }] = useState(() => readDebugParams(window.location.search));
   const [ready, setReady] = useState(false);
   const [onScreen, setOnScreen] = useState(true);
@@ -52,7 +55,7 @@ export default function HeroCanvas({ onReady }: { onReady?: () => void }) {
         className={`absolute inset-0 transition-opacity duration-600 ease-out motion-reduce:transition-none ${ready ? "opacity-100" : "opacity-0"}`}
       >
         <Canvas
-          dpr={[1, 2]}
+          dpr={[1, tier === "low" ? 1.5 : 2]}
           // Under the first-visit loader, only the frames asked for (the hero map's first one).
           frameloop={onScreen && !leaving ? (covered ? "demand" : "always") : "never"}
           // Unlit lines and dots in exact brand colors: no tone mapping. See-through, over the hero's photo (no post

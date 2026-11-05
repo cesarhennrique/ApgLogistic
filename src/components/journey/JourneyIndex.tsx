@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ScrollTrigger } from "@/components/motion/gsap";
 import { lenisRef } from "@/components/motion/SmoothScroll";
 import { site } from "@/content/site";
 
@@ -20,23 +21,41 @@ export function JourneyIndex() {
     const buttons = [...el.querySelectorAll<HTMLButtonElement>("button")];
     const sections = MARKS.map((m) => document.getElementById(m.id));
     let frame = 0;
+    let shown = -1;
+    // the sections' extents on the page, measured once and again on a refresh or a resize (never per frame: a layout
+    // read after the scenes' style writes forced a layout every frame)
+    let ranges: [number, number][] = [];
+    const measure = () => {
+      ranges = sections.map((s) => {
+        const r = s?.getBoundingClientRect();
+        return r ? [r.top + window.scrollY, r.bottom + window.scrollY] : [Infinity, -Infinity];
+      });
+    };
     const update = () => {
       frame = 0;
       // the scene under the screen's middle; where two overlap (a slide), the later one
-      const mid = window.innerHeight / 2;
+      // (Lenis's scroll: reading window.scrollY after the scenes' writes would flush the layout)
+      const mid = (lenisRef.current?.scroll ?? window.scrollY) + window.innerHeight / 2;
       let active = 0;
-      sections.forEach((s, i) => {
-        const r = s?.getBoundingClientRect();
-        if (r && r.top <= mid && r.bottom >= mid) active = i;
+      ranges.forEach(([top, bottom], i) => {
+        if (top <= mid && bottom >= mid) active = i;
       });
+      if (active === shown) return;
+      shown = active;
       buttons.forEach((b, i) => (i === active ? b.setAttribute("aria-current", "step") : b.removeAttribute("aria-current")));
     };
     const onScroll = () => (frame ||= requestAnimationFrame(update));
     const io = new IntersectionObserver(([e]) => el.toggleAttribute("data-on", e.isIntersecting));
     io.observe(journey);
-    update();
+    const refresh = () => {
+      measure();
+      update();
+    };
+    refresh();
+    ScrollTrigger.addEventListener("refresh", refresh);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
+      ScrollTrigger.removeEventListener("refresh", refresh);
       io.disconnect();
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);

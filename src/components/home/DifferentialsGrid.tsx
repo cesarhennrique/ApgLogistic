@@ -4,6 +4,7 @@ import { Truck } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Counter } from "@/components/motion/Counter";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { useQualityTier } from "@/lib/quality";
 import { site } from "@/content/site";
 
 export type PeMap = { dots: [number, number][]; routes: string[]; box: [number, number, number, number] };
@@ -119,6 +120,8 @@ export function DifferentialsGrid({ pe }: { pe: PeMap }) {
   const hands = useRef<SVGGElement>(null);
   const time = useRef<HTMLSpanElement>(null);
   const reduced = useReducedMotion();
+  // the trackers still on the 'low' tier (lib/quality)
+  const tier = useQualityTier();
 
   useEffect(() => {
     const cells = [...grid.current!.children] as HTMLElement[];
@@ -154,7 +157,7 @@ export function DifferentialsGrid({ pe }: { pe: PeMap }) {
           <div className="flex min-h-32 items-center">
             {d.viz === "fleet" && <Fleet />}
             {d.viz === "yard" && <Yard />}
-            {d.viz === "tracking" && <Tracking pe={pe} live={!reduced} />}
+            {d.viz === "tracking" && <Tracking pe={pe} live={!reduced && tier !== "low"} />}
             {d.viz === "clock" && (
               <div className="flex items-center gap-6">
                 <Clock hands={hands} />

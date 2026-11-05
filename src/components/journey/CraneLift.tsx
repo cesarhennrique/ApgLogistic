@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { gsap, SplitText } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { useQualityTier } from "@/lib/quality";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
@@ -86,6 +87,9 @@ export function CraneLift() {
   const title = useRef<HTMLParagraphElement>(null);
   const sharp = useRef<HTMLImageElement>(null);
   const reduced = useReducedMotion();
+  // the 'low' tier (lib/quality): the sharp layer a width down, no blurred copy
+  const tier = useQualityTier();
+  const sharpWidth = tier === "low" ? 1920 : 2560;
   const raw = useRef(0);
   const lines = useRef<HTMLElement[]>([]);
   // The moving parts, gathered on the first draw (the scene may draw before this mounts).
@@ -95,7 +99,7 @@ export function CraneLift() {
     fade: HTMLElement[];
     notes: Record<keyof typeof CALLOUTS, Note>;
     ground: HTMLElement;
-    blurred: HTMLElement;
+    blurred: HTMLElement | null;
     ticks: HTMLElement[];
     tickLabels: HTMLElement[];
     craneCota: HTMLElement[];
@@ -118,7 +122,7 @@ export function CraneLift() {
         container: noteOf(m.querySelector("[data-callout=container]")!),
       },
       ground: m.querySelector<HTMLElement>("[data-ground]")!,
-      blurred: w.querySelector<HTMLElement>("[data-blurred]")!,
+      blurred: w.querySelector<HTMLElement>("[data-blurred]"),
       ticks: [...m.querySelectorAll<HTMLElement>("[data-tick]")],
       tickLabels: [...m.querySelectorAll<HTMLElement>("[data-tick-label]")],
       craneCota: [...m.querySelectorAll<HTMLElement>("[data-crane-cota] > *")],
@@ -147,8 +151,8 @@ export function CraneLift() {
     const out = 1 - (reduced ? 0 : segment(c, ...SET_OUT));
     const set = out * (1 - 0.75 * dof);
     for (const el of P.fade) el.style.opacity = String(el.dataset.sharp === undefined ? set : out * (1 - dof));
-    P.blurred.style.opacity = String(out * 0.25 * dof);
-    P.blurred.style.filter = `blur(${(DOF_BLUR / sampleCraneCamera(DOF[1], view).scale).toFixed(1)}px)`;
+    if (P.blurred) P.blurred.style.opacity = String(out * 0.25 * dof);
+    if (P.blurred) P.blurred.style.filter = `blur(${(DOF_BLUR / sampleCraneCamera(DOF[1], view).scale).toFixed(1)}px)`;
     word.current!.style.transform = `translate3d(${((0.18 - 0.5 * c) * view.width).toFixed(1)}px, 0, 0)`;
 
     // The quay: its line under the legs, a ruler along it every 5 m (from the quay's edge).
@@ -287,8 +291,8 @@ export function CraneLift() {
               />
             </picture>
             <picture>
-              <source media="(min-width: 768px)" type="image/avif" srcSet={base(2560, "avif")} />
-              <source media="(min-width: 768px)" type="image/webp" srcSet={base(2560, "webp")} />
+              <source media="(min-width: 768px)" type="image/avif" srcSet={base(sharpWidth, "avif")} />
+              <source media="(min-width: 768px)" type="image/webp" srcSet={base(sharpWidth, "webp")} />
               <source type="image/avif" srcSet={base(1920, "avif")} />
               <img
                 ref={sharp}
@@ -303,7 +307,9 @@ export function CraneLift() {
               />
             </picture>
           </div>
-          {/* The crane out of focus (depth of field): the light layer, blurred once, a layer of its own. */}
+          {/* The crane out of focus (depth of field): the light layer, blurred once, a layer of its own (not on the
+              'low' tier: the set only fades). */}
+          {tier !== "low" && (
           <picture>
             <source type="image/avif" srcSet={base(1200, "avif")} />
             <img
@@ -317,6 +323,7 @@ export function CraneLift() {
               className="absolute inset-0 h-full w-full opacity-0 will-change-[opacity]"
             />
           </picture>
+          )}
           {ROPES.map((r) => (
             <i
               key={r.x}

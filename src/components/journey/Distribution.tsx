@@ -3,12 +3,14 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { useQualityTier } from "@/lib/quality";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
 import { distributionProgress } from "@/three/progress";
-import { PE_BA_BOUNDS, PULL_BACK, SALVADOR_AT, sampleDistributionCamera, smoother } from "@/three/stages/distributionCamera";
+import { MAP_IN, PE_BA_BOUNDS, PULL_BACK, SALVADOR_AT, sampleDistributionCamera, smoother } from "@/three/stages/distributionCamera";
 import { Scene, segment } from "./Scene";
+import { StaticMap } from "./StaticMap";
 
 const DistributionCanvas = dynamic(() => import("@/three/DistributionCanvas"), { ssr: false });
 
@@ -42,7 +44,10 @@ export function Distribution() {
   const copy = useRef<HTMLDivElement>(null);
   const counter = useRef<HTMLSpanElement>(null);
   const reduced = useReducedMotion();
+  const tier = useQualityTier();
+  const still = useRef<HTMLDivElement>(null);
   const raw = useRef(0);
+  const top = useRef<number | null>(null);
   // The canvas mounts once the scene is a screen away (and stays); it renders only while the scene is on screen.
   const [near, setNear] = useState(false);
   const [onScreen, setOnScreen] = useState(false);
@@ -62,7 +67,8 @@ export function Distribution() {
   const apply = useCallback(() => {
     const el = stage.current!;
     // Sliding in over scene 4: see-through and empty, held still on screen (scene 4's last picture shows under it).
-    const stageTop = reduced ? 0 : Math.max(el.parentElement!.getBoundingClientRect().top, 0);
+    // (the section's top from the scroll trigger; read from the layout only on a first draw or a resize)
+    const stageTop = reduced ? 0 : Math.max(top.current ?? el.parentElement!.getBoundingClientRect().top, 0);
     const sliding = stageTop > 0;
     el.style.transform = sliding ? `translate(0, ${-stageTop}px)` : "";
     el.style.background = sliding ? "" : BACKGROUND;
@@ -74,6 +80,8 @@ export function Distribution() {
     const view = { width: el.clientWidth, height: el.clientHeight };
     const { scale, origin } = sampleDistributionCamera(smoother(c, PULL_BACK), view, PE_BA_BOUNDS);
     // The terminal's red point (scene 4's dock), and its name, then the two hubs' names.
+    still.current!.style.transform = `translate3d(${origin.x.toFixed(1)}px, ${origin.y.toFixed(1)}px, 0) scale(${scale.toFixed(4)})`;
+    still.current!.style.opacity = String(smoother(c, MAP_IN));
     dot.current!.style.transform = `translate3d(${origin.x.toFixed(1)}px, ${origin.y.toFixed(1)}px, 0) translate(-50%, -50%)`;
     // (in once pinned: scene 4 hands over the point alone)
     const cone = segment(c, 0.01, 0.06) * (1 - segment(c, ...CONE_OUT));
@@ -90,8 +98,9 @@ export function Distribution() {
   }, [reduced]);
 
   const onProgress = useCallback(
-    (p: number) => {
+    (p: number, t: number) => {
       raw.current = p;
+      top.current = t;
       apply();
     },
     [apply],
@@ -99,7 +108,10 @@ export function Distribution() {
 
   useEffect(() => {
     apply();
-    const observer = new ResizeObserver(apply);
+    const observer = new ResizeObserver(() => {
+      top.current = null;
+      apply();
+    });
     observer.observe(stage.current!);
     return () => observer.disconnect();
   }, [apply]);
@@ -118,7 +130,11 @@ export function Distribution() {
     >
       <div ref={stage} className="absolute inset-0 overflow-hidden">
         <div aria-hidden="true" className="absolute inset-0">
-          {near && <DistributionCanvas onScreen={onScreen || reduced} />}
+          {near && tier !== null && tier !== "static" && <DistributionCanvas onScreen={onScreen || reduced} />}
+          {/* the 'static' tier (lib/quality): the map as a still picture, placed by the same camera */}
+          <div ref={still} className="absolute top-0 left-0 origin-top-left">
+            {tier === "static" && <StaticMap variant="distribution" />}
+          </div>
         </div>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <div ref={dot} className="suape-dot absolute top-0 left-0 size-3 rounded-full bg-red-500" />

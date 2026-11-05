@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { useQualityTier } from "@/lib/quality";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
@@ -185,12 +186,15 @@ export function OceanArrival() {
   const scrim = useRef<HTMLDivElement>(null);
   const count = useRef<HTMLSpanElement>(null);
   const reduced = useReducedMotion();
+  const tier = useQualityTier();
   const raw = useRef(0);
+  const top = useRef<number | null>(null);
 
   const apply = useCallback(() => {
     const el = stage.current!;
     // Sliding in over the hero: hold the picture still on screen, as the hero's copy of it is.
-    const stageTop = reduced ? 0 : Math.max(el.parentElement!.getBoundingClientRect().top, 0);
+    // (the section's top from the scroll trigger; read from the layout only on a first draw or a resize)
+    const stageTop = reduced ? 0 : Math.max(top.current ?? el.parentElement!.getBoundingClientRect().top, 0);
     el.style.transform = `translate3d(0, ${(-stageTop).toFixed(1)}px, 0)`;
 
     const q = reduced ? REDUCED_Q : raw.current;
@@ -207,8 +211,9 @@ export function OceanArrival() {
   }, [reduced]);
 
   const onProgress = useCallback(
-    (p: number) => {
+    (p: number, t: number) => {
       raw.current = p;
+      top.current = t;
       apply();
     },
     [apply],
@@ -217,7 +222,10 @@ export function OceanArrival() {
   useEffect(() => {
     setRedraw(apply);
     apply();
-    const observer = new ResizeObserver(apply);
+    const observer = new ResizeObserver(() => {
+      top.current = null;
+      apply();
+    });
     observer.observe(stage.current!);
     return () => {
       setRedraw(null);
@@ -228,7 +236,8 @@ export function OceanArrival() {
   // The original (6688 px) only for the desktop close, fetched as the scene comes near (the phone's close is the
   // 1920 one).
   useEffect(() => {
-    if (!window.matchMedia("(min-width: 768px)").matches) return;
+    // (nor on the 'low' tier: lib/quality)
+    if (!window.matchMedia("(min-width: 768px)").matches || tier === "low") return;
     const io = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
@@ -239,7 +248,7 @@ export function OceanArrival() {
     );
     io.observe(document.getElementById("chegada")!);
     return () => io.disconnect();
-  }, []);
+  }, [tier]);
 
   return (
     <Scene

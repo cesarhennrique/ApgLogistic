@@ -82,11 +82,13 @@ export function Load() {
   const locks = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const raw = useRef(0);
+  const sectionTop = useRef<number | null>(null);
 
   const apply = useCallback(() => {
     const el = stage.current!;
     // Sliding in over scene 2: see-through and empty, held still on screen (scene 2's own close shows under it).
-    const stageTop = reduced ? 0 : Math.max(el.parentElement!.getBoundingClientRect().top, 0);
+    // (the section's top from the scroll trigger; read from the layout only on a first draw or a resize)
+    const stageTop = reduced ? 0 : Math.max(sectionTop.current ?? el.parentElement!.getBoundingClientRect().top, 0);
     const sliding = stageTop > 0;
     el.style.transform = sliding ? `translate(0, ${-stageTop}px)` : "";
     el.style.background = sliding ? "" : BACKGROUND;
@@ -150,8 +152,9 @@ export function Load() {
   }, [reduced]);
 
   const onProgress = useCallback(
-    (p: number) => {
+    (p: number, t: number) => {
       raw.current = p;
+      sectionTop.current = t;
       apply();
     },
     [apply],
@@ -159,7 +162,10 @@ export function Load() {
 
   useEffect(() => {
     apply();
-    const observer = new ResizeObserver(apply);
+    const observer = new ResizeObserver(() => {
+      sectionTop.current = null;
+      apply();
+    });
     observer.observe(stage.current!);
     return () => observer.disconnect();
   }, [apply]);

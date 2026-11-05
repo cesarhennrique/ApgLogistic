@@ -1,5 +1,5 @@
 import { site } from "@/content/site";
-import { HERO_SCALE, toHero } from "./heroMapLayout";
+import { HERO_SCALE, toHero } from "./mapUnits";
 
 // Scene 5, the distribution, on the hero's map (heroMapLayout's units: Suape, the CONE terminal's point, at the
 // origin, north toward -Z): from its hubs, Suape and Salvador, 24 deliveries, three per coverage route in site.ts
