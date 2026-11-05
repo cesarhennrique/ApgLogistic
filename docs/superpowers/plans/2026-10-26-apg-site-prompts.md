@@ -2108,7 +2108,8 @@ find-animation-opportunities e break-ui, nesta ordem.
 1. Revise todo o motion do site contra o spec (seção 5 "Movimento"):
    durações, easings e consistência. Corrija o que destoar. Liste no
    commit o que mudou.
-2. Rode break-ui em: cards de serviço, Stats, FAQ, formulários e footer.
+2. Rode break-ui em: painéis de Serviços, Por que a APG, CTA do
+   container, FAQ, formulários e footer.
    Corrija tudo que quebrar (textos longos, 320px, zoom 200%).
 3. Acessibilidade:
    - instale @axe-core/playwright e crie e2e/a11y.spec.ts rodando axe
