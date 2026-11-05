@@ -251,7 +251,7 @@ export function CraneLift() {
         <div data-set="" className="absolute inset-x-0 top-1/2 -translate-y-1/2">
           <div
             ref={word}
-            className="font-condensed text-[34vw] leading-none font-bold tracking-[-0.02em] whitespace-nowrap text-[#EDEBE6] uppercase md:text-[26vw]"
+            data-decor="" className="font-condensed text-[34vw] leading-none font-bold tracking-[-0.02em] whitespace-nowrap text-[#EDEBE6] uppercase md:text-[26vw]"
           >
             {copyText.word}
           </div>

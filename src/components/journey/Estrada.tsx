@@ -544,7 +544,7 @@ export function Estrada() {
         <div
           ref={wordEl}
           aria-hidden="true"
-          className="font-condensed absolute top-0 left-0 text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase opacity-0 md:text-[22vw]"
+          data-decor="" className="font-condensed absolute top-0 left-0 text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase opacity-0 md:text-[22vw]"
         >
           {roadText.word}
         </div>
@@ -564,7 +564,7 @@ export function Estrada() {
               <div key={ch.title} data-pin="" className="group absolute top-0 left-0">
                 <span className="absolute -top-2 -left-2 size-4 rounded-full bg-red-500 opacity-0 group-data-lit:animate-[pin-pulse_1.4s_var(--ease-out)_3]" />
                 <span className="absolute -top-2 -left-2 size-4 rounded-full border-2 border-navy-900 bg-[#fefefe] transition-colors duration-200 group-data-lit:border-red-500 group-data-lit:bg-red-500" />
-                <span className="absolute top-0 left-3.5 -translate-y-1/2 bg-navy-900 px-1.5 py-0.5 font-mono text-[11px] leading-none whitespace-nowrap text-sand-50 transition-colors duration-200 group-data-lit:bg-red-500">
+                <span className="absolute top-0 left-3.5 -translate-y-1/2 bg-navy-900 px-1.5 py-0.5 font-mono text-[11px] leading-none whitespace-nowrap text-sand-50 transition-colors duration-200 group-data-lit:bg-red-500 group-data-lit:text-white">
                   {ch.mark}
                 </span>
               </div>
@@ -689,7 +689,7 @@ export function Estrada() {
           className="font-condensed absolute top-[30%] left-[4vw] -translate-y-1/2 border border-navy-900/15 bg-sand-50 px-4 py-3 text-[clamp(2.6rem,5vw,5rem)] leading-[0.9] font-bold text-navy-900 uppercase opacity-0 max-md:hidden"
         >
           {trackText.title.map((line, i) => (
-            <span key={line} className={`block ${i === 0 ? "text-steel-400" : ""}`}>
+            <span key={line} className={`block ${i === 0 ? "text-navy-900/60" : ""}`}>
               {line}
             </span>
           ))}

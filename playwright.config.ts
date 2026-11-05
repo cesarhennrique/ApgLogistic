@@ -15,18 +15,24 @@ export default defineConfig({
       testIgnore: /\.timing\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
+    // Safari on a desktop (spec §7): the same suite in WebKit at the desktop size.
+    {
+      name: "webkit",
+      testIgnore: /\.timing\.spec\.ts/,
+      use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } },
+    },
     { name: "mobile", testIgnore: /\.timing\.spec\.ts/, use: { ...devices["iPhone 13"] } },
     // Timing-sensitive tests, once the suite above is done, so no other page loads the CPU meanwhile.
     {
       name: "timing-desktop",
       testMatch: /\.timing\.spec\.ts/,
-      dependencies: ["desktop", "mobile"],
+      dependencies: ["desktop", "webkit", "mobile"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
     {
       name: "timing-mobile",
       testMatch: /\.timing\.spec\.ts/,
-      dependencies: ["desktop", "mobile"],
+      dependencies: ["desktop", "webkit", "mobile"],
       use: { ...devices["iPhone 13"] },
     },
   ],

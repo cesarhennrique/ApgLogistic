@@ -12,7 +12,8 @@ import { MAP_IN, PE_BA_BOUNDS, PULL_BACK, SALVADOR_AT, sampleDistributionCamera,
 import { Scene, segment } from "./Scene";
 import { StaticMap } from "./StaticMap";
 
-const DistributionCanvas = dynamic(() => import("@/three/DistributionCanvas"), { ssr: false });
+const loadCanvas = () => import("@/three/DistributionCanvas");
+const DistributionCanvas = dynamic(loadCanvas, { ssr: false });
 
 const scene = site.journey.find((s) => s.id === "distribuicao")!;
 const { distribution: copyText, dock, mapLabels } = site.journeyScene;
@@ -51,6 +52,9 @@ export function Distribution() {
   // The canvas mounts once the scene is a screen away (and stays); it renders only while the scene is on screen.
   const [near, setNear] = useState(false);
   const [onScreen, setOnScreen] = useState(false);
+  // the canvas's first frame is in: until then (a slow network) the still map stands in for it
+  const [ready, setReady] = useState(false);
+  const onReady = useCallback(() => setReady(true), []);
 
   useEffect(() => {
     const section = stage.current!.closest("section")!;
@@ -63,6 +67,20 @@ export function Distribution() {
       onIo.disconnect();
     };
   }, []);
+
+  // The canvas's chunk starts loading as the Estrada (the scene before) comes on screen: on a slow network it is
+  // there by the time the map is.
+  useEffect(() => {
+    const estrada = document.getElementById("estrada");
+    if (!estrada || tier === null || tier === "static") return;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      void loadCanvas();
+      io.disconnect();
+    });
+    io.observe(estrada);
+    return () => io.disconnect();
+  }, [tier]);
 
   const apply = useCallback(() => {
     const el = stage.current!;
@@ -130,10 +148,11 @@ export function Distribution() {
     >
       <div ref={stage} className="absolute inset-0 overflow-hidden">
         <div aria-hidden="true" className="absolute inset-0">
-          {near && tier !== null && tier !== "static" && <DistributionCanvas onScreen={onScreen || reduced} />}
-          {/* the 'static' tier (lib/quality): the map as a still picture, placed by the same camera */}
+          {near && tier !== null && tier !== "static" && <DistributionCanvas onScreen={onScreen || reduced} onReady={onReady} />}
+          {/* the 'static' tier (lib/quality), or the canvas still loading: the map as a still picture, placed by the
+              same camera */}
           <div ref={still} className="absolute top-0 left-0 origin-top-left">
-            {tier === "static" && <StaticMap variant="distribution" />}
+            {tier !== null && (tier === "static" || !ready) && <StaticMap variant="distribution" />}
           </div>
         </div>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">

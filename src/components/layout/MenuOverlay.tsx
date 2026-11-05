@@ -36,7 +36,7 @@ function MenuLink({
           className={`group/link inline-flex items-center gap-[0.25em] uppercase focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sand-50 ${
             size === "lg"
               ? "font-condensed py-1 text-5xl leading-none font-bold md:text-8xl"
-              : "py-2 text-lg font-semibold tracking-wide text-sand-50/80 hover:text-sand-50 md:text-xl"
+              : "py-2 text-lg font-semibold tracking-wide text-sand-50/80 transition-colors duration-150 ease-out hover:text-sand-50 md:text-xl"
           }`}
         >
           {link.label}
@@ -158,7 +158,7 @@ export function MenuOverlay({ id, open, onClose }: Props) {
 
       <div className="site-container flex flex-wrap gap-x-8 gap-y-2 pb-8 text-sm text-steel-400">
         {site.phones.map((p) => (
-          <a key={p.href} href={p.href} className="hover:text-sand-50 focus-visible:outline-2 focus-visible:outline-sand-50">
+          <a key={p.href} href={p.href} className="transition-colors duration-150 ease-out hover:text-sand-50 focus-visible:outline-2 focus-visible:outline-sand-50">
             {p.display}
           </a>
         ))}

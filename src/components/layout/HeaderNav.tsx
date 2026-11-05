@@ -70,7 +70,7 @@ export function HeaderNav() {
                     <TransitionLink
                       href={child.href}
                       aria-current={child.href === pathname ? "page" : undefined}
-                      className="block px-3 py-2.5 text-sm text-sand-50/85 hover:text-sand-50 focus-visible:outline-2 focus-visible:outline-(--color-sand-50)"
+                      className="block px-3 py-2.5 text-sm text-sand-50/85 transition-colors duration-150 ease-out hover:text-sand-50 focus-visible:outline-2 focus-visible:outline-(--color-sand-50)"
                     >
                       {child.label}
                     </TransitionLink>

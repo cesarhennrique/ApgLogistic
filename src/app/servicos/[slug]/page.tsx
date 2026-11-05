@@ -28,7 +28,7 @@ export default async function Page({ params }: PageProps<"/servicos/[slug]">) {
   const service = await findService(params);
   if (!service) notFound();
   return (
-    <main className="flex-1">
+    <main id="conteudo" tabIndex={-1} className="flex-1 outline-none">
       <ServiceHero service={service} />
       <section className="bg-sand-50 py-24 text-navy-900 md:py-32">
         <div className="site-container grid gap-16 md:grid-cols-2">

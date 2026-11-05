@@ -8,7 +8,7 @@ const links = [
 ];
 
 const linkClass =
-  "hover:text-sand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sand-50";
+  "transition-colors duration-150 ease-out hover:text-sand-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sand-50";
 
 function AddressBlock({ address }: { address: Address }) {
   return (

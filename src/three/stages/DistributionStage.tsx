@@ -86,8 +86,9 @@ const ringMaterials = ROUTES.map(() => new MeshBasicMaterial({ color: RED, trans
 
 // Scene 5: the hero's map from straight above, the CONE terminal at its origin; the lines out to the deliveries.
 // Everything follows distributionProgress (no clock): the canvas renders on demand.
-// pulse: each destination's ring going out as its line lands (off on the 'low' tier).
-export function DistributionStage({ pulse = true }: { pulse?: boolean }) {
+// pulse: each destination's ring going out as its line lands (off on the 'low' tier). onReady: once the map's
+// outline has loaded.
+export function DistributionStage({ pulse = true, onReady }: { pulse?: boolean; onReady?: () => void }) {
   const lines = useRef<(ComponentRef<typeof Line> | null)[]>([]);
   const dots = useRef<(Mesh | null)[]>([]);
   const rings = useRef<(Mesh | null)[]>([]);
@@ -138,6 +139,7 @@ export function DistributionStage({ pulse = true }: { pulse?: boolean }) {
     <group>
       <Suspense fallback={null}>
         <Northeast />
+        {onReady && <Ready onReady={onReady} />}
       </Suspense>
       {ROUTES.map((route, i) => (
         <group key={i}>
@@ -177,4 +179,10 @@ export function DistributionStage({ pulse = true }: { pulse?: boolean }) {
       ))}
     </group>
   );
+}
+
+// Mounted next to what a Suspense waits for: its effect runs once that has loaded.
+function Ready({ onReady }: { onReady: () => void }) {
+  useEffect(onReady, [onReady]);
+  return null;
 }

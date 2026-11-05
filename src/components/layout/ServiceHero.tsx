@@ -127,7 +127,7 @@ export function ServiceHero({ service }: { service: Service }) {
           object (phones: behind the object). */}
       <div aria-hidden="true" className="absolute inset-x-0 top-[58%] -z-10 md:top-auto md:bottom-[12svh]">
         <Parallax axis="x" distance={-160}>
-          <p className="font-condensed pl-[4vw] text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase md:text-[22vw]">
+          <p data-decor="" className="font-condensed pl-[4vw] text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase md:text-[22vw]">
             {service.word}
           </p>
         </Parallax>

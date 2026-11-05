@@ -390,6 +390,7 @@ export const site = {
   legal: { privacy: { href: "/privacidade", label: "Política de Privacidade" } },
 
   ui: {
+    skipToContent: "Pular para o conteúdo",
     openMenu: "Menu",
     closeMenu: "Fechar",
     menuLabel: "Menu principal",

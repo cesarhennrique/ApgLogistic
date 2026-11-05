@@ -148,7 +148,7 @@ export function DifferentialsGrid({ pe }: { pe: PeMap }) {
   }, []);
 
   return (
-    <ul ref={grid} className="mt-14 grid border-t border-l border-sand-50/15 md:mt-20 md:grid-cols-2">
+    <ul ref={grid} className="mt-14 grid grid-cols-[minmax(0,1fr)] border-t border-l border-sand-50/15 md:mt-20 md:grid-cols-2">
       {site.differentials.map((d) => (
         <li key={d.title} className="group relative flex flex-col gap-8 border-r border-b border-sand-50/15 p-6 md:min-h-[24rem] md:p-10">
           {/* technical corner ticks */}
@@ -159,11 +159,11 @@ export function DifferentialsGrid({ pe }: { pe: PeMap }) {
             {d.viz === "yard" && <Yard />}
             {d.viz === "tracking" && <Tracking pe={pe} live={!reduced && tier !== "low"} />}
             {d.viz === "clock" && (
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 min-[400px]:gap-6">
                 <Clock hands={hands} />
                 <p className="font-mono text-xs tracking-[0.12em] text-sand-50/75 uppercase">
                   {site.home.differentials.clock}
-                  <span ref={time} className="font-mono-tabular mt-1 block text-2xl text-sand-50">
+                  <span ref={time} className="font-mono-tabular mt-1 block text-xl text-sand-50 min-[400px]:text-2xl">
                     --:--:--
                   </span>
                 </p>
@@ -171,7 +171,7 @@ export function DifferentialsGrid({ pe }: { pe: PeMap }) {
             )}
           </div>
           <div className="mt-auto">
-            <p className="font-condensed text-6xl leading-none font-bold md:text-7xl">
+            <p className="font-condensed text-5xl leading-none font-bold min-[400px]:text-6xl md:text-7xl">
               <Counter value={d.value} suffix={d.unit} className="font-condensed" />
             </p>
             {"second" in d && <p className="font-mono-tabular mt-2 text-sm text-sand-50/75">{d.second}</p>}

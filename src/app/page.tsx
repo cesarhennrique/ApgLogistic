@@ -7,7 +7,7 @@ import { ServicesTrack } from "@/components/home/ServicesTrack";
 // The order of spec §4 ("Ordem da Home"), as in content/homeSections.ts; Clients stays hidden until there are logos.
 export default function Home() {
   return (
-    <main className="flex-1">
+    <main id="conteudo" tabIndex={-1} className="flex-1 outline-none">
       <Journey />
       <ServicesTrack />
       <Differentials />

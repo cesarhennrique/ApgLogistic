@@ -192,6 +192,12 @@ body {
 
 /* The hero photo's entrance starts zoomed in (the intro timeline zooms it out); not with reduced motion, nor when
    no intro runs (no intro-full / intro-short class). */
+@keyframes photo-settle {
+  from {
+    transform: scale(1.08);
+  }
+}
+
 .intro-full [data-intro-photo],
 .intro-short [data-intro-photo] {
   transform: scale(1.08);

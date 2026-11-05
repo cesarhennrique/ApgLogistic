@@ -9,7 +9,7 @@ export const metadata = { title: page.label };
 
 export default function Page() {
   return (
-    <main className="flex-1">
+    <main id="conteudo" tabIndex={-1} className="flex-1 outline-none">
       <PageHero title={about.title} text={about.text}>
         <CoverPhoto name="hero-porto" phone="hero-porto-mobile" alt={about.photoAlt} />
       </PageHero>

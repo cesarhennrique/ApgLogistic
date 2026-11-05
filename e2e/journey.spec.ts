@@ -492,7 +492,8 @@ test("scene 4's camera rises without a jump in the truck's size or place", async
   for (let i = 0; i <= 40; i++) {
     await scrollToEstrada(page, b0 + ((b1 - b0) * i) / 40);
     await page.waitForTimeout(250);
-    const { data, info } = await sharp(await page.screenshot()).raw().toBuffer({ resolveWithObject: true });
+    // (in CSS px: Desktop Safari renders at 2×)
+    const { data, info } = await sharp(await page.screenshot({ scale: "css" })).raw().toBuffer({ resolveWithObject: true });
     let [x0, x1, y0, y1] = [Infinity, -1, Infinity, -1];
     for (let y = 0; y < info.height; y++) {
       for (let x = 0; x < info.width; x++) {

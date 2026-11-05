@@ -35,7 +35,7 @@ export function Differentials() {
     <section data-header-theme="dark" className="relative isolate overflow-hidden bg-navy-900 py-24 text-sand-50 md:py-32">
       <div aria-hidden="true" className="absolute inset-x-0 top-[18%] -z-10">
         <Parallax axis="x" distance={-220}>
-          <p className="font-condensed pl-[4vw] text-[28vw] leading-none font-bold whitespace-nowrap text-navy-800 uppercase md:text-[20vw]">
+          <p data-decor="" className="font-condensed pl-[4vw] text-[28vw] leading-none font-bold whitespace-nowrap text-navy-800 uppercase md:text-[20vw]">
             {copy.word}
           </p>
         </Parallax>

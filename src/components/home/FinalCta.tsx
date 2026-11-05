@@ -97,7 +97,10 @@ export function FinalCta() {
     const el = box.current!;
     const [left, right] = [...el.querySelectorAll<HTMLElement>("[data-door]")];
     const contacts = [...el.querySelectorAll<HTMLElement>("[data-contact]")];
-    const apply = (p: number) => {
+    // A keyboard's focus inside opens it all (the contacts stay in the tab order, see-through until they are out).
+    let held = false;
+    const apply = (scrolled: number) => {
+      const p = held ? 1 : scrolled;
       const swing = OPEN * easeInOut(seg(p, DOORS));
       left.style.transform = `rotateY(${-swing}deg)`;
       right.style.transform = `rotateY(${swing}deg)`;
@@ -105,14 +108,25 @@ export function FinalCta() {
         const k = easeOut(seg(p, CONTACT(i)));
         c.style.opacity = String(k);
         c.style.transform = `translate3d(0, ${((1 - k) * 18).toFixed(1)}px, 0)`;
-        // out of reach (and of the tab order) until it is out
-        c.style.visibility = k > 0.05 ? "" : "hidden";
       });
     };
+    let last = 0;
+    const track = (p: number) => apply((last = p));
+    const onFocusIn = () => {
+      held = true;
+      apply(last);
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      if (el.contains(e.relatedTarget as Node | null)) return;
+      held = false;
+      apply(last);
+    };
+    el.addEventListener("focusin", onFocusIn);
+    el.addEventListener("focusout", onFocusOut);
     const reset = () => {
       for (const d of [left, right]) d.style.removeProperty("transform");
       for (const c of contacts)
-        for (const p of ["opacity", "transform", "visibility"])
+        for (const p of ["opacity", "transform"])
           c.style.removeProperty(p);
     };
     const mm = gsap.matchMedia();
@@ -125,9 +139,9 @@ export function FinalCta() {
           start: "top 65%",
           end: "center 35%",
           scrub: true,
-          onUpdate: (s) => apply(s.progress),
+          onUpdate: (s) => track(s.progress),
         });
-        apply(t.progress);
+        track(t.progress);
         return reset;
       },
     );
@@ -136,12 +150,12 @@ export function FinalCta() {
       "(max-width: 767px) and (prefers-reduced-motion: no-preference)",
       () => {
         const state = { p: 0 };
-        apply(0);
+        track(0);
         const tween = gsap.to(state, {
           p: 1,
           duration: 1.8,
           ease: "none",
-          onUpdate: () => apply(state.p),
+          onUpdate: () => track(state.p),
           scrollTrigger: { trigger: el, start: "top 75%", once: true },
         });
         return () => {
@@ -151,7 +165,11 @@ export function FinalCta() {
         };
       },
     );
-    return () => mm.revert();
+    return () => {
+      mm.revert();
+      el.removeEventListener("focusin", onFocusIn);
+      el.removeEventListener("focusout", onFocusOut);
+    };
   }, []);
 
   return (

@@ -44,7 +44,8 @@ export function CoverPhoto({ name, phone, alt }: { name: SceneImageName; phone?:
         height={height}
         alt={alt}
         fetchPriority="high"
-        className="absolute inset-0 h-full w-full object-cover"
+        // the entrance zoom (spec §5, images: 1.08 to 1), as the home's photo; never hidden: it is the LCP
+        className="absolute inset-0 h-full w-full object-cover motion-safe:animate-[photo-settle_2.4s_var(--ease-out)_both]"
       />
     </picture>
   );

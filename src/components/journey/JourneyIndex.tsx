@@ -72,7 +72,7 @@ export function JourneyIndex() {
     <nav
       ref={nav}
       aria-label={site.ui.journeyNav}
-      className="pointer-events-none fixed top-1/2 right-3 z-40 -translate-y-1/2 opacity-0 transition-opacity duration-200 ease-out data-on:pointer-events-auto data-on:opacity-100 max-md:hidden"
+      className="pointer-events-none fixed top-1/2 right-3 z-40 -translate-y-1/2 opacity-0 transition-opacity duration-200 ease-out focus-within:pointer-events-auto focus-within:opacity-100 data-on:pointer-events-auto data-on:opacity-100 max-md:hidden"
     >
       <ol className="flex flex-col items-end gap-1">
         {MARKS.map((m) => (

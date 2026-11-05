@@ -21,7 +21,7 @@ export function WhatsAppButton({ variant = "floating" }: { variant?: keyof typeo
       rel="noopener noreferrer"
       aria-label={variant === "floating" ? site.ui.whatsappLabel : undefined}
       onClick={() => track("whatsapp_clique")}
-      className={`transition-transform duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-3 motion-reduce:transition-none ${styles[variant]}`}
+      className={`transition-[transform,border-color] duration-150 ease-out active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-3 motion-reduce:transition-none ${styles[variant]}`}
     >
       {/* WhatsApp glyph from simple-icons (CC0) */}
       <svg aria-hidden="true" viewBox="0 0 24 24" className={`fill-current ${variant === "floating" ? "size-7" : "size-5"}`}>

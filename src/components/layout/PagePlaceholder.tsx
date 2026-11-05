@@ -3,7 +3,7 @@ import { RevealText } from "@/components/motion/RevealText";
 // shortcut: provisional page body until each route gets its real content (Prompt 05).
 export function PagePlaceholder({ title }: { title: string }) {
   return (
-    <main className="site-container flex-1 pt-32 pb-24 md:pt-44">
+    <main id="conteudo" tabIndex={-1} className="site-container flex-1 outline-none pt-32 pb-24 md:pt-44">
       <RevealText as="h1" immediate className="font-condensed text-6xl leading-[0.9] font-bold uppercase md:text-9xl">
         {title}
       </RevealText>

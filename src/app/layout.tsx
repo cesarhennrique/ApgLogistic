@@ -56,6 +56,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: INTRO_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col">
+        {/* The first stop of the keyboard: past the header to the page's main (id="conteudo" on each page). */}
+        <a
+          href="#conteudo"
+          className="fixed top-3 left-3 z-[70] -translate-y-[200%] bg-sand-50 px-4 py-3 text-sm font-semibold text-navy-900 focus:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+        >
+          {site.ui.skipToContent}
+        </a>
         <SmoothScroll />
         <Header />
         {children}

@@ -112,7 +112,7 @@ export function ServicesTrack() {
                 <div aria-hidden="true" className="absolute inset-x-0 top-[58%] -z-10 md:top-1/2 md:-translate-y-1/2">
                   <p
                     data-word=""
-                    className="font-condensed pl-[4vw] text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase md:text-[22vw]"
+                    data-decor="" className="font-condensed pl-[4vw] text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase md:text-[22vw]"
                   >
                     {service.word}
                   </p>

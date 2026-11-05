@@ -106,8 +106,8 @@ export function Header() {
         ref={headerRef}
         data-intro="header"
         data-tone="light"
-        // hidden (data-hidden) unless something in it has focus
-        className="group/header fixed inset-x-0 top-0 z-50 transition-transform duration-200 ease-out data-hidden:not-focus-within:-translate-y-full data-[tone=dark]:[--focus-ring:var(--color-navy-900)]"
+        // hidden (data-hidden) unless something in it has focus: slid up, or faded out with reduced motion
+        className="group/header fixed inset-x-0 top-0 z-50 transition-[translate,opacity] duration-200 ease-out motion-safe:data-hidden:not-focus-within:-translate-y-full motion-reduce:data-hidden:not-focus-within:pointer-events-none motion-reduce:data-hidden:not-focus-within:opacity-0 data-[tone=dark]:[--focus-ring:var(--color-navy-900)]"
         data-solid={solid || undefined}
       >
         {/* the solid state fades in on its own layer, so only opacity animates */}
