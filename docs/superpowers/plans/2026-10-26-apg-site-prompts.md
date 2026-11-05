@@ -405,10 +405,24 @@ superpowers:test-driven-development e escreva os testes antes.
    Coloque o QuoteForm em /contato (com endereços e mapa embed do Google
    Maps via iframe com loading="lazy" e title) e o ResumeForm em
    /trabalhe-conosco.
+6b. Visual (revisão 2026-11-05: as páginas internas já existem com
+   PageHero e o padrão da jornada). /contato e /trabalhe-conosco usam o
+   PageHero (foto de fundo com degradê navy: hero-porto em /contato,
+   terminal-aereo em /trabalhe-conosco) e o formulário entra numa
+   "ficha técnica": fundo sand-50, grade técnica sutil, campos com
+   rótulo mono pequeno em caixa alta e linha de base navy (sem caixas
+   cinza genéricas), foco com sublinhado red-500 animado, código APGU
+   no topo da ficha. Ao enviar com sucesso, a ficha "carimba": um selo
+   em traço red-500 "RECEBIDO · APGU 1996-NN" entra com leve rotação.
+   O CTA "Solicitar cotação" do container da Home e do header leva a
+   /contato#cotacao. O mapa do Google Maps fica em tons de cinza
+   (filter: grayscale) ao lado dos endereços.
 7. e2e/forms.spec.ts: intercepte /api/* com page.route. Testar o erro de
    validação visível, o sucesso e a falha 502 mostrando o WhatsApp.
 
-Pronto quando: lint, typecheck, test e e2e passam.
+Pronto quando: lint, typecheck, test e e2e passam, e há screenshots
+desktop e mobile de /contato e /trabalhe-conosco (vazio, com erro e
+com sucesso) em e2e/__screenshots__/pages/.
 Commit: "feat: formulários de cotação e currículo"
 ````
 
