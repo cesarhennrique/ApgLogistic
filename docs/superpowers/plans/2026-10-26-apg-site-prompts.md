@@ -527,6 +527,99 @@ URL de preview está pronta para teste no iPhone.
 Commit: "perf: rolagem fluida no celular (cena 1, camadas, imagens e mapa SVG)"
 ````
 
+## Prompt M3 — Jornada no celular em vídeos curtos (nova estratégia)
+
+> Decisão do usuário em 2026-11-09: mesmo com o M2 (metas atingidas no Chromium), o iPhone de verdade continua travando. No celular a jornada deixa de ser animada quadro a quadro pela rolagem: rolagem nativa, cenas sem fixar, cada cena um clipe MP4 curto gravado da própria animação, tocando sozinho ao entrar na tela, com os textos em HTML por cima. O desktop não muda.
+
+````text
+Leia o CLAUDE.md, o spec (seção 3), HomeJourney/Scene.tsx,
+OceanArrival.tsx, ArrivalFrame.tsx, CraneLift.tsx, Load.tsx,
+Estrada.tsx, estradaScript.ts, Distribution.tsx, StaticMap.tsx,
+SmoothScroll.tsx, useNear.ts e src/lib/quality.ts. Use as skills
+animation-performance, mobile-native, animate e
+superpowers:writing-plans (faça um plano curto antes do código).
+
+Base: parta do branch fix/mobile-fluidez (já tem os mapas em SVG no
+celular e o useNear com histerese) e crie o branch fix/mobile-videos.
+
+Contexto: no iPhone de verdade a Home continua travando, mesmo com as
+metas do M2 atingidas no Chromium. Mudança de estratégia, só no
+celular (largura < 768 px ou pointer: coarse); o desktop fica
+exatamente como está:
+- rolagem nativa: nada fixado (pin), sem scrub, sem Lenis, sem
+  ScrollTrigger na jornada;
+- cada cena da jornada vira um clipe de vídeo curto, decodificado
+  pelo hardware do iPhone, que toca sozinho ao entrar na tela;
+- todos os textos (títulos, HUD, códigos APGU, contadores, capítulos
+  da estrada) ficam em HTML por cima ou abaixo do vídeo, com animação
+  de entrada simples (transform/opacity, disparada uma vez).
+
+1. Gravação dos clipes (script, não manual): scripts/record-mobile-
+   clips.mjs com Playwright (Chromium com GPU, janela visível),
+   viewport 390×844, dpr 2. Para cada cena, esconda os textos (um
+   atributo data-recording no <html> que zera os elementos de texto)
+   e percorra o progresso de 0 a 1 quadro a quadro: para cada quadro,
+   posicione a rolagem, espere 2 requestAnimationFrame e tire o
+   screenshot. Não grave em tempo real: o clipe precisa sair liso
+   mesmo que a máquina engasgue. 30 fps.
+   Clipes (ajuste se a cena pedir, máximo ~6 s cada):
+   - navio: chegada e zoom do largo ao close (5 s);
+   - portêiner: container descendo até a carreta, câmera do largo ao
+     close (5 s);
+   - carga: carreta recebendo o container e saindo (4 s);
+   - estrada A: carreta de lado passando para a vista de cima (4 s);
+   - estrada B: carreta seguindo a pista com curvas até a doca do
+     CONE (6 s). Os capítulos da história ficam em HTML abaixo do
+     vídeo, como cartões em sequência, não sobre ele.
+   A Distribuição continua com o mapa SVG do M2 (sem vídeo).
+2. Codificação: ffmpeg-static como devDependency (o ffmpeg do
+   Playwright não tem x264). H.264 High, yuv420p, 720 px de largura
+   (altura proporcional, par), CRF 26–28, -movflags +faststart, sem
+   áudio. Meta: ≤ 1,2 MB por clipe, ≤ 6 MB no total. Gere também o
+   pôster de cada clipe (primeiro quadro) e o último quadro, em AVIF
+   e WebP, ≤ 60 KB cada. Saída em public/video/jornada/. Commite os
+   arquivos gerados e o script (npm run clips).
+3. Componente MobileJourney (substitui a jornada só no celular):
+   - cada cena: <video muted playsinline preload="none"
+     poster=...> com width/height fixos (sem CLS), sem o atributo
+     autoplay;
+   - IntersectionObserver: a 1 tela de distância, preload="auto";
+     com 60% visível, play(); fora da tela, pause();
+   - toca uma vez e para no último quadro; ao voltar a entrar vindo
+     de cima, recomeça do início;
+   - só 2 vídeos com src ao mesmo tempo (o iOS limita decodificadores
+     de vídeo); os demais ficam só com o pôster (removeAttribute
+     ("src") + load() para liberar);
+   - se play() for recusado (Modo Pouca Energia do iOS) ou com
+     prefers-reduced-motion: mostre o último quadro como imagem, sem
+     erro no console;
+   - decisão desktop × celular feita uma vez no cliente, antes de
+     montar a jornada, carregando só o código da versão escolhida
+     (import dinâmico): o celular não baixa GSAP da jornada, R3F nem
+     as imagens grandes das cenas. Sem flash da versão errada: a
+     seção reserva a altura e mostra a cor de fundo até decidir.
+4. Resto da Home no celular: confira Serviços, Por que a APG, CTA e
+   hero. Qualquer coisa fixada ou com scrub no celular vira animação
+   de entrada disparada uma vez (transform/opacity). Lenis desligado
+   no toque. O mapa do hero continua o SVG animado do M2.
+5. Medição: memory.spec e smoothness.spec rodando no celular contra a
+   nova jornada; metas: p95 do tempo de quadro ≤ 20 ms com CPU 4×,
+   nenhuma long task > 50 ms na rolagem, ≤ 2 vídeos com src ao mesmo
+   tempo, nenhum elemento fixado (pin-spacer) na Home do celular,
+   ≤ 15 MP de imagens decodificadas. LCP do celular não pode piorar
+   (nenhum vídeo baixado acima da dobra).
+6. Screenshots 390×844 de cada cena (pôster, meio e fim do clipe) e
+   um vídeo da Home inteira no celular com rolagem por toque.
+7. Entrega: push do branch fix/mobile-videos (a Vercel gera o preview
+   sozinha) e me passe a URL. Não faça merge em main.
+
+Pronto quando: lint, typecheck, test e e2e passam, os clipes estão no
+orçamento do item 2, as metas do item 5 batem, o desktop está igual
+(screenshots desktop sem diferença) e a URL de preview está pronta
+para teste no iPhone.
+Commit: "perf: jornada no celular em vídeos curtos com rolagem nativa"
+````
+
 ## Prompt 06 — Formulários de cotação e currículo
 
 ````text
