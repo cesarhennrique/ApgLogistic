@@ -435,7 +435,8 @@ Problema: depois do M1 a Home não derruba mais a aba no iPhone, mas a
 rolagem engasga (vídeo do usuário): congela ~0,26 s na passagem cena 1
 → portêiner, congela de novo ao subir ao hero, e o mapa do hero fica
 vazio ~2 s ao voltar. Na cena 2 a carreta some por um instante
-enquanto o container desce. Os limites de memória do M1 continuam
+enquanto o container desce. Na cena 1, no celular, não há zoom: uma
+foto do navio aparece por cima da outra. Os limites de memória do M1 continuam
 valendo (≤ 25 MP decodificados, camadas ≤ 4096², 1 contexto WebGL).
 
 1. Medição antes de mexer. Chromium do Playwright com emulação de
@@ -460,6 +461,24 @@ valendo (≤ 25 MP decodificados, camadas ≤ 4096², 1 contexto WebGL).
      <img> em camada (will-change: transform) com a caixa do tamanho
      da variante reduzida (≤ 2× a tela) e escala residual ≤ 2, como o
      item 2 do M1 pedia.
+2b. Cena 1 no celular não dá zoom: no vídeo do usuário o navio fica
+   quase do mesmo tamanho por ~2 s de rolagem, depois aparece uma
+   segunda foto do navio em outra escala e posição por cima da
+   primeira (duas camadas sobrepostas) e só então pula para o close.
+   Ache a causa no celular (390×844, tier low), por exemplo:
+   - a cópia do hero e o canvas da cena 1 visíveis ao mesmo tempo, cada
+     um com a sua câmera;
+   - o recorte navio-mar-close desenhado com coordenadas de outra
+     variante (CLOSE em px da foto original aplicado à variante
+     reduzida, ou ao contrário);
+   - a câmera do celular calculada com a tela de outro tamanho (svh/lvh,
+     barra de endereço) ou travada no enquadramento largo.
+   Corrija para que, no celular, seja um zoom contínuo de uma única
+   imagem do largo ao close, com o close entrando em fade alinhado
+   pixel a pixel sobre a base (diferença ≤ 1 px). Teste e2e: em 10
+   pontos da cena 1, um só elemento da foto visível e escala da
+   câmera crescendo sem saltos; screenshots 390×844 em 0, 0,25, 0,5,
+   0,75 e 1 do progresso.
 3. Grua, carga, pista e palavra gigante: sem camada elas repintam a
    cada quadro. Dê camada (will-change: transform) a cada peça que
    anda, mas com a caixa no tamanho em que aparece na tela (srcset
