@@ -420,6 +420,94 @@ está pronta para teste no iPhone.
 Commit: "fix: memória no iPhone (cena 1, WebGL e imagens fora da tela)"
 ````
 
+## Prompt M2 — Engasgos no celular depois do M1 (fluidez)
+
+> Vídeo do usuário em 2026-11-09 (iPhone 14 Pro, apg-logistic.vercel.app já com o M1): a aba não cai mais no trecho gravado, mas a rolagem engasga. Medido no vídeo: congelamentos de 0,26 s na passagem cena 1 → portêiner e de 0,13 s a 0,28 s ao subir de volta ao hero, onde o mapa fica vazio por ~2 s antes de aparecer; na cena 2 a carreta some enquanto o container desce. O M1 trocou memória por trabalho por quadro: a foto da cena 1 é redesenhada num canvas 2D a cada quadro, e grua, carga e pista viraram transforms sem camada própria (repintura a cada quadro).
+
+````text
+Leia o CLAUDE.md, ArrivalFrame.tsx, OceanArrival.tsx, CraneLift.tsx,
+Load.tsx, Estrada.tsx, SceneImage.tsx, useNear.ts, HeroStage.tsx,
+HeroCanvas.tsx, StaticMap.tsx, Distribution.tsx, SmoothScroll.tsx e
+src/lib/quality.ts. Use as skills animation-performance, mobile-native
+e superpowers:systematic-debugging.
+
+Problema: depois do M1 a Home não derruba mais a aba no iPhone, mas a
+rolagem engasga (vídeo do usuário): congela ~0,26 s na passagem cena 1
+→ portêiner, congela de novo ao subir ao hero, e o mapa do hero fica
+vazio ~2 s ao voltar. Na cena 2 a carreta some por um instante
+enquanto o container desce. Os limites de memória do M1 continuam
+valendo (≤ 25 MP decodificados, camadas ≤ 4096², 1 contexto WebGL).
+
+1. Medição antes de mexer. Chromium do Playwright com emulação de
+   iPhone 14 (390×844, dpr 3, touch), CPU 4× mais lenta (CDP
+   Emulation.setCPUThrottlingRate), rolagem por toque
+   (Input.dispatchTouchEvent) da Home inteira, ida e volta, e um trace
+   de Performance (CDP Tracing). Por cena, informe: fps médio e p95
+   do tempo de quadro, long tasks > 50 ms (com a função culpada),
+   tempo de Paint/Rasterize e de Image Decode. Repita no WebKit
+   390×844 dpr 3 (sem throttling) e informe o tempo de quadro.
+   Tabela antes/depois.
+2. Cena 1 (ArrivalFrame.paint): hoje desenha o <img> inteiro com
+   imageSmoothingQuality "high" a cada quadro. Faça:
+   - createImageBitmap uma vez por variante, já reduzida
+     (resizeWidth) ao tamanho que a câmera usa naquela faixa de zoom
+     (largo, meio, close), no máximo 2× a tela; troque de bitmap pela
+     faixa, não por quadro, e libere com bitmap.close();
+   - imageSmoothingQuality "medium" (ou "low" no tier low);
+   - redesenhe só quando câmera ou opacidade mudarem (rAF com flag
+     sujo), nunca dentro do onUpdate do ScrollTrigger em sequência;
+   - se ainda passar de 8 ms por quadro no trace com CPU 4×, volte a
+     <img> em camada (will-change: transform) com a caixa do tamanho
+     da variante reduzida (≤ 2× a tela) e escala residual ≤ 2, como o
+     item 2 do M1 pedia.
+3. Grua, carga, pista e palavra gigante: sem camada elas repintam a
+   cada quadro. Dê camada (will-change: transform) a cada peça que
+   anda, mas com a caixa no tamanho em que aparece na tela (srcset
+   que entrega no máximo ~2× o tamanho exibido; nada de imagem de
+   13800 px escalada para baixo). Regra: peça animada = camada própria
+   com área ≤ 2× a tela em pixels de dispositivo. Confirme no
+   LayerTree que nenhuma passa de 4096² e que não há repintura por
+   quadro (Paint flashing / trace).
+4. useNear com histerese e decodificação antes de mostrar: carrega a
+   2 telas, só descarrega a 4 telas (dois IntersectionObserver ou
+   rootMargin diferentes para entrar e sair), e só troca para a
+   imagem real depois de img.decode() resolver (o placeholder de cor
+   fica até lá). Nenhuma troca de src pode acontecer com a cena
+   fixada na tela. Isso deve acabar com o congelamento na passagem
+   cena 1 → portêiner (confirme no trace qual decode ou montagem
+   causava o 0,26 s).
+5. Hero no celular: no tier low o mapa do hero e o da Distribuição
+   são SVG animado (StaticMap + rotas com stroke-dashoffset, pulsos
+   e navio com transform/opacity), sem WebGL. Assim não há contexto
+   a recriar, nem shader a compilar, nem mapa vazio ao voltar. No
+   tier high (desktop) fica tudo como está, mas a remontagem do
+   HeroCanvas ao subir começa 1 tela antes do hero, com o StaticMap
+   por baixo até o primeiro quadro do WebGL (sem tela vazia).
+6. Trabalho por quadro: procure em todos os onUpdate/ticker leituras
+   de layout (getBoundingClientRect, offsetTop, scrollHeight) e
+   setState do React; meça uma vez (no refresh do ScrollTrigger) e
+   guarde. Estrada.tsx linha ~221 (cardEnds) e JourneyIndex.tsx linha
+   ~30 são candidatos. Lenis desligado no toque (confirme), e
+   ScrollTrigger.config({ ignoreMobileResize: true }).
+7. Cena 2: a carreta não pode sumir enquanto o container desce
+   (vídeo: aos 11,2 s só o spreader e o container aparecem). Ache a
+   causa (provavelmente useNear desmontando a carreta ou a ordem das
+   camadas) e corrija.
+8. Metas no Chromium iPhone 14 com CPU 4×: p95 do tempo de quadro
+   ≤ 33 ms em todas as cenas, nenhum quadro > 100 ms, nenhuma long
+   task > 50 ms durante a rolagem, mapa do hero visível ao voltar
+   sem quadro vazio. Transforme em teste e2e (e2e/smoothness.spec.ts)
+   ao lado do memory.spec.ts, que continua passando.
+9. Entrega: trabalhe no branch fix/mobile-fluidez e dê push nele (a
+   Vercel gera preview sozinha; o push em main vai direto para
+   produção). Me passe a URL de preview. Não faça merge em main.
+
+Pronto quando: lint, typecheck, test e e2e (memory e smoothness)
+passam, a tabela do item 1 mostra as metas do item 8 atingidas, e a
+URL de preview está pronta para teste no iPhone.
+Commit: "perf: rolagem fluida no celular (cena 1, camadas, imagens e mapa SVG)"
+````
+
 ## Prompt 06 — Formulários de cotação e currículo
 
 ````text
