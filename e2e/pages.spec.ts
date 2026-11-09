@@ -25,7 +25,8 @@ for (const { path, h1 } of PAGES) {
       await page.waitForTimeout(80);
     }
     await expect
-      .poll(() => page.locator("main img").evaluateAll((imgs) => imgs.every((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0)))
+      // (the journey's images hold a source only within two screens: those without one are far, by design)
+      .poll(() => page.locator("main img[src]").evaluateAll((imgs) => imgs.every((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0)))
       .toBe(true);
     // the header navy over a light hero (the services'), sand over a photo's
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));

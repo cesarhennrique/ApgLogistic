@@ -19,6 +19,7 @@ test("without WebGL: no canvas, the maps still", async ({ page }) => {
   });
   await page.waitForTimeout(1500);
   await expect(page.locator('#distribuicao [data-static-map="distribution"]')).toBeVisible();
-  await expect(page.locator("canvas")).toHaveCount(0);
+  // (no WebGL one: scene 1's photo is drawn on a 2D canvas, [data-photo])
+  await expect(page.locator("canvas:not([data-photo])")).toHaveCount(0);
   expect(errors).toEqual([]);
 });

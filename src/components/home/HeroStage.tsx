@@ -19,6 +19,9 @@ const HeroCanvas = dynamic(() => import("@/three/HeroCanvas"), { ssr: false });
 const COPY_OUT = [0, 0.25] as const;
 const PHOTO_OUT = [0.15, 0.55] as const;
 const OCEAN_IN = [0.78, 1] as const;
+// The hero's copy of scene 1's picture exists only for the hand-over (from a little before it shows): one copy of it
+// the rest of the time, scene 1's (a phone's memory).
+const OCEAN_MOUNT = 0.7;
 // Pointer parallax (fine pointers only): the photo and the map, the nearer moving more.
 const PARALLAX = { photo: 6, map: 14 };
 
@@ -33,6 +36,11 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
   const copy = useRef<HTMLDivElement>(null);
   const [canvas, setCanvas] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  // In the hand-over (the dive past OCEAN_MOUNT); covered (scene 1 pinned over the hero): the map's canvas and the
+  // hero's copy of scene 1 let go (one WebGL context at most on the page; the canvas comes back on the way up).
+  const [handOver, setHandOver] = useState(false);
+  const [covered, setCovered] = useState(false);
+  const handing = useRef(false);
   const reduced = useReducedMotion();
   // no canvas on the 'static' tier (no WebGL, reduced motion: lib/quality): the map as a still picture
   const tier = useQualityTier();
@@ -56,6 +64,8 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
       copy.current!.style.visibility = copyOut >= 1 ? "hidden" : "";
       photoLayer.current!.style.opacity = String(1 - segment(d, ...PHOTO_OUT));
       ocean.current!.style.opacity = String(segment(d, ...OCEAN_IN));
+      // (React state only as the threshold is crossed, never per frame)
+      if (d >= OCEAN_MOUNT !== handing.current) setHandOver((handing.current = d >= OCEAN_MOUNT));
     };
     const { frozen } = readDebugParams(window.location.search);
     if (frozen !== null) return apply(frozen);
@@ -70,6 +80,22 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
     apply(trigger.progress);
     return () => trigger.kill();
   }, [reduced]);
+
+  useEffect(() => {
+    const scene = document.getElementById("chegada");
+    if (!scene) return;
+    const trigger = ScrollTrigger.create({
+      trigger: scene,
+      start: "top top",
+      // (also at creation, when the page opens past it)
+      onEnter: () => {
+        setCovered(true);
+        setMapReady(false);
+      },
+      onLeaveBack: () => setCovered(false),
+    });
+    return () => trigger.kill();
+  }, []);
 
   // The parallax: the pointer's offset from the screen's centre, eased.
   useEffect(() => {
@@ -129,10 +155,10 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
               className="absolute top-[16%] right-[6%] h-[60%] w-auto max-md:top-[12%] max-md:right-[8%] max-md:h-[34%]"
             />
           )}
-          {canvas && tier !== null && tier !== "static" && <HeroCanvas onReady={() => setMapReady(true)} />}
+          {canvas && !covered && tier !== null && tier !== "static" && <HeroCanvas onReady={() => setMapReady(true)} />}
         </div>
         <div ref={ocean} className="absolute inset-0 overflow-hidden opacity-0">
-          {canvas && <ArrivalFrame alt="" />}
+          {canvas && handOver && !covered && <ArrivalFrame alt="" />}
         </div>
       </div>
       <div ref={copy} className="relative flex h-full flex-col">

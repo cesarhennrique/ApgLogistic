@@ -49,7 +49,8 @@ export function Distribution() {
   const still = useRef<HTMLDivElement>(null);
   const raw = useRef(0);
   const top = useRef<number | null>(null);
-  // The canvas mounts once the scene is a screen away (and stays); it renders only while the scene is on screen.
+  // The canvas mounts once the scene is a screen away and unmounts past that (its WebGL context let go: one at most
+  // on the page); it renders only while the scene is on screen.
   const [near, setNear] = useState(false);
   const [onScreen, setOnScreen] = useState(false);
   // the canvas's first frame is in: until then (a slow network) the still map stands in for it
@@ -58,7 +59,14 @@ export function Distribution() {
 
   useEffect(() => {
     const section = stage.current!.closest("section")!;
-    const nearIo = new IntersectionObserver(([e]) => e.isIntersecting && setNear(true), { rootMargin: "100% 0px" });
+    const nearIo = new IntersectionObserver(
+      ([e]) => {
+        setNear(e.isIntersecting);
+        // (back to the still map until a new canvas has its first frame)
+        if (!e.isIntersecting) setReady(false);
+      },
+      { rootMargin: "100% 0px" },
+    );
     const onIo = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting));
     nearIo.observe(section);
     onIo.observe(section);

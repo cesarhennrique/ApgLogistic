@@ -47,9 +47,11 @@ export function maxZoom(view: View) {
 // A photo point on screen: the same math as cameraTransform.
 export const toScreen = ({ x, y, scale }: Camera, p: { x: number; y: number }) => ({ x: x + scale * p.x, y: y + scale * p.y });
 
-// The camera as one transform on the photo's box (its origin at the top left).
+// The camera as one transform on a box of the picture's own pixel size (its origin at the top left). 2D, never a
+// layer of its own: such a box, scaled up for a close, would ask a phone's compositor for tiles far past the screen;
+// as it is, it paints into its sticky stage, the size of the screen.
 export const cameraTransform = ({ x, y, scale }: Camera) =>
-  `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${scale.toFixed(5)})`;
+  `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) scale(${scale.toFixed(5)})`;
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 

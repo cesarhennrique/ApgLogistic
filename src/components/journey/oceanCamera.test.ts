@@ -72,7 +72,7 @@ describe("oceanCamera", () => {
   it("maps a photo point to the screen as the photo's transform does, at three scales", () => {
     // The CSS transform (origin top left): translate, then scale.
     const viaTransform = (t: string, p: { x: number; y: number }) => {
-      const [, tx, ty, s] = t.match(/translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\) scale\(([-\d.]+)\)/)!.map(Number);
+      const [, tx, ty, s] = t.match(/translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([-\d.]+)\)/)!.map(Number);
       return { x: tx + s * p.x, y: ty + s * p.y };
     };
     const corner = { x: TARGET.x, y: TARGET.y };

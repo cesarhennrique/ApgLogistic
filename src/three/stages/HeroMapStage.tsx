@@ -139,9 +139,12 @@ const coreMaterial = new MeshBasicMaterial({ color: RED, transparent: true });
 const PARALLAX = MathUtils.degToRad(2);
 // The labels fade out as the dive begins.
 const DIVE_FADE = [0.05, 0.3] as const;
-// Suape's glow: in as the camera nears it, swelling to fill the screen (a 40 px disc, scaled).
+// Suape's glow: in as the camera nears it, swelling to fill the screen (a 40 px disc, scaled). Never past 4096
+// device px across (a phone's layer budget: 90× at 3× was 10920 px a side); by then it already covers the screen.
 const GLOW_IN = [0.55, 0.9] as const;
 const GLOW_SCALE = 90;
+const GLOW_PX = 40;
+const MAX_LAYER_PX = 4096;
 // The map itself fades before the camera gets close (its dots would fill the screen as huge squares), then the
 // routes and Suape, while the ocean of scene 1 fades in over the hero (Hero, from 0.7).
 const MAP_FADE = [0.4, 0.85] as const;
@@ -309,7 +312,7 @@ export function HeroMapStage({ reducedMotion }: { reducedMotion: boolean }) {
     if (glow.current) {
       const swell = MathUtils.smoothstep(p, ...GLOW_IN);
       glow.current.style.opacity = String(swell);
-      if (swell > 0) place(glow.current, ORIGIN, 0, `translate(-50%, -50%) scale(${(1 + GLOW_SCALE * swell * swell).toFixed(2)})`);
+      if (swell > 0) place(glow.current, ORIGIN, 0, `translate(-50%, -50%) scale(${Math.min(1 + GLOW_SCALE * swell * swell, MAX_LAYER_PX / (GLOW_PX * devicePixelRatio)).toFixed(2)})`);
     }
 
     // Pointer: parallax tilt and the Suape hover, both only in the hero.

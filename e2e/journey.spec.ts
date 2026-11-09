@@ -84,7 +84,8 @@ test("scene 1 renders the photo, without foam canvas or console errors", async (
   await scrollToArrival(page, 0.5);
   await expect(photo(page)).toBeVisible();
   await imagesIn(page);
-  await expect(page.locator("#chegada canvas")).toHaveCount(0);
+  // (no WebGL there: the photo's own canvas is a 2D one, drawn by the camera)
+  await expect(page.locator("#chegada canvas:not([data-photo])")).toHaveCount(0);
   await page.waitForTimeout(500);
   expect(errors).toEqual([]);
 });
@@ -143,16 +144,28 @@ test("each layer shows in its stretch only: the HUD, the heading, the APG contai
   expect(errors).toEqual([]);
 });
 
-test("the hero's map is the only canvas until scene 5 comes near; then scene 5's mounts", async ({ page }) => {
+// WebGL's canvases (scene 1's photo is drawn on a 2D one: [data-photo]).
+const webgl = (page: Page, within = "") => page.locator(`${within} canvas:not([data-photo])`.trim());
+
+// One WebGL context at most (a phone's memory): the hero's map until scene 1 pins over it (and back on the way up),
+// then none until scene 5 comes near, then scene 5's, gone again as it leaves.
+test("one WebGL canvas at most: the hero's map, then scene 5's once it comes near", async ({ page }) => {
   await page.goto("/");
   await settle(page);
-  await expect(page.locator("#hero canvas")).toHaveCount(1);
-  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect(webgl(page, "#hero")).toHaveCount(1);
+  await expect(webgl(page)).toHaveCount(1);
+  await scrollToArrival(page, 0.5);
+  await expect(webgl(page)).toHaveCount(0);
   await scrollToEstrada(page, 0.6);
   await page.waitForTimeout(500);
-  await expect(page.locator("#distribuicao canvas")).toHaveCount(0);
+  await expect(webgl(page)).toHaveCount(0);
   await scrollToProgress(page, "distribuicao", 0.4);
-  await expect(page.locator("#distribuicao canvas")).toHaveCount(1);
+  await expect(webgl(page, "#distribuicao")).toHaveCount(1);
+  await expect(webgl(page)).toHaveCount(1);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await expect(webgl(page)).toHaveCount(0);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(webgl(page, "#hero")).toHaveCount(1);
 });
 
 // The side index (wide screens): a mark per scene, the one in view current; a click takes you to its scene. Not on
@@ -182,7 +195,7 @@ test.describe("with reduced motion", () => {
     await page.waitForLoadState("load");
     // the 'static' tier (lib/quality): no canvas, the maps as still pictures
     await page.waitForTimeout(2500);
-    await expect(page.locator("canvas")).toHaveCount(0);
+    await expect(webgl(page)).toHaveCount(0);
     await expect(page.locator('#hero [data-static-map="hero"]')).toBeVisible();
     await expect(page.locator('#distribuicao [data-static-map="distribution"]')).toBeAttached();
     const vh = await page.evaluate(() => innerHeight);

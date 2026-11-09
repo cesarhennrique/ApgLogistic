@@ -5,12 +5,14 @@ import images from "@/content/journeyImages.json";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { site } from "@/content/site";
 import { useQualityTier } from "@/lib/quality";
-import { APG_CONTAINERS, PHOTO, type View } from "./oceanCamera";
+import { capSizes } from "@/lib/sizes";
+import { APG_CONTAINERS, type Camera, PHOTO, type View } from "./oceanCamera";
+import { useNear } from "./useNear";
 
 const { widths } = images["navio-mar"];
 const src = (w: number, ext: string) => `/images/journey/navio-mar-${w}.${ext}`;
-// Up to 1920: the close has a layer of its own, the original's full resolution cropped round the client's container
-// (navio-mar-close, CLOSE in photo px), loaded later, on desktop only.
+// Up to 1920: the close has an image of its own, the original's full resolution cropped round the client's container
+// (navio-mar-close, CLOSE in photo px), loaded as the scene comes near.
 const base = widths.filter((w) => w <= 1920);
 // (the 'low' tier, lib/quality: its largest left out)
 const srcSet = (ext: string, low: boolean) => (low ? base.slice(0, -1) : base).map((w) => `${src(w, ext)} ${w}w`).join(", ");
@@ -18,6 +20,9 @@ const srcSet = (ext: string, low: boolean) => (low ? base.slice(0, -1) : base).m
 const SIZES = `(min-aspect-ratio: ${PHOTO.width}/${PHOTO.height}) 100vw, ${((PHOTO.width / PHOTO.height) * 100).toFixed(1)}vh`;
 const CLOSE = { x: 1990, y: 912, width: 2600, height: 1800 };
 const ORIGINAL = { avif: `/images/journey/navio-mar-close-${CLOSE.width}.avif`, webp: `/images/journey/navio-mar-close-${CLOSE.width}.webp` };
+
+// The scene's sea, under the photo until it is in.
+const SEA = "#0d2f4f";
 
 export const viewOf = (stage: HTMLElement): View => ({
   width: stage.clientWidth,
@@ -40,7 +45,11 @@ type Note = {
 // hero the two halves are one picture.
 export type Frame = {
   root: HTMLElement;
-  photo: HTMLElement;
+  // The photo, drawn by the camera on a canvas the size of the screen (paint): never a layer bigger than the screen.
+  canvas: HTMLCanvasElement;
+  // its backing store at most this many device px per CSS px (2 on the 'low' tier)
+  maxDpr: number;
+  base: { img: HTMLImageElement; loaded: boolean };
   sharp: { source: HTMLSourceElement; img: HTMLImageElement; loaded: boolean };
   // One per APG container: its four edges.
   outlines: Note[];
@@ -62,16 +71,44 @@ let redraw: (() => void) | null = null;
 // Scene 1 draws every frame; a frame mounted later gets drawn at once.
 export const setRedraw = (fn: (() => void) | null) => (redraw = fn);
 
-// The original, once scene 1 comes near (desktop only): set on every frame, fetched once.
+// An image in once decoded (drawing it undecoded would stall the frame that first does).
+const whenDecoded = (img: HTMLImageElement, done: () => void) => {
+  const go = () => void img.decode().then(done, () => {});
+  if (img.complete && img.naturalWidth) go();
+  else img.onload = go;
+};
+
+// The original, once scene 1 comes near: set on every frame, fetched once.
 export function loadSharp() {
   for (const f of frames) {
     if (f.sharp.img.getAttribute("src")) continue;
-    f.sharp.img.onload = () => {
-      f.sharp.loaded = true;
-      redraw?.();
-    };
     f.sharp.source.srcset = ORIGINAL.avif;
     f.sharp.img.src = ORIGINAL.webp;
+    whenDecoded(f.sharp.img, () => {
+      f.sharp.loaded = true;
+      redraw?.();
+    });
+  }
+}
+
+// The photo through the camera: the canvas sized to the screen, the photo drawn at the camera's place and scale (the
+// canvas clips it), the close's crop over the same pixels at `sharp` opacity.
+export function paint(frame: Frame, cam: Camera, view: View, sharp: number) {
+  const { canvas } = frame;
+  const k = Math.min(view.dpr, frame.maxDpr);
+  const [w, h] = [Math.round(view.width * k), Math.round(view.height * k)];
+  if (canvas.width !== w || canvas.height !== h) [canvas.width, canvas.height] = [w, h];
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  ctx.imageSmoothingQuality = "high";
+  ctx.fillStyle = SEA;
+  ctx.fillRect(0, 0, view.width, view.height);
+  if (frame.base.loaded) ctx.drawImage(frame.base.img, cam.x, cam.y, PHOTO.width * cam.scale, PHOTO.height * cam.scale);
+  if (frame.sharp.loaded && sharp > 0) {
+    ctx.globalAlpha = sharp;
+    ctx.drawImage(frame.sharp.img, cam.x + CLOSE.x * cam.scale, cam.y + CLOSE.y * cam.scale, CLOSE.width * cam.scale, CLOSE.height * cam.scale);
+    ctx.globalAlpha = 1;
   }
 }
 
@@ -102,10 +139,16 @@ const note = (group: Element): Note => ({
 
 export function ArrivalFrame({ alt }: { alt: string }) {
   const root = useRef<HTMLDivElement>(null);
+  const baseImg = useRef<HTMLImageElement>(null);
   // The photo only after the page's load: on a slow connection Chrome fetches lazy images far ahead (~2500 px), and
   // this one competed with the hero's LCP.
   const [loaded, setLoaded] = useState(false);
+  // (the images only within two screens: useNear)
+  const near = useNear(root);
+  const on = loaded && near;
   const low = useQualityTier() === "low";
+  // (the 'low' tier picks as if at 2× at most: lib/sizes)
+  const sizes = low ? capSizes(SIZES, window.devicePixelRatio) : SIZES;
   useEffect(() => {
     const go = () => setLoaded(true);
     if (document.readyState === "complete") go();
@@ -118,7 +161,9 @@ export function ArrivalFrame({ alt }: { alt: string }) {
     const q = <T extends Element>(s: string) => el.querySelector<T>(s)!;
     const frame: Frame = {
       root: el,
-      photo: q("[data-photo]"),
+      canvas: q("[data-photo]"),
+      maxDpr: Infinity,
+      base: { img: q("[data-base] img"), loaded: false },
       sharp: { source: q("[data-sharp] source"), img: q("[data-sharp] img"), loaded: false },
       outlines: [...el.querySelectorAll("[data-outline]")].map(note),
       heading: note(q("[data-note=heading]")),
@@ -133,38 +178,50 @@ export function ArrivalFrame({ alt }: { alt: string }) {
     return () => void frames.delete(frame);
   }, []);
 
+  // The tier known (after hydration): the canvas' density; the photo drawn once decoded.
+  useEffect(() => {
+    for (const f of frames) if (f.root === root.current) f.maxDpr = low ? 2 : Infinity;
+    redraw?.();
+  }, [low]);
+  useEffect(() => {
+    const img = baseImg.current!;
+    const frame = [...frames].find((f) => f.base.img === img);
+    if (!on) {
+      // far: its pixels let go (the close's crop too; loadSharp sets it again on the way back)
+      if (frame) {
+        frame.base.loaded = frame.sharp.loaded = false;
+        frame.sharp.img.removeAttribute("src");
+        frame.sharp.source.removeAttribute("srcset");
+      }
+      return;
+    }
+    whenDecoded(img, () => {
+      if (frame) frame.base.loaded = true;
+      redraw?.();
+    });
+  }, [on]);
+
   const { notes, hud, targetCard } = site.journeyScene;
   return (
     <div ref={root} className="absolute inset-0 overflow-hidden">
-      {/* The photo in a box of its own pixel size, placed by the camera (oceanCamera). No will-change: the browser
-          re-rasters the image at each scale, so the close stays sharp. */}
-      <div data-photo="" className="absolute top-0 left-0 origin-top-left" style={{ width: PHOTO.width, height: PHOTO.height }}>
-        {loaded && (
-          <picture>
-            <source type="image/avif" srcSet={srcSet("avif", low)} sizes={SIZES} />
-            <source type="image/webp" srcSet={srcSet("webp", low)} sizes={SIZES} />
-            <img
-              src={src(1920, "webp")}
-              width={PHOTO.width}
-              height={PHOTO.height}
-              alt={alt}
-              sizes={SIZES}
-              decoding="async"
-              className="absolute inset-0 h-full w-full"
-            />
-          </picture>
-        )}
-        {/* The close's crop, crossfaded over the same pixels of the photo: no jump between the two. */}
-        <picture data-sharp="">
-          <source type="image/avif" />
-          <img
-            alt=""
-            decoding="async"
-            className="absolute opacity-0"
-            style={{ left: CLOSE.x, top: CLOSE.y, width: CLOSE.width, height: CLOSE.height }}
-          />
-        </picture>
-      </div>
+      {/* The photo, drawn by the camera (paint); its images, hidden, picked by the browser from their srcset. */}
+      <canvas
+        data-photo=""
+        role={alt ? "img" : undefined}
+        aria-label={alt || undefined}
+        aria-hidden={alt ? undefined : true}
+        className="absolute inset-0 h-full w-full"
+        style={{ background: SEA }}
+      />
+      <picture data-base="" className="hidden">
+        {on && <source type="image/avif" srcSet={srcSet("avif", low)} sizes={sizes} />}
+        {on && <source type="image/webp" srcSet={srcSet("webp", low)} sizes={sizes} />}
+        <img ref={baseImg} src={on ? src(1920, "webp") : undefined} alt="" sizes={sizes} decoding="async" />
+      </picture>
+      <picture data-sharp="" className="hidden">
+        <source type="image/avif" />
+        <img alt="" decoding="async" />
+      </picture>
 
       {/* Notes in screen space, pinned to the photo by the camera. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">

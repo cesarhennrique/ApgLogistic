@@ -378,7 +378,8 @@ export function Estrada() {
     roadEl.current!.style.opacity = String(reveal * roadOut);
     dashesEl.current!.style.transform = `translate3d(${((dist % 96) - 96).toFixed(1)}px, 0, 0)`;
     trailAEl.current!.style.transform = `scaleX(${Math.min(Math.max((W - rear) / W, 0), 1).toFixed(4)})`;
-    wordEl.current!.style.transform = `translate3d(${(-0.25 * W + 0.3 * dist).toFixed(1)}px, ${(Y - 0.36 * H).toFixed(1)}px, 0)`;
+    // (2D: a layer of its own under the track would make the track's whole length one too)
+    wordEl.current!.style.transform = `translate(${(-0.25 * W + 0.3 * dist).toFixed(1)}px, ${(Y - 0.36 * H).toFixed(1)}px)`;
     // (the word only once pinned: across the slide nothing may change round scene 3's truck)
     wordEl.current!.style.opacity = String(segment(ph.a, 0, 0.05) * (1 - segment(theta, 0, 25)));
     // (once pinned: sliding, scene 3's own code still shows under it)
@@ -413,7 +414,8 @@ export function Estrada() {
     // C and D: the world (track, trail, pins, dock) under the camera, which keeps the truck where it is.
     const zw = inC ? zD : 1;
     worldEl.current!.style.opacity = String(inC ? 1 : 0);
-    worldEl.current!.style.transform = `translate3d(${(X - at.x * zw).toFixed(1)}px, ${(Y - at.y * zw).toFixed(1)}px, 0) scale(${zw.toFixed(5)})`;
+    // (2D, no will-change: the track's whole length as one layer was ~4300 px tall, its trail's segments each one more)
+    worldEl.current!.style.transform = `translate(${(X - at.x * zw).toFixed(1)}px, ${(Y - at.y * zw).toFixed(1)}px) scale(${zw.toFixed(5)})`;
     const behind = s - 0.5 * L.Lc;
     // The trail drawn up to the truck's rear: the segments wholly behind it shown, the one under it drawn part way;
     // only those whose state changes since the last frame are written.
@@ -550,7 +552,7 @@ export function Estrada() {
         </div>
 
         {/* The world seen from above (C, D): the track, its lane's dashes, the red trail, the dock. */}
-        <div ref={worldEl} aria-hidden="true" className="absolute top-0 left-0 origin-top-left opacity-0 will-change-transform">
+        <div ref={worldEl} aria-hidden="true" className="absolute top-0 left-0 origin-top-left opacity-0">
           <svg className="absolute top-0 left-0 size-px overflow-visible" fill="none">
             <path ref={trackRef} className="stroke-navy-900" strokeLinecap="butt" />
             <path ref={laneRef} className="stroke-sand-50/70" strokeWidth={2} strokeDasharray="32 32" />

@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
-import { useQualityTier } from "@/lib/quality";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
-import { ArrivalFrame, type Frame, frames, loadSharp, setRedraw, viewOf } from "./ArrivalFrame";
-import { APG_CONTAINERS, BOW, type Rect, SHIP, TARGET, type View, ZOOM, cameraTransform, sampleOceanCamera, toScreen } from "./oceanCamera";
+import { ArrivalFrame, type Frame, frames, loadSharp, paint, setRedraw, viewOf } from "./ArrivalFrame";
+import { APG_CONTAINERS, BOW, type Rect, SHIP, TARGET, type View, ZOOM, sampleOceanCamera, toScreen } from "./oceanCamera";
 import { edges, guide, place } from "./marks";
 import { Scene, segment } from "./Scene";
 
@@ -48,7 +47,7 @@ const CLOSE_IN = [0.75, 0.86] as const;
 const LOCK = [0.86, 0.99] as const;
 // (fully in by 0.85: the close holds from there)
 const CARD_IN = [0.8, 0.85] as const;
-// The original photo (desktop) crossfades over the 1920 one before the zoom gets close.
+// The original's crop crossfades over the photo before the zoom gets close.
 const SHARP_IN = [0.12, 0.26] as const;
 // Reduced motion: the end state, still: the camera mid-zoom, the HUD, the outlines, the counter and the card.
 const REDUCED_Q = 0.6;
@@ -77,8 +76,7 @@ const position = (t: number) =>
 
 function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   const cam = sampleOceanCamera(q, view);
-  frame.photo.style.transform = cameraTransform(cam);
-  frame.sharp.img.style.opacity = frame.sharp.loaded ? String(reduced ? 1 : segment(q, ...SHARP_IN)) : "0";
+  paint(frame, cam, view, reduced ? 1 : segment(q, ...SHARP_IN));
   const box = (r: Rect) => {
     const a = toScreen(cam, r);
     return { x: a.x, y: a.y, w: r.w * cam.scale, h: r.h * cam.scale };
@@ -186,7 +184,6 @@ export function OceanArrival() {
   const scrim = useRef<HTMLDivElement>(null);
   const count = useRef<HTMLSpanElement>(null);
   const reduced = useReducedMotion();
-  const tier = useQualityTier();
   const raw = useRef(0);
   const top = useRef<number | null>(null);
 
@@ -233,22 +230,17 @@ export function OceanArrival() {
     };
   }, [apply]);
 
-  // The original (6688 px) only for the desktop close, fetched as the scene comes near (the phone's close is the
-  // 1920 one).
+  // The original's crop round the client's container (2600 × 1800 px), for the close, fetched as the scene comes
+  // near.
   useEffect(() => {
-    // (nor on the 'low' tier: lib/quality)
-    if (!window.matchMedia("(min-width: 768px)").matches || tier === "low") return;
     const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        loadSharp();
-        io.disconnect();
-      },
+      // (again each time it comes near: far away, the frames let it go)
+      ([entry]) => entry.isIntersecting && loadSharp(),
       { rootMargin: "100% 0px" },
     );
     io.observe(document.getElementById("chegada")!);
     return () => io.disconnect();
-  }, [tier]);
+  }, []);
 
   return (
     <Scene

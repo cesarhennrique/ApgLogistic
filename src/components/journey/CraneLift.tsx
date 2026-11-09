@@ -15,6 +15,7 @@ import { type Camera, cameraTransform } from "./oceanCamera";
 import { Scene, segment } from "./Scene";
 import { SceneImage } from "./SceneImage";
 import { TruckShadow } from "./TruckShadow";
+import { useNear } from "./useNear";
 
 const scene = site.journey.find((s) => s.id === "porteiner")!;
 const { crane: copyText } = site.journeyScene;
@@ -89,7 +90,11 @@ export function CraneLift() {
   const reduced = useReducedMotion();
   // the 'low' tier (lib/quality): the sharp layer a width down, no blurred copy
   const tier = useQualityTier();
+  // the sharp layer a width down on the 'low' tier (phones: the light layer's own, so nothing more is held)
   const sharpWidth = tier === "low" ? 1920 : 2560;
+  const phoneSharp = tier === "low" ? 1200 : 1920;
+  // the crane's images only within two screens (useNear): a phone's memory holds the scenes round the reader
+  const near = useNear(stage);
   const raw = useRef(0);
   const lines = useRef<HTMLElement[]>([]);
   // The moving parts, gathered on the first draw (the scene may draw before this mounts).
@@ -141,7 +146,8 @@ export function CraneLift() {
     // The load comes down (crane px), the ropes paying out with it.
     // down to HANDOFF_GAP above its seat on the truck: scene 3 finishes the drop
     const dy = descent(segment(p, DESCENT_START, 1)) * (seatDrop - HANDOFF_GAP);
-    P.load.style.transform = `translate3d(0, ${dy.toFixed(1)}px, 0)`;
+    // (2D: it spans the whole crane box; a layer of its own would be one far past the screen)
+    P.load.style.transform = `translate(0, ${dy.toFixed(1)}px)`;
     ROPES.forEach((r, i) => (P.ropes[i].style.transform = `scaleY(${(SPREADER_BOX.y - r.top + dy).toFixed(1)})`));
 
     // The set (crane, quay, word) goes out of focus, then leaves the close to the truck and the container. The
@@ -153,7 +159,8 @@ export function CraneLift() {
     for (const el of P.fade) el.style.opacity = String(el.dataset.sharp === undefined ? set : out * (1 - dof));
     if (P.blurred) P.blurred.style.opacity = String(out * 0.25 * dof);
     if (P.blurred) P.blurred.style.filter = `blur(${(DOF_BLUR / sampleCraneCamera(DOF[1], view).scale).toFixed(1)}px)`;
-    word.current!.style.transform = `translate3d(${((0.18 - 0.5 * c) * view.width).toFixed(1)}px, 0, 0)`;
+    // (2D: a layer of its own under the crane would make the crane one too, a box far past the screen)
+    word.current!.style.transform = `translate(${((0.18 - 0.5 * c) * view.width).toFixed(1)}px, 0)`;
 
     // The quay: its line under the legs, a ruler along it every 5 m (from the quay's edge).
     const gy = sy(GROUND.y);
@@ -278,10 +285,10 @@ export function CraneLift() {
             {/* The crane, always there: a light layer (1200 px) first, so no frame ever lacks it; the sharp one
                 (2560 px on desktop, 1920 on phones: past 60% of the zoom it goes out of focus) over it once decoded. */}
             <picture>
-              <source type="image/avif" srcSet={base(1200, "avif")} />
+              <source type="image/avif" srcSet={near ? base(1200, "avif") : undefined} />
               <img
                 data-crane=""
-                src={base(1200, "webp")}
+                src={near ? base(1200, "webp") : undefined}
                 width={CRANE.width}
                 height={CRANE.height}
                 alt=""
@@ -291,12 +298,12 @@ export function CraneLift() {
               />
             </picture>
             <picture>
-              <source media="(min-width: 768px)" type="image/avif" srcSet={base(sharpWidth, "avif")} />
-              <source media="(min-width: 768px)" type="image/webp" srcSet={base(sharpWidth, "webp")} />
-              <source type="image/avif" srcSet={base(1920, "avif")} />
+              <source media="(min-width: 768px)" type="image/avif" srcSet={near ? base(sharpWidth, "avif") : undefined} />
+              <source media="(min-width: 768px)" type="image/webp" srcSet={near ? base(sharpWidth, "webp") : undefined} />
+              <source type="image/avif" srcSet={near ? base(phoneSharp, "avif") : undefined} />
               <img
                 ref={sharp}
-                src={base(1920, "webp")}
+                src={near ? base(phoneSharp, "webp") : undefined}
                 width={CRANE.width}
                 height={CRANE.height}
                 alt=""
@@ -311,10 +318,10 @@ export function CraneLift() {
               'low' tier: the set only fades). */}
           {tier !== "low" && (
           <picture>
-            <source type="image/avif" srcSet={base(1200, "avif")} />
+            <source type="image/avif" srcSet={near ? base(1200, "avif") : undefined} />
             <img
               data-blurred=""
-              src={base(1200, "webp")}
+              src={near ? base(1200, "webp") : undefined}
               width={CRANE.width}
               height={CRANE.height}
               alt=""
