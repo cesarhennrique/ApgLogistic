@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Container, MapPinned, Radar, Route, Ship, Truck, Warehouse } from "lucide-react";
+import { MapPinned, Ship, Truck, Warehouse } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { gsap, SplitText } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
@@ -29,6 +29,7 @@ import {
 import { CONE_AT } from "@/three/stages/distributionCamera";
 import { leader } from "./marks";
 import { CONTAINER_CLIP, TRUCK_FRAME } from "./Load";
+import { ROAD_ICONS } from "./roadIcons";
 import { Scene, segment } from "./Scene";
 import { SceneImage } from "./SceneImage";
 import { TruckShadow } from "./TruckShadow";
@@ -64,7 +65,7 @@ const RIM_R = 54;
 const TOP_SPEED = 80;
 
 // A's cards, the services then the differentials, each with its line icon; C's chapters, theirs.
-const ICONS = [Container, Route, Warehouse, Truck, Radar, Clock, Ship];
+const ICONS = ROAD_ICONS;
 const CHAPTER_ICONS = [Ship, Truck, CraneIcon, Warehouse, MapPinned];
 // The trail's segments (world px) and the chapters' reveal, in truck lengths along the track.
 const TRAIL_STEP = 12;
@@ -546,6 +547,7 @@ export function Estrada() {
         {/* The giant word behind the truck, sliding against its run. */}
         <div
           ref={wordEl}
+          data-rec-hide=""
           aria-hidden="true"
           data-decor="" className="font-condensed absolute top-0 left-0 text-[30vw] leading-none font-bold whitespace-nowrap text-[#EDEBE6] uppercase opacity-0 md:text-[22vw]"
         >
@@ -567,7 +569,7 @@ export function Estrada() {
               <div key={ch.title} data-pin="" className="group absolute top-0 left-0">
                 <span className="pin-pulse absolute -top-2 -left-2 size-4 rounded-full bg-red-500 opacity-0 group-data-lit:animate-[pin-pulse_1.4s_var(--ease-out)_3]" />
                 <span className="absolute -top-2 -left-2 size-4 rounded-full border-2 border-navy-900 bg-[#fefefe] transition-colors duration-200 group-data-lit:border-red-500 group-data-lit:bg-red-500" />
-                <span className="absolute top-0 left-3.5 -translate-y-1/2 bg-navy-900 px-1.5 py-0.5 font-mono text-[11px] leading-none whitespace-nowrap text-sand-50 transition-colors duration-200 group-data-lit:bg-red-500 group-data-lit:text-white">
+                <span data-rec-hide="" className="absolute top-0 left-3.5 -translate-y-1/2 bg-navy-900 px-1.5 py-0.5 font-mono text-[11px] leading-none whitespace-nowrap text-sand-50 transition-colors duration-200 group-data-lit:bg-red-500 group-data-lit:text-white">
                   {ch.mark}
                 </span>
               </div>
@@ -657,7 +659,7 @@ export function Estrada() {
         </div>
 
         {/* A: the code and the speedometer, top left. */}
-        <div ref={copyEl} className="site-container absolute inset-x-0 top-[13svh] text-navy-900 opacity-0">
+        <div ref={copyEl} data-rec-hide="" className="site-container absolute inset-x-0 top-[13svh] text-navy-900 opacity-0">
           <ContainerCode index={homeCode("estrada")} label={scene.code} />
           <p className="font-mono-tabular mt-2 text-sm text-navy-900/75">
             {roadText.highway} · <span ref={speedEl}>000</span> {roadText.unit}
@@ -665,7 +667,7 @@ export function Estrada() {
         </div>
 
         {/* A: the band's title and its cards. */}
-        <div ref={bandCopyEl} className="absolute inset-x-0 top-0 text-sand-50 opacity-0">
+        <div ref={bandCopyEl} data-rec-hide="" className="absolute inset-x-0 top-0 text-sand-50 opacity-0">
           <div className="site-container pt-5 md:pt-7">
             <p className="font-condensed text-[clamp(1.6rem,3vw,2.6rem)] leading-none font-bold uppercase">{roadText.title}</p>
           </div>
@@ -689,6 +691,7 @@ export function Estrada() {
         {/* C: the track's title, fixed at the left (wide screens). */}
         <p
           ref={trackTitleEl}
+          data-rec-hide=""
           className="font-condensed absolute top-[30%] left-[4vw] -translate-y-1/2 border border-navy-900/15 bg-sand-50 px-4 py-3 text-[clamp(2.6rem,5vw,5rem)] leading-[0.9] font-bold text-navy-900 uppercase opacity-0 max-md:hidden"
         >
           {trackText.title.map((line, i) => (
@@ -697,18 +700,19 @@ export function Estrada() {
             </span>
           ))}
         </p>
-        <div ref={leadersEl} aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div ref={leadersEl} data-rec-hide="" aria-hidden="true" className="pointer-events-none absolute inset-0">
           {history.map((ch) => (
             <i key={ch.title} className="absolute top-0 left-0 size-px origin-top-left bg-red-500 opacity-0" />
           ))}
         </div>
-        <div ref={chaptersEl}>
+        <div ref={chaptersEl} data-rec-hide="">
           <Chapters />
         </div>
 
         {/* D: the terminal's numbers, as a scoreboard. */}
         <div
           ref={boardEl}
+          data-rec-hide=""
           className="absolute opacity-0 max-md:inset-x-4 max-md:top-[12svh] md:bottom-[9svh] md:left-[4vw] md:w-[30rem]"
         >
           <p className="font-mono text-xs tracking-[0.12em] text-navy-900/75 uppercase">{dock.label}</p>

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { site } from "@/content/site";
 import { DELIVERIES } from "@/three/models/distributionLayout";
 import { HERO_SCALE, MAP_VIEWBOX, ROUTE_STARTS, SALVADOR_HERO, toHero } from "@/three/models/mapUnits";
@@ -102,9 +103,19 @@ export function StaticMap({
               strokeDasharray={animated ? 1 : undefined}
               strokeDashoffset={animated ? 1 : undefined}
               className="stroke-red-500/80"
+              // (its place in the stagger: the phone's journey draws them in by CSS, globals.css)
+              style={animated ? ({ "--i": i } as CSSProperties) : undefined}
               strokeWidth={0.1}
             />
-            <circle data-dest={animated ? i : undefined} cx={d.to.x} cy={d.to.z} r={0.32} className="fill-red-500" opacity={animated ? 0 : undefined} />
+            <circle
+              data-dest={animated ? i : undefined}
+              cx={d.to.x}
+              cy={d.to.z}
+              r={0.32}
+              className="fill-red-500"
+              opacity={animated ? 0 : undefined}
+              style={animated ? ({ "--i": i } as CSSProperties) : undefined}
+            />
           </g>
         ))}
       <circle r={0.9} className={`fill-red-500/30 ${animated ? "map-pulse" : ""}`} />

@@ -7,6 +7,7 @@ import { gsap, ScrollTrigger } from "@/components/motion/gsap";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
+import { DESKTOP_QUERY, motionSafe, PHONE_QUERY } from "@/lib/phoneLayout";
 import { measure, setText, viewport } from "@/components/journey/measure";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -35,7 +36,7 @@ export function ServicesTrack() {
       word: p.querySelector<HTMLElement>("[data-word]")!,
       rims: [...p.querySelectorAll<HTMLElement>("[data-rim]")],
     }));
-    mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
+    mm.add(motionSafe(DESKTOP_QUERY), () => {
       const apply = (p: number) => {
         const W = viewport().width;
         const at = p * (N - 1);
@@ -72,8 +73,8 @@ export function ServicesTrack() {
         }
       };
     });
-    // Phones: each panel's object in from the side once it shows (a CSS transition on data-in).
-    mm.add("(max-width: 767px) and (prefers-reduced-motion: no-preference)", () => {
+    // The phone's layout (lib/phoneLayout): each panel's object in from the side once it shows (a CSS transition on data-in).
+    mm.add(motionSafe(PHONE_QUERY), () => {
       const io = new IntersectionObserver(
         (entries) => {
           for (const e of entries) if (e.isIntersecting) (e.target as HTMLElement).setAttribute("data-in", "");
@@ -94,20 +95,20 @@ export function ServicesTrack() {
       data-surface="light"
       data-header-theme="light"
       aria-labelledby="services-title"
-      className="relative z-10 bg-[#fefefe] text-navy-900 motion-safe:-mt-[100svh] motion-safe:md:h-[300vh]"
+      className="relative z-10 bg-[#fefefe] text-navy-900 motion-safe:desk:-mt-[100svh] motion-safe:desk:h-[300vh]"
     >
       <h2 id="services-title" className="sr-only">
         {copy.title}
       </h2>
-      <div className="motion-safe:md:sticky motion-safe:md:top-0 motion-safe:md:h-svh motion-safe:md:overflow-hidden">
-        <div ref={track} className="motion-safe:md:flex motion-safe:md:h-full motion-safe:md:w-[300vw]">
+      <div className="motion-safe:desk:sticky motion-safe:desk:top-0 motion-safe:desk:h-svh motion-safe:desk:overflow-hidden">
+        <div ref={track} className="motion-safe:desk:flex motion-safe:desk:h-full motion-safe:desk:w-[300vw]">
           {site.services.map((service, i) => {
             const shape = SHAPES[service.slug];
             return (
               <article
                 key={service.slug}
                 data-panel=""
-                className="group relative isolate flex min-h-svh flex-col overflow-hidden pb-[10svh] md:block md:h-svh md:min-h-0 md:pb-0 motion-safe:md:w-screen motion-safe:md:shrink-0"
+                className="group relative isolate flex min-h-svh flex-col overflow-hidden pb-[10svh] md:block md:h-svh md:min-h-0 md:pb-0 motion-safe:desk:w-screen motion-safe:desk:shrink-0"
               >
                 {/* the giant word behind */}
                 <div aria-hidden="true" className="absolute inset-x-0 top-[58%] -z-10 md:top-1/2 md:-translate-y-1/2">
@@ -149,7 +150,7 @@ export function ServicesTrack() {
                 <div className="relative mt-8 min-h-[34svh] flex-1 md:absolute md:top-28 md:right-[4vw] md:bottom-[14svh] md:left-[44%] md:mt-0">
                   <div
                     data-object=""
-                    className={`absolute inset-x-4 bottom-0 flex items-end justify-center md:inset-x-0 ${shape.tall ? "top-0" : ""} max-md:transition-[translate,opacity] max-md:duration-700 max-md:ease-out motion-safe:max-md:translate-x-[45%] motion-safe:max-md:opacity-0 motion-safe:max-md:group-data-in:translate-x-0 motion-safe:max-md:group-data-in:opacity-100`}
+                    className={`absolute inset-x-4 bottom-0 flex items-end justify-center md:inset-x-0 ${shape.tall ? "top-0" : ""} phone:transition-[translate,opacity] phone:duration-700 phone:ease-out motion-safe:phone:translate-x-[45%] motion-safe:phone:opacity-0 motion-safe:phone:group-data-in:translate-x-0 motion-safe:phone:group-data-in:opacity-100`}
                   >
                     <ServiceObject service={service} rims />
                   </div>
@@ -160,7 +161,7 @@ export function ServicesTrack() {
           })}
         </div>
         {/* wide screens: the count and the bar, over the panels */}
-        <div aria-hidden="true" className="pointer-events-none absolute right-[4vw] bottom-[5svh] items-center gap-4 font-mono text-xs tracking-[0.12em] max-md:hidden motion-safe:flex motion-reduce:hidden">
+        <div aria-hidden="true" className="pointer-events-none absolute right-[4vw] bottom-[5svh] hidden items-center gap-4 font-mono text-xs tracking-[0.12em] motion-safe:desk:flex">
           <span ref={counter} className="tabular-nums">
             01/{pad(N)}
           </span>

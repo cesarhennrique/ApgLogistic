@@ -9,6 +9,9 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem("apg-intro", "1"));
 });
 
+// The desktop's journey (pinned, scrubbed scenes); a phone has its own (M3: e2e/mobile-journey.spec.ts).
+test.skip(({ isMobile }) => isMobile, "the desktop's journey");
+
 // The scroll at a scene's own (desktop) progress p, on any screen (as journey.spec.ts's sceneY).
 async function sceneY(page: Page, id: string, p: number) {
   return page.evaluate(

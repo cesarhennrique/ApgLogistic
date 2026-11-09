@@ -388,7 +388,7 @@ export function CraneLift() {
         </div>
       </div>
 
-      <div ref={copy} className="site-container absolute inset-x-0 top-[13svh] text-navy-900 opacity-0">
+      <div ref={copy} data-rec-hide="" className="site-container absolute inset-x-0 top-[13svh] text-navy-900 opacity-0">
         <div className="max-w-[30rem] max-md:rounded-sm max-md:bg-[#fefefe]/85 max-md:p-3">
           <ContainerCode index={homeCode("porteiner")} label={scene.code} />
           <p ref={title} className="font-condensed mt-3 max-w-[16ch] text-[clamp(1.6rem,3.8vw,3.4rem)] leading-[0.92] font-bold uppercase">

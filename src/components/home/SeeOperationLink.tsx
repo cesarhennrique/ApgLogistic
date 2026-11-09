@@ -3,6 +3,7 @@
 import type { MouseEvent } from "react";
 import { lenisRef } from "@/components/motion/SmoothScroll";
 import { site } from "@/content/site";
+import { isPhoneLayout } from "@/lib/phoneLayout";
 
 // Scrolls to where scene 1 begins: the hero's dive done, the ocean full screen, scene 1 about to slide in. Without
 // JS, the anchor still lands on scene 1.
@@ -11,7 +12,8 @@ export function SeeOperationLink() {
     const scene = document.getElementById("chegada");
     if (!scene) return;
     event.preventDefault();
-    const target = scene.getBoundingClientRect().top + window.scrollY - window.innerHeight;
+    // (the phone's journey, lib/phoneLayout: no hand-over, scene 1 itself)
+    const target = scene.getBoundingClientRect().top + window.scrollY - (isPhoneLayout() ? 0 : window.innerHeight);
     if (lenisRef.current) lenisRef.current.scrollTo(target, { duration: 1.6 });
     else window.scrollTo({ top: target });
   };

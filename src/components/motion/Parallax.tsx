@@ -1,11 +1,12 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef } from "react";
+import { DESKTOP_QUERY } from "@/lib/phoneLayout";
 import { gsap } from "./gsap";
 import { useReducedMotion } from "./useReducedMotion";
 
 // A light parallax: its content drifts `distance` px (down, or across with axis x) as its section scrolls away
-// (transform only, scrubbed). Not with reduced motion.
+// (transform only, scrubbed). Not with reduced motion, nor on a phone.
 export function Parallax({
   children,
   className,
@@ -21,7 +22,8 @@ export function Parallax({
   const reduced = useReducedMotion();
 
   useEffect(() => {
-    if (reduced) return;
+    // (not in the phone's layout, lib/phoneLayout: nothing scrubbed under a phone's native scroll)
+    if (reduced || !window.matchMedia(DESKTOP_QUERY).matches) return;
     const el = ref.current!;
     const tween = gsap.fromTo(
       el,

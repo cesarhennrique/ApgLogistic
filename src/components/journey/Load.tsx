@@ -234,7 +234,7 @@ export function Load() {
           </div>
         </div>
 
-        <div className="site-container absolute inset-x-0 top-[13svh] text-navy-900">
+        <div data-rec-hide="" className="site-container absolute inset-x-0 top-[13svh] text-navy-900">
           <ContainerCode index={homeCode("carga")} label={scene.code} />
         </div>
       </div>

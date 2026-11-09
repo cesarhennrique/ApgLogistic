@@ -2,12 +2,13 @@ import { expect, test } from "@playwright/test";
 
 // A phone's memory along the whole Home (iOS kills a tab past its budget: the photo drawn in blocks, then "Um
 // problema ocorreu repetidamente"). In WebKit at 390×844, 3×: at every half screen of the scroll,
-// - the decoded pixels alive (every loaded <img> still in the page) stay ≤ 25 MP;
+// - the decoded pixels alive (every loaded <img> still in the page) stay ≤ 15 MP (M3: the journey as videos);
 // - no layer of its own (a 3D transform or a will-change on transform/opacity) holds more than 4096² device px (a
 //   long thin strip, the road's dashes, is fine: it is the area that costs);
-// - at most one WebGL context is alive.
+// - at most one WebGL context is alive;
+// - at most two videos hold a source (iOS decodes only a few at once), and nothing is pinned (no pin-spacer).
 
-const MAX_PIXELS = 25e6;
+const MAX_PIXELS = 15e6;
 const MAX_LAYER = 4096 * 4096;
 
 test("the Home stays within a phone's memory, all the way down", async ({ page, browserName, isMobile }) => {
@@ -50,12 +51,16 @@ test("the Home stays within a phone's memory, all the way down", async ({ page, 
         if (s > area) [area, layer] = [s, `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 50)} ${Math.round(r.width * dpr)}×${Math.round(r.height * dpr)}`];
       }
       const gl = [...(window as unknown as { __gl: Set<HTMLCanvasElement> }).__gl].filter((c) => c.isConnected).length;
-      return { pixels, area, layer, gl };
+      const videos = [...document.querySelectorAll("video")].filter((v) => v.getAttribute("src")).length;
+      const pins = document.querySelectorAll(".pin-spacer").length;
+      return { pixels, area, layer, gl, videos, pins };
     });
     const at = `at y = ${Math.round(y)}`;
     expect(m.pixels, `${at}: decoded pixels`).toBeLessThanOrEqual(MAX_PIXELS);
     expect(m.area, `${at}: ${m.layer}`).toBeLessThanOrEqual(MAX_LAYER);
     expect(m.gl, `${at}: WebGL contexts`).toBeLessThanOrEqual(1);
+    expect(m.videos, `${at}: videos with a source`).toBeLessThanOrEqual(2);
+    expect(m.pins, `${at}: pinned elements`).toBe(0);
     worst = {
       pixels: Math.max(worst.pixels, m.pixels),
       layer: m.area > worst.area ? m.layer : worst.layer,

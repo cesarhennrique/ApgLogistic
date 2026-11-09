@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* The journey's two layouts (lib/phoneLayout): "desk" a wide screen with a fine pointer, "phone" anything else. */
+@custom-variant desk (@media (min-width: 768px) and (pointer: fine));
+@custom-variant phone (@media not all and (min-width: 768px) and (pointer: fine));
+
 @theme {
   --color-navy-900: #0a1338;
   --color-navy-800: #121c47; /* as palavras gigantes ao fundo das seções navy */
@@ -287,4 +291,63 @@ body {
 [data-scene]:not([data-visible]) :is(.mira, .map-pulse, .pin-pulse),
 [data-scene]:not([data-visible]) .suape-dot::after {
   animation-play-state: paused;
+}
+
+/* Recording the phone's clips (scripts/record-mobile-clips.mjs): the pictures alone, every text left to the HTML
+   over and under the videos. */
+html[data-recording]
+  :is(
+    header,
+    [data-rec-hide],
+    [data-hud],
+    [data-note="heading"],
+    [data-note="containers"],
+    [data-note="target"] > :not(.mira),
+    [data-callout],
+    [data-crane-cota],
+    [data-drop-cota],
+    [data-set],
+    [data-cota],
+    #estrada svg text,
+    #journey [data-decor]
+  ) {
+  opacity: 0 !important;
+}
+
+/* The phone's journey (MobileJourney): its copy in once, as its section comes into view. */
+.m-in {
+  opacity: 0;
+  translate: 0 16px;
+  transition:
+    opacity 0.6s var(--ease-out),
+    translate 0.6s var(--ease-out);
+  transition-delay: var(--d, 0ms);
+}
+[data-in] .m-in {
+  opacity: 1;
+  translate: 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-in {
+    translate: 0 0;
+    transition-property: opacity;
+  }
+}
+
+/* The phone's distribution (MobileJourney): the routes drawn out of the terminal one after the other, each
+   destination lit as its route lands; once, as the section comes into view. */
+[data-in] .m-routes [data-route] {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1.2s var(--ease-out);
+  transition-delay: calc(300ms + var(--i) * 60ms);
+}
+[data-in] .m-routes [data-dest] {
+  opacity: 1;
+  transition: opacity 0.3s var(--ease-out);
+  transition-delay: calc(1100ms + var(--i) * 60ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-in] .m-routes :is([data-route], [data-dest]) {
+    transition: none;
+  }
 }

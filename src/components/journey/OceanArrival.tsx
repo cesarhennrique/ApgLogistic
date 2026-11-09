@@ -273,12 +273,14 @@ export function OceanArrival() {
       {/* Enough navy at the left for the copy to read over the deck. */}
       <div
         ref={scrim}
+        data-rec-hide=""
         aria-hidden="true"
         className="absolute inset-y-0 left-0 w-[45%] bg-linear-to-r from-navy-900/60 to-transparent opacity-0 max-md:hidden"
       />
 
       <div
         ref={copy}
+        data-rec-hide=""
         className="site-container absolute inset-x-0 bottom-[6svh] text-sand-50 opacity-0 md:top-[34svh] md:bottom-auto"
       >
         <div className="max-w-[24rem] max-md:rounded-sm max-md:bg-navy-900/70 max-md:p-4 max-md:backdrop-blur-sm">

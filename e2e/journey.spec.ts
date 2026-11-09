@@ -5,6 +5,9 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem("apg-intro", "1"));
 });
 
+// The desktop's journey (pinned, scrubbed scenes); a phone has its own (M3: e2e/mobile-journey.spec.ts).
+test.skip(({ isMobile }) => isMobile, "the desktop's journey");
+
 function collectErrors(page: Page) {
   const errors: string[] = [];
   page.on("console", (msg) => msg.type() === "error" && errors.push(msg.text()));
@@ -215,6 +218,8 @@ test.describe("with reduced motion", () => {
 
 test("the Home's container codes run 01, 02, 03… in order, without repeats", async ({ page }) => {
   await page.goto("/");
+  // (the scenes mount once the layout is known: JourneyScenes)
+  await page.locator("#chegada").waitFor({ state: "attached" });
   const codes = await page
     .locator("main")
     // (the sections' codes: not the container code on scene 1's card, a note on the photo, nor scene 4's chapters,

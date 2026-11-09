@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 // The Home's scroll on a phone (spec §6; M2): Chromium as an iPhone 14 (390×844, 3×, touch), the CPU 4× slower,
-// the whole Home dragged by touch down and back up. Per scene: the 95th percentile frame ≤ 33.4 ms (two frames
-// at 60 Hz: frames come at multiples of 16.7 ms), no frame past 100 ms, no long task (> 50 ms) on the main thread;
+// the whole Home dragged by touch down and back up. Per scene: the 95th percentile frame ≤ 20 ms (M3: no frame
+// dropped at 60 Hz, frames coming at multiples of 16.7 ms), no frame past 100 ms, no long task (> 50 ms) on the main
+// thread;
 // back at the top, the hero's map shows at once. Against the production build (the "smoothness" project in
 // playwright.config.ts: development React alone would fail it), on the GPU (a 2D canvas drawn in software, as
 // headless does, costs a copy every frame that no phone pays).
@@ -72,7 +73,7 @@ test("the Home scrolls smoothly on a phone, down and back up", async ({ page, co
     const sorted = [...dts].sort((a, b) => a - b);
     const p95 = sorted[Math.floor(0.95 * sorted.length)];
     console.log(`${scene.padEnd(22)} p95 ${p95.toFixed(1)} ms, max ${Math.max(...dts).toFixed(0)} ms, ${dts.length} frames`);
-    expect.soft(p95, `${scene}: 95th percentile frame`).toBeLessThanOrEqual(33.4);
+    expect.soft(p95, `${scene}: 95th percentile frame`).toBeLessThanOrEqual(20);
     expect.soft(Math.max(...dts), `${scene}: longest frame`).toBeLessThanOrEqual(100);
   }
   expect(long.map(([ms, scene]) => `${Math.round(ms)} ms in ${scene}`)).toEqual([]);

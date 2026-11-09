@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
-    "images": "node scripts/build-journey-images.mjs"
+    "images": "node scripts/build-journey-images.mjs",
+    "clips": "node scripts/record-mobile-clips.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
@@ -38,6 +39,7 @@
     "@types/three": "^0.186.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "ffmpeg-static": "^5.3.0",
     "jsdom": "^29.1.1",
     "potrace": "^2.1.8",
     "sharp": "^0.35.5",

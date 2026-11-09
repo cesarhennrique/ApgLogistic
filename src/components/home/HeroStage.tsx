@@ -4,14 +4,16 @@ import dynamic from "next/dynamic";
 import { type ReactNode, startTransition, useEffect, useRef, useState } from "react";
 import { gsap, ScrollTrigger } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
-import { ArrivalFrame } from "@/components/journey/ArrivalFrame";
 import { segment } from "@/components/journey/segment";
 import { HERO_FRAME, StaticMap } from "@/components/journey/StaticMap";
+import { JOURNEY_MOUNTED, usePhoneLayout } from "@/lib/phoneLayout";
 import { useQualityTier } from "@/lib/quality";
 import { readDebugParams } from "@/three/debug";
 import { heroDive } from "@/three/progress";
 
 const HeroCanvas = dynamic(() => import("@/three/HeroCanvas"), { ssr: false });
+// (desktop's journey only: a phone never loads it)
+const ArrivalFrame = dynamic(() => import("@/components/journey/ArrivalFrame").then((m) => m.ArrivalFrame), { ssr: false });
 
 // The exit, over the hero's scroll (heroDive, 0–1): the copy rises away; the camera dives into Suape on the map
 // (CameraRig, heroCamera), its red dot swelling into a glow (HeroMapStage); the night photo fades; scene 1's picture
@@ -60,7 +62,10 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
   // WebGL on the 'high' tier only (lib/quality); the others draw the map as SVG: still on 'static', animated on
   // 'low' (phones: no context to make again, nor shaders to compile, on the way back up)
   const tier = useQualityTier();
-  const webgl = tier === "high";
+  // The phone's layout (lib/phoneLayout): no dive, no hand-over to scene 1, the SVG map animated whatever the tier
+  const phone = usePhoneLayout();
+  const webgl = tier === "high" && phone === false;
+  const animated = tier === "low" || (tier === "high" && phone === true);
 
   // The 3D chunk (three, drei: ~530 KB of script) loads after the page's load event, a frame actually painted (on a
   // fast connection the load can fire before the first paint) and an idle moment: off the LCP's path.
@@ -99,7 +104,7 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
     };
     const { frozen } = readDebugParams(window.location.search);
     if (frozen !== null) return apply(frozen);
-    if (reduced) return apply(0);
+    if (reduced || phone !== false) return apply(0);
     const trigger = ScrollTrigger.create({
       trigger: document.getElementById("hero"),
       start: "top top",
@@ -109,34 +114,52 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
     });
     apply(trigger.progress);
     return () => trigger.kill();
-  }, [reduced, tier]);
+  }, [reduced, tier, phone]);
 
   useEffect(() => {
-    const scene = document.getElementById("chegada");
-    if (!scene) return;
-    const trigger = ScrollTrigger.create({
-      trigger: scene,
-      start: "top top",
-      // (also at creation, when the page opens past it)
-      onEnter: () => startTransition(() => setCovered(true)),
-      onLeaveBack: () => startTransition(() => setCovered(false)),
-    });
-    const far = ScrollTrigger.create({
-      trigger: scene,
-      start: "top -200%",
-      onEnter: () =>
-        startTransition(() => {
-          setMapFar(true);
-          setBack(true);
-          setMapReady(false);
-        }),
-      onLeaveBack: () => startTransition(() => setMapFar(false)),
-    });
-    return () => {
-      trigger.kill();
-      far.kill();
+    if (phone === null) return;
+    // The phone's: the SVG map let go off screen, back as the hero comes in again.
+    if (phone) {
+      const io = new IntersectionObserver(([e]) => startTransition(() => setMapFar(!e.isIntersecting)));
+      io.observe(document.getElementById("hero")!);
+      return () => io.disconnect();
+    }
+    // Desktop: covered once scene 1 pins over the hero, far two screens past. (Scene 1 mounts after the hero: its
+    // chunk loads once the layout is known, JourneyScenes.)
+    let kill: (() => void) | null = null;
+    const watch = () => {
+      const scene = document.getElementById("chegada");
+      if (!scene || kill) return;
+      const trigger = ScrollTrigger.create({
+        trigger: scene,
+        start: "top top",
+        // (also at creation, when the page opens past it)
+        onEnter: () => startTransition(() => setCovered(true)),
+        onLeaveBack: () => startTransition(() => setCovered(false)),
+      });
+      const far = ScrollTrigger.create({
+        trigger: scene,
+        start: "top -200%",
+        onEnter: () =>
+          startTransition(() => {
+            setMapFar(true);
+            setBack(true);
+            setMapReady(false);
+          }),
+        onLeaveBack: () => startTransition(() => setMapFar(false)),
+      });
+      kill = () => {
+        trigger.kill();
+        far.kill();
+      };
     };
-  }, []);
+    watch();
+    window.addEventListener(JOURNEY_MOUNTED, watch);
+    return () => {
+      window.removeEventListener(JOURNEY_MOUNTED, watch);
+      kill?.();
+    };
+  }, [phone]);
 
   // The parallax: the pointer's offset from the screen's centre, eased.
   useEffect(() => {
@@ -198,7 +221,7 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
               className={MAP_BOX}
               style={{ aspectRatio: HERO_FRAME.aspect, transformOrigin: `${HERO_FRAME.suape.x * 100}% ${HERO_FRAME.suape.y * 100}%` }}
             >
-              <StaticMap variant="hero" fit animated={tier === "low"} className="h-full w-full" />
+              <StaticMap variant="hero" fit animated={animated} className="h-full w-full" />
               <div
                 ref={glow}
                 className="pointer-events-none absolute size-10 rounded-full bg-[radial-gradient(closest-side,rgb(255_214_200/0.95),rgb(227_30_36/0.75)_45%,transparent)] opacity-0"

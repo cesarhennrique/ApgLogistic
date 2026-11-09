@@ -8,10 +8,9 @@ import { HeroStage } from "./HeroStage";
 import { HeroStrip } from "./HeroStrip";
 import { SeeOperationLink } from "./SeeOperationLink";
 
-// Scene 0, 320vh: 120vh of scroll for the hero's exit (the copy and the map leave, the photo pushes in on the
+// Scene 0, 320vh (its class): 120vh of scroll for the hero's exit (the copy and the map leave, the photo pushes in on the
 // ship), then 100vh while scene 1 slides in over it (scene 1 overlaps the hero's last screen), then the screen it
-// covers.
-const HERO_VH = 320;
+// covers. The phone's layout (lib/phoneLayout): a screen high, no exit.
 
 // The photo (the LCP): the full frame on wide screens, a portrait crop on the bow and the cranes on phones
 // (scripts/build-journey-images.mjs).
@@ -55,7 +54,7 @@ export function Hero() {
     fetchPriority: "high",
   });
   return (
-    <section id="hero" data-intro-root="" data-header-theme="dark" className="relative bg-navy-900" style={{ height: `${HERO_VH}vh` }}>
+    <section id="hero" data-intro-root="" data-header-theme="dark" className="relative h-[320vh] bg-navy-900 phone:h-svh">
       <HeroStage photo={<HeroPhoto />}>
         {/* Phones: at the bottom, over the photo's darker foot; wide screens: centred at the left, over the sea. */}
         <div className="site-container flex flex-1 flex-col pt-20 pb-4 max-md:justify-end md:justify-center md:pt-24 md:pb-6">

@@ -8,6 +8,7 @@ import { ContainerCode } from "@/components/ui/ContainerCode";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
+import { DESKTOP_QUERY, motionSafe, PHONE_QUERY } from "@/lib/phoneLayout";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 // The doors' swing when open, and the order the contacts come out in (over the opening's progress).
@@ -132,7 +133,7 @@ export function FinalCta() {
     const mm = gsap.matchMedia();
     // wide screens: scrubbed as the section scrolls through
     mm.add(
-      "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
+      motionSafe(DESKTOP_QUERY),
       () => {
         const t = ScrollTrigger.create({
           trigger: el,
@@ -147,7 +148,7 @@ export function FinalCta() {
     );
     // phones: played once, as the container comes in
     mm.add(
-      "(max-width: 767px) and (prefers-reduced-motion: no-preference)",
+      motionSafe(PHONE_QUERY),
       () => {
         const state = { p: 0 };
         track(0);

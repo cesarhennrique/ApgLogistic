@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollTrigger } from "@/components/motion/gsap";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";
+import { JOURNEY_MOUNTED } from "@/lib/phoneLayout";
 import { HeaderNav } from "./HeaderNav";
 import { MenuOverlay } from "./MenuOverlay";
 import { TransitionLink } from "./TransitionLink";
@@ -30,7 +31,13 @@ export function Header() {
       end: () => ScrollTrigger.maxScroll(window) + 1,
       onToggle: (self) => setScrolled(self.isActive),
     });
-    return () => trigger.kill();
+    // the page's height known once the journey's scenes are in (they mount after it: JourneyScenes)
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener(JOURNEY_MOUNTED, refresh);
+    return () => {
+      window.removeEventListener(JOURNEY_MOUNTED, refresh);
+      trigger.kill();
+    };
   }, []);
 
   // Over the 3D journey the header stays see-through (a solid bar would crop the frame); per route, since
@@ -54,11 +61,13 @@ export function Header() {
     const header = headerRef.current!;
     header.dataset.tone = "light";
     if (solid) return;
-    const scenes = [...document.querySelectorAll<HTMLElement>("[data-header-theme]")];
+    let scenes: HTMLElement[] = [];
     const under = new Set<HTMLElement>();
     let io: IntersectionObserver;
     const watch = () => {
       io?.disconnect();
+      // (looked up again as the journey's scenes mount, after the page: JourneyScenes)
+      scenes = [...document.querySelectorAll<HTMLElement>("[data-header-theme]")];
       const band = Math.round(header.offsetHeight / 2);
       io = new IntersectionObserver(
         (entries) => {
@@ -75,8 +84,10 @@ export function Header() {
     };
     watch();
     window.addEventListener("resize", watch);
+    window.addEventListener(JOURNEY_MOUNTED, watch);
     return () => {
       window.removeEventListener("resize", watch);
+      window.removeEventListener(JOURNEY_MOUNTED, watch);
       io.disconnect();
     };
   }, [solid, pathname]);
