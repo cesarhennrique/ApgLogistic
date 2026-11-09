@@ -354,6 +354,72 @@ Pronto quando: lint, typecheck, test e e2e passam.
 Commit: "feat: páginas internas"
 ````
 
+## Prompt M1 — Travamento e queda do site no iPhone (memória)
+
+> Vídeo do usuário em 2026-11-09 (iPhone, Safari, apg-logistic.vercel.app): na passagem hero → cena 1 a foto do navio aparece com faixa vermelha, depois só em pedaços (blocos faltando, um quarto da tela), fica preta, a página recarrega no hero e, na segunda vez, o Safari mostra "Um problema ocorreu repetidamente em https://apg-logistic.vercel.app". É a aba sendo morta por falta de memória (GPU/tiles), não erro de JavaScript.
+
+````text
+Leia o CLAUDE.md, ArrivalFrame.tsx, OceanArrival.tsx, oceanCamera.ts,
+HeroStage.tsx, HeroCanvas.tsx, CraneLift.tsx, Estrada.tsx,
+Distribution.tsx e src/lib/quality.ts. Use as skills
+animation-performance, mobile-native e superpowers:systematic-debugging.
+
+Problema (vídeo do usuário no iPhone, Safari, deploy da Vercel): na
+passagem hero → cena 1 a foto do navio é desenhada em blocos, some, a
+aba recarrega e, na segunda vez, o Safari mostra "Um problema ocorreu
+repetidamente". É o iOS matando a aba por memória.
+
+Causa mais provável (confirme medindo antes de corrigir):
+- ArrivalFrame põe a foto numa caixa de 6688×3764 px CSS (PHOTO) e a
+  escala com transform, sem will-change, "para re-rasterizar a cada
+  escala". No iPhone (dpr 3) isso pede ao compositor tiles de uma
+  camada gigantesca a cada frame.
+- Existem DUAS cópias desse quadro ao mesmo tempo (a última tela do
+  hero e a cena 1).
+- O canvas WebGL do mapa do hero continua vivo durante a passagem.
+- SIZES em vh faz o celular baixar a variante de 1920.
+
+1. Medição (antes e depois), em WebKit do Playwright 390×844 dpr 3 e
+   no Chrome com emulação de iPhone:
+   - tamanho das camadas compostas e memória estimada (painel Layers /
+     CDP LayerTree.compositingReasons e LayerTree.layerPainted);
+   - pixels decodificados vivos (soma de naturalWidth×naturalHeight
+     das imagens carregadas e não desmontadas) por cena;
+   - contextos WebGL vivos.
+   Informe a tabela antes/depois.
+2. Cena 1 sem caixa gigante: a caixa da foto passa a ter o tamanho da
+   tela (no máximo viewport × dpr em pixels de dispositivo); a câmera
+   escolhe o recorte por object-position/object-view-box ou por uma
+   transform residual pequena (escala ≤ 2 dentro de cada variante), e
+   troca de variante conforme o zoom (largo: navio-mar-1200/1920;
+   meio: recorte médio; close: navio-mar-close). Nenhuma camada pode
+   passar de ~4096×4096 px de dispositivo no celular.
+3. Uma cópia só: a última tela do hero e a cena 1 compartilham o mesmo
+   elemento (ou o hero desmonta a cópia dele quando a cena 1 fixa).
+4. WebGL: no máximo 1 contexto vivo. Ao sair do hero (cena 1 fixada),
+   desmonte o HeroCanvas e libere o contexto (gl.getExtension(
+   'WEBGL_lose_context').loseContext()); remonte ao voltar. Idem para a
+   Distribuição ao sair dela.
+5. Imagens fora de alcance: cenas a mais de 2 telas de distância
+   desmontam suas imagens grandes (portêiner 2560, cópia desfocada da
+   grua, carretas) e remontam ao se aproximar (com o placeholder de
+   cor por baixo, sem salto).
+6. Celular = tier 'low' por padrão (pointer: coarse ou iOS): sem a
+   cópia desfocada da grua (use só opacity), srcset uma largura abaixo
+   e dpr máximo 2 para escolher as imagens.
+7. Meta no celular: pixels decodificados vivos ≤ 25 MP em qualquer
+   ponto da Home; camadas ≤ 4096² px de dispositivo; 1 contexto WebGL.
+   Teste e2e que percorre a Home inteira no WebKit 390×844 dpr 3 e
+   falha se algum desses limites for passado.
+8. Deploy de preview na Vercel ao fim (vercel deploy, sem --prod) e me
+   passe a URL para eu testar no iPhone.
+
+Pronto quando: lint, typecheck, test e e2e passam, a tabela de
+memória mostra os limites do item 7 respeitados, e a URL de preview
+está pronta para teste no iPhone.
+Commit: "fix: memória no iPhone (cena 1, WebGL e imagens fora da tela)"
+````
+
 ## Prompt 06 — Formulários de cotação e currículo
 
 ````text
