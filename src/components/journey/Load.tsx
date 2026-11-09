@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { gsap } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { measure, setText } from "./measure";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
@@ -94,8 +95,7 @@ export function Load() {
     el.style.background = sliding ? "" : BACKGROUND;
     el.style.visibility = sliding ? "hidden" : "";
 
-    const W = el.clientWidth;
-    const H = el.clientHeight;
+    const { width: W, height: H } = measure(el);
     const c = reduced ? 1 : segment(raw.current, ...SCRIPT);
     // The truck's box (its layout, TRUCK_FRAME) and its centre and the container's, in stage px.
     const bw = FRAME.width * W;
@@ -134,7 +134,7 @@ export function Load() {
     cota.current!.style.transform = `translate3d(0, ${dy.toFixed(1)}px, 0)`;
     line.style.transform = `scaleY(${(-dy).toFixed(1)})`;
     mark.style.transform = `translate3d(0, ${(-dy).toFixed(1)}px, 0)`;
-    label.textContent = metres(-dy / s);
+    setText(label, metres(-dy / s));
     // halfway down the line, as scene 2 sets it
     label.style.transform = `translate3d(0, ${(-dy / 2).toFixed(1)}px, 0) translateY(-50%)`;
     cota.current!.style.opacity = String(reduced ? 0 : 1 - segment(c, ...COTA_OUT));

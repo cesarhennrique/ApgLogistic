@@ -244,3 +244,47 @@ body {
     animation: intro-fade 0.2s ease-out both;
   }
 }
+
+/* The maps as SVG on the 'low' tier (StaticMap "animated"): the hero's routes drawn in from the sea, Suape's ring
+   breathing. Still with reduced motion (that is the 'static' tier anyway). */
+.map-route {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: map-route-in 1.2s var(--ease-out) forwards;
+}
+
+@keyframes map-route-in {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.map-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: map-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes map-pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(1.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-route {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .map-pulse {
+    animation: none;
+  }
+}
+
+/* A journey scene off screen (Scene: data-visible): its endless animations paused (each one restyles every frame).
+   Named, not "*": toggling the attribute then restyles only these, not every node of the scene. */
+[data-scene]:not([data-visible]) :is(.mira, .map-pulse, .pin-pulse),
+[data-scene]:not([data-visible]) .suape-dot::after {
+  animation-play-state: paused;
+}

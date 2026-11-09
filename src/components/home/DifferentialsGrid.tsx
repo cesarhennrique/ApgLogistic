@@ -6,6 +6,7 @@ import { Counter } from "@/components/motion/Counter";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { useQualityTier } from "@/lib/quality";
 import { site } from "@/content/site";
+import { setText } from "@/components/journey/measure";
 
 export type PeMap = { dots: [number, number][]; routes: string[]; box: [number, number, number, number] };
 
@@ -67,9 +68,14 @@ function Tracking({ pe, live }: { pe: PeMap; live: boolean }) {
   const [x, y, w, h] = pe.box;
   return (
     <svg viewBox={`${x} ${y} ${w} ${h}`} className="w-full max-w-[320px]" aria-hidden="true">
-      {pe.dots.map(([dx, dz], i) => (
-        <circle key={i} cx={dx} cy={dz} r={0.13} className="fill-sand-50/45" />
-      ))}
+      {/* the dots as one path (a round-capped point each): one node, not hundreds, under the cell's data-in restyle */}
+      <path
+        d={pe.dots.map(([dx, dz]) => `M${dx} ${dz}h0`).join("")}
+        className="stroke-sand-50/45"
+        strokeWidth={0.26}
+        strokeLinecap="round"
+        fill="none"
+      />
       {pe.routes.map((d) => (
         <path key={d} d={d} fill="none" className="stroke-red-500/35" strokeWidth={0.08} strokeDasharray="0.3 0.3" />
       ))}
@@ -134,7 +140,7 @@ export function DifferentialsGrid({ pe }: { pe: PeMap }) {
     for (const c of cells) io.observe(c);
     // the clock: Recife's time, live; the hands' angles for it
     const tick = () => {
-      time.current!.textContent = recife.format(new Date());
+      setText(time.current!, recife.format(new Date()));
       const { hour, minute } = handsNow();
       hands.current!.style.setProperty("--hour", `${hour}deg`);
       hands.current!.style.setProperty("--minute", `${minute}deg`);

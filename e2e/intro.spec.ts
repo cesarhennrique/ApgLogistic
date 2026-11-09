@@ -53,8 +53,9 @@ test("on mobile the map sits above the copy, whole", async ({ page }, testInfo) 
   test.skip(testInfo.project.name !== "mobile", "mobile layout");
   await page.goto("/");
   await introDone(page);
-  await expect.poll(() => page.evaluate(() => typeof (window as never as { __heroMapRect?: unknown }).__heroMapRect)).toBe("function");
-  const map = await page.evaluate(() => (window as never as { __heroMapRect: () => DOMRect }).__heroMapRect());
+  // (phones, the 'low' tier: the map is the SVG one, its box the map's)
+  const svg = (await page.locator("#hero [data-static-map=hero]").boundingBox())!;
+  const map = { top: svg.y, bottom: svg.y + svg.height, left: svg.x, right: svg.x + svg.width };
   const copy = (await page.locator("#hero-copy").boundingBox())!;
   const width = page.viewportSize()!.width;
   expect(map.bottom).toBeLessThan(copy.y);

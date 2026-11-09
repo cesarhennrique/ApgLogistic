@@ -34,7 +34,8 @@ async function sceneY(page: Page, id: string, p: number) {
 async function settle(page: Page) {
   await page.goto("/");
   await page.waitForLoadState("load");
-  await page.locator("#hero canvas").waitFor({ state: "attached", timeout: 15_000 });
+  // (the 3D map on wide screens; phones, the 'low' tier, draw it as SVG)
+  await page.locator("#hero canvas:not([data-photo]), #hero [data-static-map]").first().waitFor({ state: "attached", timeout: 15_000 });
   await page.waitForTimeout(1500);
 }
 

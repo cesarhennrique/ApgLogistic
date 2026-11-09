@@ -7,6 +7,7 @@ import { gsap, ScrollTrigger } from "@/components/motion/gsap";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
+import { measure, setText, viewport } from "@/components/journey/measure";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const N = site.services.length;
@@ -36,7 +37,7 @@ export function ServicesTrack() {
     }));
     mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {
       const apply = (p: number) => {
-        const W = window.innerWidth;
+        const W = viewport().width;
         const at = p * (N - 1);
         track.current!.style.transform = `translate3d(${(-at * W).toFixed(1)}px, 0, 0)`;
         parts.forEach(({ object, word, rims }, i) => {
@@ -47,10 +48,10 @@ export function ServicesTrack() {
           word.style.transform = `translate3d(${(-rel * 0.5 * W).toFixed(1)}px, 0, 0)`;
           // rolling, not sliding: the wheels turn by the truck's own travel over the tyre's radius
           const travel = rel * 1.45 * W;
-          const radius = TYRE * (object.firstElementChild as HTMLElement).offsetWidth;
+          const radius = TYRE * measure(object.firstElementChild as HTMLElement).width;
           for (const rim of rims) rim.style.transform = `rotate(${((travel / radius) * (180 / Math.PI)).toFixed(1)}deg)`;
         });
-        counter.current!.textContent = `${pad(Math.round(at) + 1)}/${pad(N)}`;
+        setText(counter.current!, `${pad(Math.round(at) + 1)}/${pad(N)}`);
         bar.current!.style.transform = `scaleX(${((at + 1) / N).toFixed(4)})`;
       };
       const trigger = ScrollTrigger.create({

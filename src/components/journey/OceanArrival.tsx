@@ -8,6 +8,7 @@ import { site } from "@/content/site";
 import { ArrivalFrame, type Frame, frames, loadSharp, paint, setRedraw, viewOf } from "./ArrivalFrame";
 import { APG_CONTAINERS, BOW, type Rect, SHIP, TARGET, type View, ZOOM, sampleOceanCamera, toScreen } from "./oceanCamera";
 import { edges, guide, place } from "./marks";
+import { measure, setText } from "./measure";
 import { Scene, segment } from "./Scene";
 
 const scene = site.journey.find((s) => s.id === "chegada")!;
@@ -67,6 +68,7 @@ const MARK = { line: 2, gap: 10, from: 120, snap: 5, arm: 0.28 };
 const DASH = { length: 8, every: 16, gap: 12 };
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
+const offDashes = new WeakSet<HTMLElement>();
 // The HUD's position: degrees and minutes, from the open sea to Suape's.
 const { hud } = site.journeyScene;
 const minutes = ([d, m]: readonly number[]) => d * 60 + m;
@@ -87,27 +89,31 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
 
   // 0–20%: the HUD (its position running), the heading drawn dash by dash from the bow up and out of the frame.
   frame.hud.group.style.opacity = String(reduced ? 1 : segment(q, ...HUD_IN) * (1 - segment(q, ...HUD_OUT)));
-  frame.hud.coords.textContent = position(reduced ? 1 : easeOut(segment(q, ...HUD_RUN)));
+  setText(frame.hud.coords, position(reduced ? 1 : easeOut(segment(q, ...HUD_RUN))));
   const reach = (reduced ? 1 : segment(q, ...ROUTE_DRAW)) * Math.max(bow.y - DASH.gap, 0);
   frame.route.forEach((dash, i) => {
     const y = bow.y - DASH.gap - DASH.length - i * DASH.every;
     const on = i * DASH.every < reach && y > -DASH.length;
+    // (a dash off is written once, not moved every frame unseen)
+    if (!on && offDashes.has(dash)) return;
     place(dash, bow.x - 1, y, on ? 1 : 0, on ? 1 : 0);
+    if (on) offDashes.delete(dash);
+    else offDashes.add(dash);
   });
 
   // 20–45%: the sonar's rings out of the ship's centre; the heading's label off the bow, a leader to it.
   const ship = toScreen(cam, SHIP);
   frame.sonar.forEach((ring, i) => {
     const t = reduced ? 0 : segment(q, SONAR[i][0], SONAR[i][1]);
-    const size = ring.offsetWidth;
+    const size = measure(ring).width;
     place(ring, ship.x - size / 2, ship.y - size / 2, 0.35 + 1.9 * t, 0.35 + 1.9 * t);
     ring.style.opacity = String(t > 0 && t < 1 ? 0.75 * (1 - t) : 0);
   });
   const h = frame.heading;
-  const hw = h.label.offsetWidth;
+  const hw = measure(h.label).width;
   const hx = Math.min(Math.max(bow.x + (md ? 96 : 40), 16), view.width - hw - 16);
   // (below the HUD, in the same corner: on a short phone the bow's label would run into it)
-  const hy = Math.max(bow.y + 28, header + 8, frame.hud.group.offsetTop + frame.hud.group.offsetHeight + 8);
+  const hy = Math.max(bow.y + 28, header + 8, measure(frame.hud.group).top + measure(frame.hud.group).height + 8);
   place(h.label, hx, hy);
   guide(h, bow.x, bow.y, Math.min(Math.max(bow.x, hx), hx + hw), hy);
   // (held at the top once the bow has gone off it, its leader pointing where the bow went)
@@ -129,8 +135,7 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   // The note on the first one: beside the hull, a leader from the container's right edge.
   const first = box(APG_CONTAINERS[ORDER[0]]);
   const c = frame.containers;
-  const cw = c.label.offsetWidth;
-  const ch = c.label.offsetHeight;
+  const { width: cw, height: ch } = measure(c.label);
   const cx = Math.min(first.x + first.w + (md ? 72 : 24), view.width - cw - 16);
   const cy = first.y + first.h / 2 - ch / 2;
   place(c.label, cx, cy);
@@ -160,14 +165,14 @@ function draw(frame: Frame, q: number, view: View, reduced: boolean) {
   corners(frame.target.halos, HALO);
   corners(frame.target.bars, 0);
   const card = frame.target.label;
-  const tw = card.offsetWidth;
+  const tw = measure(card).width;
   // beside it, on the right where there is room, else below it
   const right = t.x + t.w + MARK.gap + 12;
   const fits = right + tw <= view.width - 16;
   // beside the sight, a little off it, with a leader from its corner
   const [kx, ky] = fits ? [right + 24, t.y] : [Math.max(16, Math.min(t.x, view.width - tw - 16)), y1 + 32];
   place(card, kx, ky);
-  if (fits) guide(frame.target, x1, y0 + 8, kx, ky + card.offsetHeight / 2);
+  if (fits) guide(frame.target, x1, y0 + 8, kx, ky + measure(card).height / 2);
   else guide(frame.target, x0 + 8, y1, kx + 16, ky);
   card.style.opacity = String(reduced ? 1 : segment(q, ...CARD_IN));
   frame.target.group.style.opacity = String(reduced ? 1 : segment(q, ...TARGET_IN));
@@ -189,13 +194,20 @@ export function OceanArrival() {
 
   const apply = useCallback(() => {
     const el = stage.current!;
-    // Sliding in over the hero: hold the picture still on screen, as the hero's copy of it is.
+    // Sliding in over the hero: see-through; the hero's copy of the picture (held still by its sticky
+    // stage, on the compositor) shows it all until this one pins. Holding this one still by a transform instead
+    // lagged a phone's async scroll: two pictures, apart, for a moment.
     // (the section's top from the scroll trigger; read from the layout only on a first draw or a resize)
     const stageTop = reduced ? 0 : Math.max(top.current ?? el.parentElement!.getBoundingClientRect().top, 0);
-    el.style.transform = `translate3d(0, ${(-stageTop).toFixed(1)}px, 0)`;
+    const sliding = stageTop > 0;
 
     const q = reduced ? REDUCED_Q : raw.current;
+    // every size the drawing reads, read first, before this frame's writes: a cache miss then lays out once, not once
+    // per label between writes (each frame's first draw, as scene 1 pins)
+    for (const f of frames) for (const m of [f.hud.group, f.heading.label, f.containers.label, f.target.label, ...f.sonar]) measure(m);
     const view = viewOf(el);
+    // (see-through, not hidden: drawn all along, its layer ready as it pins; made then, it was a long frame)
+    el.style.opacity = sliding ? "0" : "";
     for (const frame of frames) draw(frame, q, view, reduced);
 
     const copyIn = reduced ? 1 : segment(q, ...COPY_IN) * (1 - segment(q, ...COPY_OUT));
@@ -204,7 +216,7 @@ export function OceanArrival() {
     copy.current!.style.transform = `translate3d(0, ${((1 - copyIn) * 16).toFixed(1)}px, 0)`;
     copy.current!.style.visibility = copyIn <= 0 ? "hidden" : "";
     // the count climbs with the outlines
-    count.current!.textContent = TEUS.format(Math.round(site.journeyScene.arrivalTeus * (reduced ? 1 : segment(q, ...COUNT))));
+    setText(count.current!, TEUS.format(Math.round(site.journeyScene.arrivalTeus * (reduced ? 1 : segment(q, ...COUNT)))));
   }, [reduced]);
 
   const onProgress = useCallback(
@@ -246,7 +258,8 @@ export function OceanArrival() {
     <Scene
       id="chegada"
       heightVh={HEIGHT_VH}
-      background="#0d2f4f"
+      // (its picture paints its own sea; see-through while it slides in over the hero's copy)
+      background="transparent"
       headerTheme="dark"
       // over the hero's last screen: it slides in on top of the hero's copy of the picture
       from="slide"

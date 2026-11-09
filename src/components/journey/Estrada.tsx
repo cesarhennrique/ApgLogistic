@@ -10,6 +10,7 @@ import { Scoreboard } from "@/components/ui/Scoreboard";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
 import { TRUCK } from "./craneAnchors";
+import { setText } from "./measure";
 import {
   ESTRADA_VH,
   TRUCK_VIEWS,
@@ -384,7 +385,7 @@ export function Estrada() {
     wordEl.current!.style.opacity = String(segment(ph.a, 0, 0.05) * (1 - segment(theta, 0, 25)));
     // (once pinned: sliding, scene 3's own code still shows under it)
     copyEl.current!.style.opacity = String(segment(ph.a, 0, 0.03) * (1 - segment(theta, 50, 80)));
-    speedEl.current!.textContent = String(Math.round(TOP_SPEED * speed)).padStart(3, "0");
+    setText(speedEl.current!, String(Math.round(TOP_SPEED * speed)).padStart(3, "0"));
 
     // A's navy band under the road, its title and cards: they go down and out as the camera starts to rise.
     const bandTop = Y + (SIDE.wheel.y - O.y) * sz + (mobile ? 36 : 56);
@@ -456,7 +457,7 @@ export function Estrada() {
       const c = history[i].count;
       if (c) {
         const n = Math.round(lerp(c.from, c.to, easeOut(segment(s, at0 - CHAPTER_IN * L.Lc, at0 + L.Lc))));
-        counter!.textContent = c.from === 0 ? count.format(n) : String(n);
+        setText(counter!, c.from === 0 ? count.format(n) : String(n));
       }
       // the title's lines out of their masks, one after the other
       titleLines.current[i]?.forEach((line, j) => {
@@ -482,7 +483,7 @@ export function Estrada() {
       cell.style.opacity = String(k);
       cell.style.transform = `translate3d(0, ${((1 - k) * 12).toFixed(1)}px, 0)`;
       const n = segment(ph.d, 0.35 + i * 0.05, 0.75 + i * 0.05, easeOut);
-      value.textContent = count.format(Math.round(dock.stats[i].value * n));
+      setText(value, count.format(Math.round(dock.stats[i].value * n)));
     });
     // E: night falls over it all but the terminal's red point (scene 5's, on the same pixel).
     nightEl.current!.style.opacity = String(segment(ph.e, 0.1, 0.85));
@@ -564,7 +565,7 @@ export function Estrada() {
           <div ref={pinsEl}>
             {history.map((ch) => (
               <div key={ch.title} data-pin="" className="group absolute top-0 left-0">
-                <span className="absolute -top-2 -left-2 size-4 rounded-full bg-red-500 opacity-0 group-data-lit:animate-[pin-pulse_1.4s_var(--ease-out)_3]" />
+                <span className="pin-pulse absolute -top-2 -left-2 size-4 rounded-full bg-red-500 opacity-0 group-data-lit:animate-[pin-pulse_1.4s_var(--ease-out)_3]" />
                 <span className="absolute -top-2 -left-2 size-4 rounded-full border-2 border-navy-900 bg-[#fefefe] transition-colors duration-200 group-data-lit:border-red-500 group-data-lit:bg-red-500" />
                 <span className="absolute top-0 left-3.5 -translate-y-1/2 bg-navy-900 px-1.5 py-0.5 font-mono text-[11px] leading-none whitespace-nowrap text-sand-50 transition-colors duration-200 group-data-lit:bg-red-500 group-data-lit:text-white">
                   {ch.mark}
@@ -748,7 +749,8 @@ function Chapters() {
       <article
         key={ch.title}
         data-chapter=""
-        className={`absolute opacity-0 max-md:inset-x-4 md:w-[20rem] ${i % 2 ? "max-md:bottom-[5svh] md:bottom-[10svh] md:left-[4vw]" : "max-md:top-[9svh] md:top-[38%] md:right-[4vw]"}`}
+        // (a layer of its own, a card's size: it fades and slides every frame)
+        className={`absolute opacity-0 will-change-[opacity,transform] max-md:inset-x-4 md:w-[20rem] ${i % 2 ? "max-md:bottom-[5svh] md:bottom-[10svh] md:left-[4vw]" : "max-md:top-[9svh] md:top-[38%] md:right-[4vw]"}`}
       >
         <div className="border border-navy-900/15 bg-[#fefefe] p-4 text-navy-900">
           <div className="flex items-center justify-between gap-4">

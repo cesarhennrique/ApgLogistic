@@ -47,7 +47,8 @@ const scrollToArrival = (page: Page, q: number) => scrollToProgress(page, "chega
 // The hero's canvas mounts after the load event and an idle moment.
 async function settle(page: Page) {
   await page.waitForLoadState("load");
-  await page.locator("#hero canvas").waitFor({ state: "attached", timeout: 15_000 });
+  // (the 3D map on wide screens; phones, the 'low' tier, draw it as SVG)
+  await page.locator("#hero canvas:not([data-photo]), #hero [data-static-map]").first().waitFor({ state: "attached", timeout: 15_000 });
   await page.waitForTimeout(1500);
 }
 
@@ -147,15 +148,16 @@ test("each layer shows in its stretch only: the HUD, the heading, the APG contai
 // WebGL's canvases (scene 1's photo is drawn on a 2D one: [data-photo]).
 const webgl = (page: Page, within = "") => page.locator(`${within} canvas:not([data-photo])`.trim());
 
-// One WebGL context at most (a phone's memory): the hero's map until scene 1 pins over it (and back on the way up),
-// then none until scene 5 comes near, then scene 5's, gone again as it leaves.
-test("one WebGL canvas at most: the hero's map, then scene 5's once it comes near", async ({ page }) => {
+// One WebGL context at most (memory): the hero's map until scene 1 is two screens past its top (and back a screen before
+// the hero on the way up), then none until scene 5 comes near, then scene 5's, gone again as it leaves. Wide screens:
+// phones (the 'low' tier) have no WebGL at all, the maps as SVG.
+test("one WebGL canvas at most: the hero's map, then scene 5's once it comes near", async ({ page, isMobile }) => {
+  test.skip(isMobile, "phones draw the maps as SVG");
   await page.goto("/");
   await settle(page);
   await expect(webgl(page, "#hero")).toHaveCount(1);
   await expect(webgl(page)).toHaveCount(1);
-  await scrollToArrival(page, 0.5);
-  await expect(webgl(page)).toHaveCount(0);
+  // (the hero's goes once scene 1 is two screens past its top, back a screen before the hero on the way up)
   await scrollToEstrada(page, 0.6);
   await page.waitForTimeout(500);
   await expect(webgl(page)).toHaveCount(0);
@@ -619,5 +621,73 @@ test.describe("hero to scene 1 frames", () => {
       await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-hero-exit-${d}.png` });
       expect(errors).toEqual([]);
     });
+  }
+});
+
+// Scene 1 on a phone (spec §3; the 'low' tier): one picture at a time, the hero's copy until scene 1 pins, then
+// scene 1's own; the camera's scale only ever growing, by small steps, from the wide framing to the close. Saved at
+// 0, 0.25, 0.5, 0.75 and 1 of the scene.
+test("scene 1 on a phone: one picture, a continuous zoom", async ({ page, isMobile }, testInfo) => {
+  test.skip(!isMobile, "the phone");
+  test.setTimeout(120_000);
+  await page.goto("/");
+  await settle(page);
+  const shown = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll<HTMLCanvasElement>("[data-photo]")]
+        .filter((c) => {
+          const r = c.getBoundingClientRect();
+          let o = 1;
+          for (let e: Element | null = c; e; e = e.parentElement) {
+            const cs = getComputedStyle(e);
+            if (cs.visibility === "hidden") o = 0;
+            o *= Number(cs.opacity);
+          }
+          return o > 0.01 && r.bottom > 0 && r.top < innerHeight;
+        })
+        .map((c) => Number(c.dataset.scale)),
+    );
+  const scales: number[] = [];
+  for (const q of [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95]) {
+    await scrollToArrival(page, q);
+    // a few frames run, as a finger's scroll makes them (a script's jump alone may wait for one in headless WebKit)
+    await page.evaluate(() => new Promise<void>((r) => { let n = 0; const f = () => (++n < 12 ? requestAnimationFrame(f) : r()); requestAnimationFrame(f); }));
+    // (polled: the hero's copy mounts as the hand-over begins, and draws a frame after)
+    await expect.poll(async () => (await shown()).filter(Number.isFinite).length, { message: `q = ${q}: one picture` }).toBe(1);
+    const visible = await shown();
+    expect(visible, `q = ${q}: one picture`).toHaveLength(1);
+    scales.push(visible[0]);
+  }
+  for (let i = 1; i < scales.length; i++) {
+    expect(scales[i], `step ${i}: never back`).toBeGreaterThanOrEqual(scales[i - 1] - 1e-4);
+    expect(scales[i] / scales[i - 1], `step ${i}: no jump`).toBeLessThan(1.3);
+  }
+  expect(scales.at(-1)! / scales[0]).toBeGreaterThan(1.5);
+  for (const q of [0, 0.25, 0.5, 0.75, 1]) {
+    await scrollToArrival(page, q);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `e2e/__screenshots__/journey/${testInfo.project.name}-cena1-${q}.png` });
+  }
+});
+
+// Scene 2: the truck waiting under the crane is there all the way down, its picture never let go nor swapped while
+// the scene is pinned (useNear: its scene, not the image, is watched; a clipped image used to read as far).
+test("scene 2 keeps its truck on screen while the container comes down", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("/");
+  await settle(page);
+  for (let i = 0; i <= 12; i++) {
+    await scrollToProgress(page, "porteiner", i / 12);
+    // (polled: the first step lands from far, its picture still decoding; never let go after that)
+    await expect
+      .poll(
+        () =>
+          page.locator("#porteiner img[src*='carreta-lado-vazia']").first().evaluate((img: HTMLImageElement) => ({
+            loaded: img.complete && img.naturalWidth > 0,
+            opacity: getComputedStyle(img).opacity,
+          })),
+        { message: `step ${i}`, timeout: i === 0 ? 5000 : 300 },
+      )
+      .toEqual({ loaded: true, opacity: "1" });
   }
 });

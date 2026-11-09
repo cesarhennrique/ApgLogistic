@@ -6,14 +6,17 @@ import { useEffect } from "react";
 import { gsap, ScrollTrigger } from "./gsap";
 import { useReducedMotion } from "./useReducedMotion";
 
-// Shared so the menu can pause scrolling; null when reduced motion keeps Lenis off.
+// Shared so the menu can pause scrolling; null when Lenis is off: reduced motion, or a touch screen (its own scroll is
+// native, async, and Lenis would only add work per frame there).
 export const lenisRef: { current: Lenis | null } = { current: null };
 
 export function SmoothScroll() {
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (reducedMotion) return;
+    // a phone's address bar resizing the viewport as it scrolls: no full refresh of every trigger for that
+    ScrollTrigger.config({ ignoreMobileResize: true });
+    if (reducedMotion || window.matchMedia("(pointer: coarse)").matches) return;
     const lenis = new Lenis();
     lenisRef.current = lenis;
     lenis.on("scroll", ScrollTrigger.update);

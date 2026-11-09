@@ -7,9 +7,11 @@ import { useQualityTier } from "@/lib/quality";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { homeCode } from "@/content/homeSections";
 import { site } from "@/content/site";
+import { DELIVERIES, routeWindow } from "@/three/models/distributionLayout";
 import { distributionProgress } from "@/three/progress";
 import { MAP_IN, PE_BA_BOUNDS, PULL_BACK, SALVADOR_AT, sampleDistributionCamera, smoother } from "@/three/stages/distributionCamera";
 import { Scene, segment } from "./Scene";
+import { measure, setText } from "./measure";
 import { StaticMap } from "./StaticMap";
 
 const loadCanvas = () => import("@/three/DistributionCanvas");
@@ -34,7 +36,7 @@ const CONE_OUT = [0.14, 0.26] as const;
 const HUBS_IN = [0.3, 0.42] as const;
 
 // A label's left edge beside its point at x: right of it, or left of it where it would run off the screen.
-const beside = (label: HTMLElement, x: number, width: number) => (x + 14 + label.offsetWidth <= width - 16 ? x + 14 : x - 14 - label.offsetWidth);
+const beside = (label: HTMLElement, x: number, width: number) => (x + 14 + measure(label).width <= width - 16 ? x + 14 : x - 14 - measure(label).width);
 
 // Scene 5: the deliveries out of the terminal across Pernambuco and Bahia, on the hero's map.
 export function Distribution() {
@@ -47,6 +49,10 @@ export function Distribution() {
   const reduced = useReducedMotion();
   const tier = useQualityTier();
   const still = useRef<HTMLDivElement>(null);
+  // WebGL on the 'high' tier only: phones ('low') draw the map as SVG, its routes by the scene's progress (no context
+  // to make, nor shaders to compile, as the scene comes near)
+  const webgl = tier === "high";
+  const svg = useRef<{ map: Element; routes: SVGElement[]; dests: SVGElement[] } | null>(null);
   const raw = useRef(0);
   const top = useRef<number | null>(null);
   // The canvas mounts once the scene is a screen away and unmounts past that (its WebGL context let go: one at most
@@ -80,7 +86,7 @@ export function Distribution() {
   // there by the time the map is.
   useEffect(() => {
     const estrada = document.getElementById("estrada");
-    if (!estrada || tier === null || tier === "static") return;
+    if (!estrada || tier !== "high") return;
     const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) return;
       void loadCanvas();
@@ -103,7 +109,7 @@ export function Distribution() {
     const c = reduced ? 1 : segment(raw.current, ...SCRIPT);
     distributionProgress.value = c;
     distributionProgress.invalidate();
-    const view = { width: el.clientWidth, height: el.clientHeight };
+    const view = { width: measure(el).width, height: measure(el).height };
     const { scale, origin } = sampleDistributionCamera(smoother(c, PULL_BACK), view, PE_BA_BOUNDS);
     // The terminal's red point (scene 4's dock), and its name, then the two hubs' names.
     still.current!.style.transform = `translate3d(${origin.x.toFixed(1)}px, ${origin.y.toFixed(1)}px, 0) scale(${scale.toFixed(4)})`;
@@ -119,9 +125,20 @@ export function Distribution() {
     suape.style.transform = `translate3d(${beside(suape, origin.x, view.width).toFixed(1)}px, ${(origin.y - 6).toFixed(1)}px, 0) translateY(-100%)`;
     const sx = origin.x + SALVADOR_AT.x * scale;
     salvador.style.transform = `translate3d(${beside(salvador, sx, view.width).toFixed(1)}px, ${(origin.y + SALVADOR_AT.z * scale).toFixed(1)}px, 0) translateY(-50%)`;
+    // the SVG map's routes ('low' tier): each drawn over its window, its destination lit as it lands
+    const map = still.current!.firstElementChild;
+    if (tier === "low" && map) {
+      if (svg.current?.map !== map)
+        svg.current = { map, routes: [...map.querySelectorAll<SVGElement>("[data-route]")], dests: [...map.querySelectorAll<SVGElement>("[data-dest]")] };
+      DELIVERIES.forEach((_, i) => {
+        const [start, end] = routeWindow(i);
+        svg.current!.routes[i]?.setAttribute("stroke-dashoffset", (1 - segment(c, start, end)).toFixed(3));
+        svg.current!.dests[i]?.setAttribute("opacity", c >= end ? "1" : "0");
+      });
+    }
     copy.current!.style.opacity = String(segment(c, ...COPY_IN));
-    counter.current!.textContent = count.format(Math.round(copyText.count * segment(c, ...COUNT)));
-  }, [reduced]);
+    setText(counter.current!, count.format(Math.round(copyText.count * segment(c, ...COUNT))));
+  }, [reduced, tier]);
 
   const onProgress = useCallback(
     (p: number, t: number) => {
@@ -156,11 +173,12 @@ export function Distribution() {
     >
       <div ref={stage} className="absolute inset-0 overflow-hidden">
         <div aria-hidden="true" className="absolute inset-0">
-          {near && tier !== null && tier !== "static" && <DistributionCanvas onScreen={onScreen || reduced} onReady={onReady} />}
+          {near && webgl && <DistributionCanvas onScreen={onScreen || reduced} onReady={onReady} />}
           {/* the 'static' tier (lib/quality), or the canvas still loading: the map as a still picture, placed by the
               same camera */}
-          <div ref={still} className="absolute top-0 left-0 origin-top-left">
-            {tier !== null && (tier === "static" || !ready) && <StaticMap variant="distribution" />}
+          {/* (a layer of its own: the camera scales it every frame; re-rastered at each scale, the map was the scene's cost) */}
+          <div ref={still} className="absolute top-0 left-0 origin-top-left will-change-transform">
+            {tier !== null && (!webgl || !ready) && <StaticMap variant="distribution" animated={tier === "low"} />}
           </div>
         </div>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">

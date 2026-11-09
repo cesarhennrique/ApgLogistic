@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap, type ScrollTrigger } from "./gsap";
 import { useReducedMotion } from "./useReducedMotion";
+import { setText } from "@/components/journey/measure";
 
 type Props = {
   value: number;
@@ -32,7 +33,7 @@ export function Counter({ value, suffix, duration = 1.6, start = "top 85%", clas
       duration,
       ease: "power2.out",
       // writes the DOM directly: no React re-render per frame
-      onUpdate: () => (el.textContent = format(Math.round(state.n))),
+      onUpdate: () => setText(el, format(Math.round(state.n))),
       scrollTrigger: { trigger: el, start, once: true },
     });
     return () => {

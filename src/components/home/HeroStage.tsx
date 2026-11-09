@@ -1,12 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, startTransition, useEffect, useRef, useState } from "react";
 import { gsap, ScrollTrigger } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
 import { ArrivalFrame } from "@/components/journey/ArrivalFrame";
 import { segment } from "@/components/journey/segment";
-import { StaticMap } from "@/components/journey/StaticMap";
+import { HERO_FRAME, StaticMap } from "@/components/journey/StaticMap";
 import { useQualityTier } from "@/lib/quality";
 import { readDebugParams } from "@/three/debug";
 import { heroDive } from "@/three/progress";
@@ -22,6 +22,15 @@ const OCEAN_IN = [0.78, 1] as const;
 // The hero's copy of scene 1's picture exists only for the hand-over (from a little before it shows): one copy of it
 // the rest of the time, scene 1's (a phone's memory).
 const OCEAN_MOUNT = 0.7;
+// The SVG map's dive (the tiers without WebGL): it swells about Suape and fades, Suape's glow swelling out of it as
+// on the 3D map (HeroMapStage: the same stretches, the same 40 px disc, never past 4096 device px across).
+const SVG_DIVE = 3;
+const SVG_FADE = [0.4, 0.85] as const;
+const GLOW_IN = [0.55, 0.9] as const;
+const GLOW_SCALE = 90;
+const smooth = (t: number) => t * t * (3 - 2 * t);
+// (phones: above the copy, which starts a third of the way down)
+const MAP_BOX = "absolute top-[16%] right-[6%] h-[60%] max-md:top-[9%] max-md:right-[8%] max-md:h-[22%]";
 // Pointer parallax (fine pointers only): the photo and the map, the nearer moving more.
 const PARALLAX = { photo: 6, map: 14 };
 
@@ -40,10 +49,18 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
   // hero's copy of scene 1 let go (one WebGL context at most on the page; the canvas comes back on the way up).
   const [handOver, setHandOver] = useState(false);
   const [covered, setCovered] = useState(false);
+  // The 3D map back a screen before the hero on the way up (scene 1 more than two screens past its top: far), the SVG
+  // map under it until its first frame; `back`: it has been away once (on the first visit, a faint outline instead).
+  const [mapFar, setMapFar] = useState(false);
+  const [back, setBack] = useState(false);
+  const svgMap = useRef<HTMLDivElement>(null);
+  const glow = useRef<HTMLDivElement>(null);
   const handing = useRef(false);
   const reduced = useReducedMotion();
-  // no canvas on the 'static' tier (no WebGL, reduced motion: lib/quality): the map as a still picture
+  // WebGL on the 'high' tier only (lib/quality); the others draw the map as SVG: still on 'static', animated on
+  // 'low' (phones: no context to make again, nor shaders to compile, on the way back up)
   const tier = useQualityTier();
+  const webgl = tier === "high";
 
   // The 3D chunk (three, drei: ~530 KB of script) loads after the page's load event, a frame actually painted (on a
   // fast connection the load can fire before the first paint) and an idle moment: off the LCP's path.
@@ -64,8 +81,21 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
       copy.current!.style.visibility = copyOut >= 1 ? "hidden" : "";
       photoLayer.current!.style.opacity = String(1 - segment(d, ...PHOTO_OUT));
       ocean.current!.style.opacity = String(segment(d, ...OCEAN_IN));
+      if (svgMap.current) {
+        const zoom = 1 + SVG_DIVE * d * d;
+        svgMap.current.style.transform = `scale(${zoom.toFixed(3)})`;
+        svgMap.current.style.opacity = String(1 - segment(d, ...SVG_FADE));
+        const swell = smooth(segment(d, ...GLOW_IN));
+        const scale = Math.min(1 + GLOW_SCALE * swell * swell, 4096 / (40 * devicePixelRatio));
+        glow.current!.style.opacity = String(swell);
+        glow.current!.style.transform = `translate(-50%, -50%) scale(${(scale / zoom).toFixed(2)})`;
+      }
       // (React state only as the threshold is crossed, never per frame)
-      if (d >= OCEAN_MOUNT !== handing.current) setHandOver((handing.current = d >= OCEAN_MOUNT));
+      if (d >= OCEAN_MOUNT !== handing.current) {
+        const on = (handing.current = d >= OCEAN_MOUNT);
+        // (a transition: React works in slices, never inside the scroll's own frame)
+        startTransition(() => setHandOver(on));
+      }
     };
     const { frozen } = readDebugParams(window.location.search);
     if (frozen !== null) return apply(frozen);
@@ -79,7 +109,7 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
     });
     apply(trigger.progress);
     return () => trigger.kill();
-  }, [reduced]);
+  }, [reduced, tier]);
 
   useEffect(() => {
     const scene = document.getElementById("chegada");
@@ -88,13 +118,24 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
       trigger: scene,
       start: "top top",
       // (also at creation, when the page opens past it)
-      onEnter: () => {
-        setCovered(true);
-        setMapReady(false);
-      },
-      onLeaveBack: () => setCovered(false),
+      onEnter: () => startTransition(() => setCovered(true)),
+      onLeaveBack: () => startTransition(() => setCovered(false)),
     });
-    return () => trigger.kill();
+    const far = ScrollTrigger.create({
+      trigger: scene,
+      start: "top -200%",
+      onEnter: () =>
+        startTransition(() => {
+          setMapFar(true);
+          setBack(true);
+          setMapReady(false);
+        }),
+      onLeaveBack: () => startTransition(() => setMapFar(false)),
+    });
+    return () => {
+      trigger.kill();
+      far.kill();
+    };
   }, []);
 
   // The parallax: the pointer's offset from the screen's centre, eased.
@@ -146,19 +187,31 @@ export function HeroStage({ photo, children }: { photo: ReactNode; children: Rea
           <img
             src="/images/map/nordeste.svg"
             alt=""
-            className={`absolute top-[16%] right-[6%] h-[60%] w-auto invert transition-opacity duration-600 ease-out max-md:top-[12%] max-md:right-[8%] max-md:h-[34%] ${mapReady || tier === "static" ? "opacity-0" : "opacity-[0.07]"}`}
+            className={`absolute top-[16%] right-[6%] h-[60%] w-auto invert transition-opacity duration-600 ease-out max-md:top-[12%] max-md:right-[8%] max-md:h-[34%] ${mapReady || back || !webgl ? "opacity-0" : "opacity-[0.07]"}`}
           />
-          {tier === "static" && (
-            <StaticMap
-              variant="hero"
-              fit
-              className="absolute top-[16%] right-[6%] h-[60%] w-auto max-md:top-[12%] max-md:right-[8%] max-md:h-[34%]"
-            />
+          {/* The SVG map: the tiers without WebGL (animated on 'low'), or under the 3D one on its way back, until its
+              first frame. It dives into Suape (scaled about it), Suape's glow swelling out of it. */}
+          {/* (not while far: its SMIL and CSS animations would run, and invalidate, off screen) */}
+          {tier !== null && !mapFar && (!webgl || (back && !mapReady)) && (
+            <div
+              ref={svgMap}
+              className={MAP_BOX}
+              style={{ aspectRatio: HERO_FRAME.aspect, transformOrigin: `${HERO_FRAME.suape.x * 100}% ${HERO_FRAME.suape.y * 100}%` }}
+            >
+              <StaticMap variant="hero" fit animated={tier === "low"} className="h-full w-full" />
+              <div
+                ref={glow}
+                className="pointer-events-none absolute size-10 rounded-full bg-[radial-gradient(closest-side,rgb(255_214_200/0.95),rgb(227_30_36/0.75)_45%,transparent)] opacity-0"
+                style={{ left: `${HERO_FRAME.suape.x * 100}%`, top: `${HERO_FRAME.suape.y * 100}%` }}
+              />
+            </div>
           )}
-          {canvas && !covered && tier !== null && tier !== "static" && <HeroCanvas onReady={() => setMapReady(true)} />}
+          {canvas && webgl && !mapFar && <HeroCanvas onReady={() => setMapReady(true)} />}
         </div>
-        <div ref={ocean} className="absolute inset-0 overflow-hidden opacity-0">
-          {canvas && handOver && !covered && <ArrivalFrame alt="" />}
+        {/* Covered (scene 1 pinned over it): hidden and out of the drawing, let go only once far (unmounting it as
+            scene 1 pins was a long task in the scroll's frame). */}
+        <div ref={ocean} className={`absolute inset-0 overflow-hidden opacity-0 ${covered ? "invisible" : ""}`}>
+          {canvas && handOver && !mapFar && <ArrivalFrame alt="" paused={covered} />}
         </div>
       </div>
       <div ref={copy} className="relative flex h-full flex-col">

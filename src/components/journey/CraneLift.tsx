@@ -11,6 +11,7 @@ import { viewOf } from "./ArrivalFrame";
 import { BOOM_TOP, CRANE, GROUND, HOIST, ROPES, ROPE_WIDTH, SPREADER, SPREADER_BOX } from "./craneAnchors";
 import { CONTAINER, HANDOFF_GAP, PX_PER_M, TRUCK_IN_CRANE, sampleCraneCamera, seatDrop } from "./craneCamera";
 import { guide, place } from "./marks";
+import { measure, setText } from "./measure";
 import { type Camera, cameraTransform } from "./oceanCamera";
 import { Scene, segment } from "./Scene";
 import { SceneImage } from "./SceneImage";
@@ -176,7 +177,7 @@ export function CraneLift() {
     place(cLine, cx, top, 1.5, bottom - top);
     place(cTop, cx - 6, top, 13, 1.5);
     place(cBottom, cx - 6, bottom - 1.5, 13, 1.5);
-    place(cLabel, cx - cLabel.offsetWidth - 10, (top + bottom) / 2 - cLabel.offsetHeight / 2);
+    place(cLabel, cx - measure(cLabel).width - 10, (top + bottom) / 2 - measure(cLabel).height / 2);
     cLine.parentElement!.style.opacity = String(reduced ? 1 : segment(c, ...CRANE_COTA.in) * (1 - segment(c, ...CRANE_COTA.out)));
 
     // The container's height above its seat on the truck, metres counting down, beside it.
@@ -187,14 +188,13 @@ export function CraneLift() {
     place(dLine, dx, boxBottom, 1.5, Math.max(seat - boxBottom, 0));
     place(dTop, dx - 6, boxBottom, 13, 1.5);
     place(dBottom, dx - 6, seat - 1.5, 13, 1.5);
-    dLabel.textContent = metres((seatDrop - dy) / PX_PER_M);
-    place(dLabel, dx + 10, (boxBottom + seat) / 2 - dLabel.offsetHeight / 2);
+    setText(dLabel, metres((seatDrop - dy) / PX_PER_M));
+    place(dLabel, dx + 10, (boxBottom + seat) / 2 - measure(dLabel).height / 2);
     dLine.parentElement!.style.opacity = String(reduced ? 1 : segment(c, ...DROP_COTA_IN));
 
     // The callouts: a leader from the part to its label (left of it, clear of the legs).
     const callout = (n: Note, key: keyof typeof CALLOUTS, ax: number, ay: number) => {
-      const lw = n.label.offsetWidth;
-      const lh = n.label.offsetHeight;
+      const { width: lw, height: lh } = measure(n.label);
       const lx = Math.max(ax - lw - 70, 16);
       const ly = Math.min(Math.max(ay - 46, 96), view.height - lh - 16);
       place(n.label, lx, ly);
@@ -213,7 +213,7 @@ export function CraneLift() {
     const lineIn = (i: number) => (reduced ? 1 : segment(c, TITLE_IN[0] + i * 0.03, TITLE_IN[1] + i * 0.03));
     lines.current.forEach((l, i) => (l.style.transform = `translate3d(0, ${((1 - lineIn(i)) * 110).toFixed(1)}%, 0)`));
     const n = reduced ? 1 : segment(c, ...COUNT);
-    P.stats.forEach((s, i) => (s.textContent = count.format(Math.round(copyText.stats[i].value * n))));
+    P.stats.forEach((s, i) => setText(s, count.format(Math.round(copyText.stats[i].value * n))));
     const copyOut = reduced ? 0 : segment(c, ...COPY_OUT);
     copy.current!.style.opacity = String((reduced ? 1 : segment(c, TITLE_IN[0], TITLE_IN[0] + 0.04)) * (1 - copyOut));
   }, [reduced]);

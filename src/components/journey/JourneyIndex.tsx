@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { ScrollTrigger } from "@/components/motion/gsap";
+import { viewport } from "./measure";
 import { lenisRef } from "@/components/motion/SmoothScroll";
 import { site } from "@/content/site";
 
@@ -20,7 +21,6 @@ export function JourneyIndex() {
     const journey = document.getElementById("journey")!;
     const buttons = [...el.querySelectorAll<HTMLButtonElement>("button")];
     const sections = MARKS.map((m) => document.getElementById(m.id));
-    let frame = 0;
     let shown = -1;
     // the sections' extents on the page, measured once and again on a refresh or a resize (never per frame: a layout
     // read after the scenes' style writes forced a layout every frame)
@@ -31,11 +31,11 @@ export function JourneyIndex() {
         return r ? [r.top + window.scrollY, r.bottom + window.scrollY] : [Infinity, -Infinity];
       });
     };
-    const update = () => {
-      frame = 0;
+    const update = (y: number) => {
       // the scene under the screen's middle; where two overlap (a slide), the later one
-      // (Lenis's scroll: reading window.scrollY after the scenes' writes would flush the layout)
-      const mid = (lenisRef.current?.scroll ?? window.scrollY) + window.innerHeight / 2;
+      // (the scroll from ScrollTrigger, read once a frame before the scenes' writes: reading window.scrollY after
+      // them would flush the layout)
+      const mid = y + viewport().height / 2;
       let active = 0;
       ranges.forEach(([top, bottom], i) => {
         if (top <= mid && bottom >= mid) active = i;
@@ -44,21 +44,20 @@ export function JourneyIndex() {
       shown = active;
       buttons.forEach((b, i) => (i === active ? b.setAttribute("aria-current", "step") : b.removeAttribute("aria-current")));
     };
-    const onScroll = () => (frame ||= requestAnimationFrame(update));
+    const tracker = ScrollTrigger.create({ start: 0, end: "max", onUpdate: (self) => update(self.scroll()) });
     const io = new IntersectionObserver(([e]) => el.toggleAttribute("data-on", e.isIntersecting));
     io.observe(journey);
     const refresh = () => {
       measure();
-      update();
+      update(tracker.scroll());
     };
     refresh();
     ScrollTrigger.addEventListener("refresh", refresh);
-    window.addEventListener("scroll", onScroll, { passive: true });
+
     return () => {
       ScrollTrigger.removeEventListener("refresh", refresh);
       io.disconnect();
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
+      tracker.kill();
     };
   }, []);
 

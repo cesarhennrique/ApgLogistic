@@ -3,6 +3,7 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 import { ScrollTrigger } from "@/components/motion/gsap";
 import { useReducedMotion } from "@/components/motion/useReducedMotion";
+import { viewport } from "./measure";
 import { type PhoneScroll, phoneLength, toDesktop } from "./sceneScroll";
 
 export { segment } from "./segment";
@@ -44,9 +45,9 @@ export function Scene({ id, heightVh, phone, background, headerTheme, onProgress
 
   useEffect(() => {
     if (reduced) return;
-    const progress = (p: number) => (phone && window.innerWidth < 768 ? toDesktop(p, range, phone) : p);
+    const progress = (p: number) => (phone && viewport().width < 768 ? toDesktop(p, range, phone) : p);
     // the trigger starts with the section's top at the viewport's bottom (slide) or top (pin)
-    const topOf = (self: ScrollTrigger) => (from === "slide" ? window.innerHeight : 0) - (self.scroll() - self.start);
+    const topOf = (self: ScrollTrigger) => (from === "slide" ? viewport().height : 0) - (self.scroll() - self.start);
     const trigger = ScrollTrigger.create({
       trigger: section.current,
       start: from === "pin" ? "top top" : "top bottom",
@@ -58,10 +59,20 @@ export function Scene({ id, heightVh, phone, background, headerTheme, onProgress
     return () => trigger.kill();
   }, [reduced, from, phone, range]);
 
+  // On screen or not (data-visible): its CSS animations (pulses, glows) pause off screen (globals.css); running there,
+  // each one restyles every frame for nothing.
+  useEffect(() => {
+    const el = section.current!;
+    const io = new IntersectionObserver(([e]) => el.toggleAttribute("data-visible", e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <section
       ref={section}
       id={id}
+      data-scene=""
       data-header-theme={headerTheme}
       // The scroll's shape, for the e2e tests to find a progress on any screen: range, from, head, tail, scale.
       data-scroll={[range, from, phone?.head ?? 0, phone?.tail ?? 0, phone?.scale ?? 1].join(" ")}

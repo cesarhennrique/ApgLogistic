@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import images from "@/content/journeyImages.json";
 import { useQualityTier } from "@/lib/quality";
 import { capSizes } from "@/lib/sizes";
@@ -25,8 +25,9 @@ const srcSet = (name: string, widths: number[], ext: string) =>
 
 // A journey image (built by `npm run images`): AVIF, then WebP, at 800, 1200 and its own width, with its intrinsic
 // size on the <img> so the layout never shifts. On the 'low' tier (lib/quality) its largest width is left out and
-// it is picked as if at 2× at most. Unless eager, its source is set only while it is within two screens (useNear):
-// past that the <img> stays (its box, its alt) but holds no pixels.
+// it is picked as if at 2× at most. Unless eager, its source is set only while its scene is near (useNear): far, the
+// <img> stays (its box, its alt) but holds no pixels; it shows only once decoded (the scene's colour under it till
+// then: no frame ever decodes it, nor shows it half drawn).
 export function SceneImage({ name, alt, sizes: wanted, className, eager = false, full = false }: Props) {
   const img = useRef<HTMLImageElement>(null);
   const near = useNear(img);
@@ -37,6 +38,20 @@ export function SceneImage({ name, alt, sizes: wanted, className, eager = false,
   const widths = full ? [width] : low ? all.slice(0, -1) : all;
   const sizes = tier === "low" ? capSizes(wanted, window.devicePixelRatio) : wanted;
   const on = eager || near;
+  const [decoded, setDecoded] = useState(false);
+  useEffect(() => {
+    const el = img.current!;
+    if (!on || eager) return;
+    let live = true;
+    const go = () => void el.decode().then(() => live && setDecoded(true), () => live && setDecoded(true));
+    if (el.complete && el.naturalWidth) go();
+    else el.addEventListener("load", go, { once: true });
+    return () => {
+      live = false;
+      el.removeEventListener("load", go);
+      setDecoded(false);
+    };
+  }, [on, eager]);
   return (
     <picture>
       <source type="image/avif" srcSet={on ? srcSet(name, widths, "avif") : undefined} sizes={sizes} />
@@ -51,6 +66,7 @@ export function SceneImage({ name, alt, sizes: wanted, className, eager = false,
         decoding="async"
         loading={eager ? "eager" : "lazy"}
         className={className}
+        style={eager || decoded ? undefined : { opacity: 0 }}
       />
     </picture>
   );

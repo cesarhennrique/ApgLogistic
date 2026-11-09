@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ScrollTrigger } from "@/components/motion/gsap";
 import { CtaButton } from "@/components/ui/CtaButton";
 import { site } from "@/content/site";
 import { HeaderNav } from "./HeaderNav";
@@ -20,11 +21,16 @@ export function Header() {
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
+  // Past the first 80 px. From ScrollTrigger (it reads the scroll once a frame, before the scenes write their styles):
+  // reading window.scrollY in a scroll listener, after those writes, forced a whole layout on every scroll event.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 80);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    // (its end a px past the page's: at "max" the trigger turns inactive on the very last pixel)
+    const trigger = ScrollTrigger.create({
+      start: 80,
+      end: () => ScrollTrigger.maxScroll(window) + 1,
+      onToggle: (self) => setScrolled(self.isActive),
+    });
+    return () => trigger.kill();
   }, []);
 
   // Over the 3D journey the header stays see-through (a solid bar would crop the frame); per route, since
@@ -81,16 +87,19 @@ export function Header() {
     const header = headerRef.current!;
     delete header.dataset.hidden;
     if (!overJourney) return;
-    let last = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      if (y > last + 2) header.dataset.hidden = "";
-      else if (y < last - 2) delete header.dataset.hidden;
-      last = y;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // (the direction from ScrollTrigger, as above; the attribute written only when it turns)
+    let hidden = false;
+    const trigger = ScrollTrigger.create({
+      start: 0,
+      end: "max",
+      onUpdate: (self) => {
+        if ((self.direction === 1) === hidden) return;
+        hidden = self.direction === 1;
+        header.toggleAttribute("data-hidden", hidden);
+      },
+    });
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      trigger.kill();
       delete header.dataset.hidden;
     };
   }, [overJourney]);

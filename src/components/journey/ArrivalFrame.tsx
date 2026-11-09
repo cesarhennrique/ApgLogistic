@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { gsap } from "@/components/motion/gsap";
 import images from "@/content/journeyImages.json";
 import { ContainerCode } from "@/components/ui/ContainerCode";
 import { site } from "@/content/site";
 import { useQualityTier } from "@/lib/quality";
 import { capSizes } from "@/lib/sizes";
 import { APG_CONTAINERS, type Camera, PHOTO, type View } from "./oceanCamera";
+import { measure } from "./measure";
 import { useNear } from "./useNear";
 
 const { widths } = images["navio-mar"];
@@ -25,8 +27,8 @@ const ORIGINAL = { avif: `/images/journey/navio-mar-close-${CLOSE.width}.avif`, 
 const SEA = "#0d2f4f";
 
 export const viewOf = (stage: HTMLElement): View => ({
-  width: stage.clientWidth,
-  height: stage.clientHeight,
+  width: measure(stage).width,
+  height: measure(stage).height,
   dpr: window.devicePixelRatio || 1,
 });
 
@@ -47,10 +49,15 @@ export type Frame = {
   root: HTMLElement;
   // The photo, drawn by the camera on a canvas the size of the screen (paint): never a layer bigger than the screen.
   canvas: HTMLCanvasElement;
-  // its backing store at most this many device px per CSS px (2 on the 'low' tier)
+  // its backing store at most this many device px per CSS px (2 on the 'low' tier), its smoothing ('low' there)
   maxDpr: number;
-  base: { img: HTMLImageElement; loaded: boolean };
-  sharp: { source: HTMLSourceElement; img: HTMLImageElement; loaded: boolean };
+  smoothing: ImageSmoothingQuality;
+  // the photo and the close's crop, each decoded once into a bitmap (drawn from it every frame, closed when far)
+  base: { img: HTMLImageElement; bitmap: ImageBitmap | null };
+  sharp: { source: HTMLSourceElement; img: HTMLImageElement; bitmap: ImageBitmap | null };
+  // what the canvas shows, and what it should (drawn once a frame, only when they differ)
+  shown: string;
+  next: { cam: Camera; view: View; sharp: number } | null;
   // One per APG container: its four edges.
   outlines: Note[];
   heading: Note;
@@ -71,11 +78,22 @@ let redraw: (() => void) | null = null;
 // Scene 1 draws every frame; a frame mounted later gets drawn at once.
 export const setRedraw = (fn: (() => void) | null) => (redraw = fn);
 
-// An image in once decoded (drawing it undecoded would stall the frame that first does).
-const whenDecoded = (img: HTMLImageElement, done: () => void) => {
-  const go = () => void img.decode().then(done, () => {});
+// An image decoded once into a bitmap, off the main thread (from its file, cached by then: a bitmap made from the
+// <img> itself decodes it on the main thread, 50+ ms for the crop on a phone), handed over, the one before it
+// closed. Every variant is already smaller than the camera draws it (measured: the 1200 / 1920 photo and the 2600
+// crop at every zoom), so none is resized.
+const toBitmap = (img: HTMLImageElement, done: (bitmap: ImageBitmap) => void) => {
+  const go = () =>
+    void fetch(img.currentSrc || img.src)
+      .then((r) => r.blob())
+      .then((blob) => createImageBitmap(blob))
+      .then(done, () => {});
   if (img.complete && img.naturalWidth) go();
   else img.onload = go;
+};
+export const release = (slot: { bitmap: ImageBitmap | null }) => {
+  slot.bitmap?.close();
+  slot.bitmap = null;
 };
 
 // The original, once scene 1 comes near: set on every frame, fetched once.
@@ -84,16 +102,45 @@ export function loadSharp() {
     if (f.sharp.img.getAttribute("src")) continue;
     f.sharp.source.srcset = ORIGINAL.avif;
     f.sharp.img.src = ORIGINAL.webp;
-    whenDecoded(f.sharp.img, () => {
-      f.sharp.loaded = true;
+    toBitmap(f.sharp.img, (bitmap) => {
+      release(f.sharp);
+      f.sharp.bitmap = bitmap;
       redraw?.();
     });
   }
 }
 
-// The photo through the camera: the canvas sized to the screen, the photo drawn at the camera's place and scale (the
-// canvas clips it), the close's crop over the same pixels at `sharp` opacity.
+// Frames to draw this frame: painted once, after the scroll's triggers (gsap's ticker runs them first), however many
+// updates asked.
+const dirty = new Set<Frame>();
+let ticking = false;
+const flush = () => {
+  for (const frame of dirty) {
+    const n = frame.next!;
+    const key = [n.cam.x, n.cam.y, n.cam.scale, n.sharp, n.view.width, n.view.height, !!frame.base.bitmap, !!frame.sharp.bitmap].join();
+    if (key !== frame.shown) {
+      frame.shown = key;
+      draw(frame, n.cam, n.view, n.sharp);
+      // the camera's scale, for the e2e tests to follow the zoom (written only when it is drawn anew)
+      frame.canvas.dataset.scale = n.cam.scale.toFixed(4);
+    }
+  }
+  dirty.clear();
+};
+
+// The photo through the camera, asked for: drawn at the next tick, if anything changed.
 export function paint(frame: Frame, cam: Camera, view: View, sharp: number) {
+  frame.next = { cam, view, sharp };
+  dirty.add(frame);
+  if (!ticking) {
+    ticking = true;
+    gsap.ticker.add(flush);
+  }
+}
+
+// The canvas sized to the screen, the photo drawn at the camera's place and scale (the canvas clips it), the close's
+// crop over the same pixels at `sharp` opacity.
+function draw(frame: Frame, cam: Camera, view: View, sharp: number) {
   const { canvas } = frame;
   const k = Math.min(view.dpr, frame.maxDpr);
   const [w, h] = [Math.round(view.width * k), Math.round(view.height * k)];
@@ -101,13 +148,13 @@ export function paint(frame: Frame, cam: Camera, view: View, sharp: number) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   ctx.setTransform(k, 0, 0, k, 0, 0);
-  ctx.imageSmoothingQuality = "high";
+  ctx.imageSmoothingQuality = frame.smoothing;
   ctx.fillStyle = SEA;
   ctx.fillRect(0, 0, view.width, view.height);
-  if (frame.base.loaded) ctx.drawImage(frame.base.img, cam.x, cam.y, PHOTO.width * cam.scale, PHOTO.height * cam.scale);
-  if (frame.sharp.loaded && sharp > 0) {
+  if (frame.base.bitmap) ctx.drawImage(frame.base.bitmap, cam.x, cam.y, PHOTO.width * cam.scale, PHOTO.height * cam.scale);
+  if (frame.sharp.bitmap && sharp > 0) {
     ctx.globalAlpha = sharp;
-    ctx.drawImage(frame.sharp.img, cam.x + CLOSE.x * cam.scale, cam.y + CLOSE.y * cam.scale, CLOSE.width * cam.scale, CLOSE.height * cam.scale);
+    ctx.drawImage(frame.sharp.bitmap, cam.x + CLOSE.x * cam.scale, cam.y + CLOSE.y * cam.scale, CLOSE.width * cam.scale, CLOSE.height * cam.scale);
     ctx.globalAlpha = 1;
   }
 }
@@ -137,9 +184,11 @@ const note = (group: Element): Note => ({
   halos: [...group.querySelectorAll<HTMLElement>("[data-halo='']")],
 });
 
-export function ArrivalFrame({ alt }: { alt: string }) {
+// paused: out of scene 1's drawing (hidden: the hero's copy once scene 1 pins over it).
+export function ArrivalFrame({ alt, paused = false }: { alt: string; paused?: boolean }) {
   const root = useRef<HTMLDivElement>(null);
   const baseImg = useRef<HTMLImageElement>(null);
+  const mine = useRef<Frame | null>(null);
   // The photo only after the page's load: on a slow connection Chrome fetches lazy images far ahead (~2500 px), and
   // this one competed with the hero's LCP.
   const [loaded, setLoaded] = useState(false);
@@ -163,8 +212,11 @@ export function ArrivalFrame({ alt }: { alt: string }) {
       root: el,
       canvas: q("[data-photo]"),
       maxDpr: Infinity,
-      base: { img: q("[data-base] img"), loaded: false },
-      sharp: { source: q("[data-sharp] source"), img: q("[data-sharp] img"), loaded: false },
+      smoothing: "medium",
+      shown: "",
+      next: null,
+      base: { img: q("[data-base] img"), bitmap: null },
+      sharp: { source: q("[data-sharp] source"), img: q("[data-sharp] img"), bitmap: null },
       outlines: [...el.querySelectorAll("[data-outline]")].map(note),
       heading: note(q("[data-note=heading]")),
       containers: note(q("[data-note=containers]")),
@@ -173,30 +225,55 @@ export function ArrivalFrame({ alt }: { alt: string }) {
       route: [...el.querySelectorAll<HTMLElement>("[data-route] i")],
       sonar: [...el.querySelectorAll<HTMLElement>("[data-sonar]")],
     };
+    mine.current = frame;
     frames.add(frame);
     redraw?.();
-    return () => void frames.delete(frame);
+    return () => {
+      frames.delete(frame);
+      dirty.delete(frame);
+      release(frame.base);
+      release(frame.sharp);
+    };
   }, []);
+
+  useEffect(() => {
+    const frame = mine.current;
+    if (!frame) return;
+    if (paused) {
+      frames.delete(frame);
+      dirty.delete(frame);
+    } else {
+      frames.add(frame);
+      redraw?.();
+    }
+  }, [paused]);
 
   // The tier known (after hydration): the canvas' density; the photo drawn once decoded.
   useEffect(() => {
-    for (const f of frames) if (f.root === root.current) f.maxDpr = low ? 2 : Infinity;
+    const f = mine.current;
+    if (f) {
+      f.maxDpr = low ? 2 : Infinity;
+      f.smoothing = low ? "low" : "medium";
+    }
     redraw?.();
   }, [low]);
   useEffect(() => {
     const img = baseImg.current!;
-    const frame = [...frames].find((f) => f.base.img === img);
+    const frame = mine.current;
     if (!on) {
       // far: its pixels let go (the close's crop too; loadSharp sets it again on the way back)
       if (frame) {
-        frame.base.loaded = frame.sharp.loaded = false;
+        release(frame.base);
+        release(frame.sharp);
         frame.sharp.img.removeAttribute("src");
         frame.sharp.source.removeAttribute("srcset");
       }
       return;
     }
-    whenDecoded(img, () => {
-      if (frame) frame.base.loaded = true;
+    toBitmap(img, (bitmap) => {
+      if (!frame) return bitmap.close();
+      release(frame.base);
+      frame.base.bitmap = bitmap;
       redraw?.();
     });
   }, [on]);

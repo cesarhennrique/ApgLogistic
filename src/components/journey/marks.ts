@@ -1,15 +1,17 @@
 // Screen-space marks over the journey's pictures (notes, leaders, outlines, dimension lines), drawn with 1 px boxes
-// stretched by transform only: nothing is laid out again, and a stroke never thickens with a camera's zoom.
+// stretched by transform only: nothing is laid out again, and a stroke never thickens with a camera's zoom. 2D
+// transforms: a mark is a few px, a layer of its own each (a hundred on a phone) cost more to hand to the compositor
+// every frame than painting them all together.
 
 export const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
 
 // A 1 px box (origin top left) at x, y, stretched to w × h.
 export const place = (el: HTMLElement, x: number, y: number, w = 1, h = 1) =>
-  (el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${w.toFixed(2)}, ${h.toFixed(2)})`);
+  (el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${w.toFixed(2)}, ${h.toFixed(2)})`);
 
 // A line t px thick from a to b, centred on it: a 1 px box rotated and stretched.
 export const leader = (el: HTMLElement, ax: number, ay: number, bx: number, by: number, t = 1) =>
-  (el.style.transform = `translate3d(${ax.toFixed(1)}px, ${ay.toFixed(1)}px, 0) rotate(${Math.atan2(by - ay, bx - ax).toFixed(4)}rad) translate3d(0, ${(-t / 2).toFixed(1)}px, 0) scale(${Math.hypot(bx - ax, by - ay).toFixed(1)}, ${t})`);
+  (el.style.transform = `translate(${ax.toFixed(1)}px, ${ay.toFixed(1)}px) rotate(${Math.atan2(by - ay, bx - ax).toFixed(4)}rad) translate(0, ${(-t / 2).toFixed(1)}px) scale(${Math.hypot(bx - ax, by - ay).toFixed(1)}, ${t})`);
 
 // A leader over its dark halo (halo px each side).
 export const guide = (n: { leader: HTMLElement | null; leaderHalo: HTMLElement | null }, ax: number, ay: number, bx: number, by: number, halo = 2) => {
